@@ -1,0 +1,56 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../core/auth/auth_state.dart';
+import '../features/auth/providers/auth_provider.dart';
+import '../features/auth/screens/login_screen.dart';
+import '../features/dashboard/screens/dashboard_screen.dart';
+import '../features/service_requests/screens/service_requests_screen.dart';
+import 'shell_screen.dart';
+
+final routerProvider = Provider<GoRouter>((ref) {
+  // Stable notifier — fires when auth changes without recreating the GoRouter,
+  // which avoids a black-screen flicker on logout (same pattern as ajcoreios).
+  final notifier = _AuthChangeNotifier();
+  ref.onDispose(notifier.dispose);
+  ref.listen<AuthState>(authProvider, (prev, next) => notifier.notify());
+
+  return GoRouter(
+    initialLocation: '/dashboard',
+    redirect: (context, state) {
+      final authState = ref.read(authProvider);
+      final isAuth = authState.status == AuthStatus.authenticated;
+      final isLoading = authState.status == AuthStatus.unknown;
+      final onLogin = state.uri.path == '/login';
+
+      if (isLoading) return null;
+      if (!isAuth && !onLogin) return '/login';
+      if (isAuth && onLogin) return '/dashboard';
+      return null;
+    },
+    refreshListenable: notifier,
+    routes: [
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      ShellRoute(
+        builder: (context, state, child) => ShellScreen(child: child),
+        routes: [
+          GoRoute(
+            path: '/dashboard',
+            builder: (context, state) => const DashboardScreen(),
+          ),
+          GoRoute(
+            path: '/service-requests',
+            builder: (context, state) => const ServiceRequestsScreen(),
+          ),
+        ],
+      ),
+    ],
+  );
+});
+
+class _AuthChangeNotifier extends ChangeNotifier {
+  void notify() => notifyListeners();
+}

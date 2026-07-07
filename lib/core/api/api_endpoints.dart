@@ -1,0 +1,28 @@
+/// All AJ Core OPS REST API endpoint paths relative to apiBaseUrl.
+/// These are the same `/ops/*` routes AJOps (the Next.js web app) uses —
+/// see class-ajcore-rest-api.php. Only staff (Admin / ajcore_ops_access /
+/// aj_ops_user role) can authenticate against them.
+class ApiEndpoints {
+  ApiEndpoints._();
+
+  // ── System ──────────────────────────────────────────────────────────────
+  static const String status = '/status';
+
+  // ── Auth ────────────────────────────────────────────────────────────────
+  static const String login = '/ops/auth/login';
+  static const String logout = '/ops/auth/logout';
+  static const String me = '/ops/auth/me';
+
+  // ── Dashboard ───────────────────────────────────────────────────────────
+  static const String summary = '/ops/summary';
+
+  // ── Staff (for assignee dropdown) ──────────────────────────────────────
+  static const String staff = '/ops/staff';
+
+  // ── Service Requests ────────────────────────────────────────────────────
+  static const String serviceRequests = '/ops/service-requests';
+  static String updateServiceRequest(int id) => '/ops/service-requests/$id';
+  static String serviceRequestQuickAction(int id) => '/ops/service-requests/$id/quick-action';
+  static String serviceRequestHistory(int id) => '/ops/service-requests/$id/history';
+  static const String serviceRequestsBulk = '/ops/service-requests/bulk';
+}
