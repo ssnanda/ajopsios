@@ -36,8 +36,13 @@ class CustomersState {
   }
 
   // Matches AJOps web: archived customers are filtered out client-side unless asked for.
-  List<Customer> get visible =>
-      includeArchived ? customers : customers.where((c) => c.portalStatus != 'archived').toList();
+  // customer_number is a fixed-width "YYYY-MM-NNNN" string assigned at creation time — sorting
+  // it descending as a string puts the most recently created customers first.
+  List<Customer> get visible {
+    final list = includeArchived ? [...customers] : customers.where((c) => c.portalStatus != 'archived').toList();
+    list.sort((a, b) => b.customerNumber.compareTo(a.customerNumber));
+    return list;
+  }
 }
 
 class CustomersNotifier extends StateNotifier<CustomersState> {

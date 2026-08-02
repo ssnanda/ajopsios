@@ -14,6 +14,7 @@ class Customer {
   final String address;
   final String portalStatus; // active | disabled | archived | without_portal_login
   final bool enabledPortal;
+  final List<String> serviceTypes; // active subscription / local-contract service names
 
   const Customer({
     required this.stripeCustomerId,
@@ -25,6 +26,7 @@ class Customer {
     required this.address,
     required this.portalStatus,
     required this.enabledPortal,
+    this.serviceTypes = const [],
   });
 
   factory Customer.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,7 @@ class Customer {
       address: _formatAddress(json['address']),
       portalStatus: json['portal_status'] as String? ?? '',
       enabledPortal: json['enabled_portal'] == true || json['enabled_portal'].toString() == '1',
+      serviceTypes: (json['service_types'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
     );
   }
 

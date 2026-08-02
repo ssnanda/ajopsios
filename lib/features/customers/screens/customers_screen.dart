@@ -119,7 +119,15 @@ class _CustomerCard extends StatelessWidget {
                     if (customer.email.isNotEmpty)
                       Text(customer.email, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                     const SizedBox(height: 6),
-                    _StatusBadge(status: customer.portalStatus),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _StatusBadge(status: customer.portalStatus),
+                        for (final service in customer.serviceTypes) _ServiceBadge(label: service),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -127,6 +135,23 @@ class _CustomerCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ServiceBadge extends StatelessWidget {
+  final String label;
+  const _ServiceBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(999)),
+      child: Text(
+        label,
+        style: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.w600, fontSize: 11),
       ),
     );
   }
