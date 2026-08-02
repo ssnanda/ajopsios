@@ -6,6 +6,7 @@ import '../core/widgets/coming_soon_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/dashboard/screens/dashboard_screen.dart';
+import '../features/live_chat/screens/chat_conversation_by_id_screen.dart';
 import '../features/live_chat/screens/live_chat_screen.dart';
 import '../features/more/screens/more_screen.dart';
 import '../features/service_requests/screens/service_requests_screen.dart';
@@ -28,7 +29,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // go_router re-runs redirect() on the result, so the auth check below still applies normally.
       if (state.uri.scheme == 'ajops') {
         final host = state.uri.host;
-        return host.isNotEmpty ? '/$host' : '/live-chat';
+        if (host.isEmpty) return '/live-chat';
+        final path = state.uri.path; // e.g. "/42" for ajops://live-chat/42
+        return '/$host$path';
       }
 
       final authState = ref.read(authProvider);
@@ -61,6 +64,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/live-chat',
             builder: (context, state) => const LiveChatScreen(),
+            routes: [
+              GoRoute(
+                path: ':sessionId',
+                builder: (context, state) {
+                  final id = int.tryParse(state.pathParameters['sessionId'] ?? '') ?? 0;
+                  return ChatConversationByIdScreen(sessionId: id);
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: '/more',

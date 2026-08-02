@@ -27,9 +27,12 @@ class DeepLinkService {
   }
 
   void _handle(Uri uri) {
-    // ajops://live-chat -> host="live-chat" -> "/live-chat". Falls back to
-    // Live Chat for any unrecognized/empty host rather than doing nothing.
-    final target = uri.host.isNotEmpty ? '/${uri.host}' : '/live-chat';
-    _navController.add(target);
+    // ajops://live-chat/42 -> host="live-chat", path="/42" -> "/live-chat/42".
+    // Falls back to Live Chat for any unrecognized/empty host rather than doing nothing.
+    if (uri.host.isEmpty) {
+      _navController.add('/live-chat');
+      return;
+    }
+    _navController.add('/${uri.host}${uri.path}');
   }
 }
