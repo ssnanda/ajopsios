@@ -4,7 +4,7 @@
 class AppConfig {
   AppConfig._();
 
-  static const String appName = 'NC LLC Agents Ops';
+  static const String appName = 'AJ Ops';
 
   static const String apiBaseUrl = String.fromEnvironment(
     'AJ_API_BASE_URL',

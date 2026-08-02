@@ -33,4 +33,13 @@ class ApiEndpoints {
   static String chatSessionClaim(int id) => '/ops/chat/sessions/$id/claim';
   static String chatSessionUnclaim(int id) => '/ops/chat/sessions/$id/unclaim';
   static String chatSessionClose(int id) => '/ops/chat/sessions/$id/close';
+
+  // ── UPOS Temps (Resideo thermostats) ────────────────────────────────────
+  // Bulk (all configured devices) and per-device are separate route sets on
+  // AJCore, not one endpoint with an optional deviceId.
+  static const String uposTemps = '/ops/upos-temps';
+  static const String uposTempsSystemBulk = '/ops/upos-temps/system';
+  static const String uposTempsFanBulk = '/ops/upos-temps/fan';
+  static String uposTempsDeviceSystem(String deviceId) => '/ops/upos-temps/devices/$deviceId/system';
+  static String uposTempsDeviceFan(String deviceId) => '/ops/upos-temps/devices/$deviceId/fan';
 }

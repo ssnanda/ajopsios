@@ -10,6 +10,7 @@ import '../features/live_chat/screens/chat_conversation_by_id_screen.dart';
 import '../features/live_chat/screens/live_chat_screen.dart';
 import '../features/more/screens/more_screen.dart';
 import '../features/service_requests/screens/service_requests_screen.dart';
+import '../features/upos_temps/screens/upos_temps_screen.dart';
 import 'shell_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -88,7 +89,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/upos-temps',
-            builder: (context, state) => const ComingSoonScreen(title: 'UPOS Temps', icon: Icons.thermostat_rounded),
+            builder: (context, state) => const UposTempsScreen(),
           ),
           GoRoute(
             path: '/mail',
