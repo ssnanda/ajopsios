@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/upos_device_model.dart';
+import 'compact_mode_row.dart';
 
 Future<void> showThermostatDetailSheet(
   BuildContext context, {
@@ -113,16 +114,7 @@ class _ControlGroup extends StatelessWidget {
       children: [
         Text(label.toUpperCase(), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey.shade600)),
         const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: modes
-              .map((mode) => OutlinedButton(
-                    onPressed: busy ? null : () => onSelect(mode),
-                    child: Text(mode),
-                  ))
-              .toList(),
-        ),
+        CompactModeRow(modes: modes, disabled: busy, onSelect: onSelect),
       ],
     );
   }

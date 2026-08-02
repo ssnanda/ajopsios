@@ -4,9 +4,11 @@ import '../../../core/api/ops_api.dart';
 import '../../../core/models/upos_device_model.dart';
 import '../../../core/utils/error_utils.dart';
 
-// Which thermostats to display is a per-device display preference, not shared ops data — kept
-// locally rather than round-tripped through AJCore/settings, same call as the AJOps web version.
+// Which thermostats/locations to display are per-device display preferences, not shared ops
+// data — kept locally rather than round-tripped through AJCore/settings, same call as the AJOps
+// web version.
 const _selectedIdsPrefsKey = 'upos_temps_selected_device_ids';
+const _selectedLocationIdsPrefsKey = 'upos_temps_selected_location_ids';
 
 class UposTempsState {
   final List<UposDevice> devices;
@@ -14,6 +16,7 @@ class UposTempsState {
   final bool loading;
   final String? error;
   final Set<String>? selectedIds; // null = not yet loaded from prefs
+  final Set<String>? selectedLocationIds; // null = not yet loaded from prefs
   final Set<String> busyDeviceKeys; // "<deviceId>-<action>", "" for bulk
 
   const UposTempsState({
@@ -22,6 +25,7 @@ class UposTempsState {
     this.loading = true,
     this.error,
     this.selectedIds,
+    this.selectedLocationIds,
     this.busyDeviceKeys = const {},
   });
 
@@ -32,6 +36,7 @@ class UposTempsState {
     String? error,
     bool clearError = false,
     Set<String>? selectedIds,
+    Set<String>? selectedLocationIds,
     Set<String>? busyDeviceKeys,
   }) {
     return UposTempsState(
@@ -40,31 +45,38 @@ class UposTempsState {
       loading: loading ?? this.loading,
       error: clearError ? null : (error ?? this.error),
       selectedIds: selectedIds ?? this.selectedIds,
+      selectedLocationIds: selectedLocationIds ?? this.selectedLocationIds,
       busyDeviceKeys: busyDeviceKeys ?? this.busyDeviceKeys,
     );
   }
 
-  List<UposDevice> get visibleDevices =>
-      selectedIds == null ? const [] : devices.where((d) => selectedIds!.contains(d.id)).toList();
+  /// Unique location IDs across the fetched devices, in a stable (sorted) order.
+  List<String> get locationIds => devices.map((d) => d.locationId).toSet().toList()..sort();
+
+  List<UposDevice> get visibleDevices {
+    if (selectedIds == null || selectedLocationIds == null) return const [];
+    return devices.where((d) => selectedIds!.contains(d.id) && selectedLocationIds!.contains(d.locationId)).toList();
+  }
 }
 
 class UposTempsNotifier extends StateNotifier<UposTempsState> {
   UposTempsNotifier() : super(const UposTempsState()) {
-    _loadSelectedIds();
+    _loadPrefs();
     load();
   }
 
   final _api = OpsApi.instance;
 
-  Future<void> _loadSelectedIds() async {
+  Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getStringList(_selectedIdsPrefsKey);
-    if (stored != null) {
-      state = state.copyWith(selectedIds: stored.toSet());
-    } else if (state.devices.isNotEmpty) {
-      // First-ever load with devices already in: default to showing everything.
-      state = state.copyWith(selectedIds: state.devices.map((d) => d.id).toSet());
-    }
+    final storedIds = prefs.getStringList(_selectedIdsPrefsKey);
+    final storedLocationIds = prefs.getStringList(_selectedLocationIdsPrefsKey);
+    state = state.copyWith(
+      selectedIds: storedIds != null ? storedIds.toSet() : (state.devices.isNotEmpty ? state.devices.map((d) => d.id).toSet() : null),
+      selectedLocationIds: storedLocationIds != null
+          ? storedLocationIds.toSet()
+          : (state.devices.isNotEmpty ? state.locationIds.toSet() : null),
+    );
   }
 
   Future<void> _persistSelectedIds() async {
@@ -72,14 +84,28 @@ class UposTempsNotifier extends StateNotifier<UposTempsState> {
     await prefs.setStringList(_selectedIdsPrefsKey, state.selectedIds?.toList() ?? []);
   }
 
+  Future<void> _persistSelectedLocationIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_selectedLocationIdsPrefsKey, state.selectedLocationIds?.toList() ?? []);
+  }
+
   Future<void> load() async {
     state = state.copyWith(loading: true, clearError: true);
     try {
       final (devices, settings) = await _api.getUposTemps();
-      // First-ever load (no saved preference yet, prefs already checked in _loadSelectedIds):
-      // default to showing everything rather than an empty grid.
+      // First-ever load (no saved preference yet, prefs already checked in _loadPrefs): default
+      // to showing everything — all devices, both/all locations — rather than an empty grid.
       final selectedIds = state.selectedIds ?? devices.map((d) => d.id).toSet();
-      state = state.copyWith(devices: devices, ready: settings.ready, loading: false, clearError: true, selectedIds: selectedIds);
+      final knownLocationIds = devices.map((d) => d.locationId).toSet();
+      final selectedLocationIds = state.selectedLocationIds ?? knownLocationIds;
+      state = state.copyWith(
+        devices: devices,
+        ready: settings.ready,
+        loading: false,
+        clearError: true,
+        selectedIds: selectedIds,
+        selectedLocationIds: selectedLocationIds,
+      );
     } catch (e) {
       state = state.copyWith(loading: false, error: friendlyError(e));
     }
@@ -101,6 +127,14 @@ class UposTempsNotifier extends StateNotifier<UposTempsState> {
   void clearSelection() {
     state = state.copyWith(selectedIds: {});
     _persistSelectedIds();
+  }
+
+  void toggleLocationSelected(String locationId) {
+    final current = state.selectedLocationIds ?? {};
+    final next = {...current};
+    if (!next.add(locationId)) next.remove(locationId);
+    state = state.copyWith(selectedLocationIds: next);
+    _persistSelectedLocationIds();
   }
 
   Future<String?> setSystemMode(String mode, {String? deviceId}) =>

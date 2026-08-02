@@ -5,6 +5,7 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../providers/upos_temps_provider.dart';
+import '../widgets/compact_mode_row.dart';
 import '../widgets/thermostat_detail_sheet.dart';
 
 class UposTempsScreen extends ConsumerStatefulWidget {
@@ -52,6 +53,14 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
                       child: ListView(
                         padding: const EdgeInsets.all(12),
                         children: [
+                          if (state.locationIds.length > 1) ...[
+                            _LocationsCard(
+                              locationIds: state.locationIds,
+                              selectedLocationIds: state.selectedLocationIds ?? {},
+                              onToggleLocation: notifier.toggleLocationSelected,
+                            ),
+                            const SizedBox(height: 10),
+                          ],
                           _BulkControlCard(busy: state.busyDeviceKeys.contains('-system') || state.busyDeviceKeys.contains('-fan'), notifier: notifier, runBulk: _runBulk),
                           const SizedBox(height: 10),
                           _PickerCard(
@@ -128,22 +137,48 @@ class _BulkControlCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text('SYSTEM', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.grey.shade600)),
             const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _systemModes
-                  .map((m) => OutlinedButton(onPressed: busy ? null : () => runBulk(() => notifier.setSystemMode(m)), child: Text(m)))
-                  .toList(),
-            ),
+            CompactModeRow(modes: _systemModes, disabled: busy, onSelect: (m) => runBulk(() => notifier.setSystemMode(m))),
             const SizedBox(height: 10),
             Text('FAN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.grey.shade600)),
             const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children:
-                  _fanModes.map((m) => OutlinedButton(onPressed: busy ? null : () => runBulk(() => notifier.setFanMode(m)), child: Text(m))).toList(),
-            ),
+            CompactModeRow(modes: _fanModes, disabled: busy, onSelect: (m) => runBulk(() => notifier.setFanMode(m))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LocationsCard extends StatelessWidget {
+  final List<String> locationIds;
+  final Set<String> selectedLocationIds;
+  final void Function(String) onToggleLocation;
+
+  const _LocationsCard({required this.locationIds, required this.selectedLocationIds, required this.onToggleLocation});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.grey.shade200)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Locations', style: TextStyle(fontWeight: FontWeight.w700)),
+            Text('Both are selected by default — uncheck to hide a location\'s thermostats below.',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            const SizedBox(height: 4),
+            ...locationIds.asMap().entries.map((entry) => CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: selectedLocationIds.contains(entry.value),
+                  onChanged: (_) => onToggleLocation(entry.value),
+                  title: Text('Location ${entry.key + 1}'),
+                  subtitle: Text(entry.value, style: const TextStyle(fontSize: 11)),
+                )),
           ],
         ),
       ),

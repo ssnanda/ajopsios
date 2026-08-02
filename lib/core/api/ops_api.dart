@@ -367,4 +367,22 @@ class OpsApi {
   Future<void> processGmailIntakeNow() async {
     await ApiClient.instance.dio.post('${ApiEndpoints.gmailIntake}/process');
   }
+
+  // ── Sync ─────────────────────────────────────────────────────────────────
+  // Fire-and-forget: AJCore schedules a one-off WP-Cron run and returns a
+  // run_key immediately, same as the "⚡ Full Sync Now" button on AJOps web —
+  // caller polls getSyncRunStatus() until done.
+
+  /// jobs empty/omitted = full sync of every configured job (Stripe products,
+  /// customers, subscriptions, invoices).
+  Future<String> triggerSync({List<String> jobs = const []}) async {
+    final resp = await ApiClient.instance.dio.post(ApiEndpoints.sync, data: {'jobs': jobs});
+    return (resp.data as Map<String, dynamic>)['run_key'] as String? ?? '';
+  }
+
+  /// Returns done/started/records_synced/errors for the given run.
+  Future<Map<String, dynamic>> getSyncRunStatus(String runKey) async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.syncRunStatus, queryParameters: {'run_key': runKey});
+    return resp.data as Map<String, dynamic>;
+  }
 }

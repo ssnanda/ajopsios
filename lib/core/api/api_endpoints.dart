@@ -67,4 +67,9 @@ class ApiEndpoints {
   static String gmailIntakeItem(int id) => '/ops/gmail-intake/$id';
   static String gmailIntakePreview(int id) => '/ops/gmail-intake/$id/preview';
   static String gmailIntakeFile(int id) => '/ops/gmail-intake/$id/file';
+
+  // ── Sync (Stripe products/customers/subscriptions/invoices) ───────────────
+  static const String sync = '/ops/sync';
+  static const String syncRunStatus = '/ops/sync/run-status';
+  static const String syncStatus = '/ops/sync/status';
 }

@@ -3,6 +3,7 @@
 class UposDevice {
   final String id;
   final String name;
+  final String locationId;
   final double? indoorTemp;
   final double? setTemp;
   final String? mode;
@@ -15,6 +16,7 @@ class UposDevice {
   const UposDevice({
     required this.id,
     required this.name,
+    required this.locationId,
     required this.indoorTemp,
     required this.setTemp,
     required this.mode,
@@ -32,6 +34,7 @@ class UposDevice {
     return UposDevice(
       id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
+      locationId: json['location_id']?.toString() ?? '',
       indoorTemp: (json['indoor_temp'] as num?)?.toDouble(),
       setTemp: (json['set_temp'] as num?)?.toDouble(),
       mode: json['mode'] as String?,

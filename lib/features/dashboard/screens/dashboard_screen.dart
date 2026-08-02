@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/api/ops_api.dart';
+import '../../../core/models/ops_summary_model.dart';
 import '../../../core/widgets/aj_card.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
@@ -45,86 +48,135 @@ class DashboardScreen extends ConsumerWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-              // 3 columns, one flowing grid (no section label) — smaller tiles, each with its own
-              // accent color rather than every tile sharing the same theme primary blue.
-              GridView.count(
-                crossAxisCount: 3,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                childAspectRatio: 1.0,
-                children: [
-                  // Customers and Subscriptions tiles removed per explicit ask. Service
-                  // Requests/Open Tasks/Leads/Chat only show when there's actually something
-                  // needing attention — a "0" tile is just noise on a small screen.
-                  if (data.serviceRequestsNeedsAction > 0)
-                    AjStatCard(
-                      label: 'Service Requests',
-                      value: '${data.serviceRequestsNeedsAction}',
-                      icon: Icons.support_agent_rounded,
-                      accentColor: Colors.orange,
-                      onTap: () => context.go('/service-requests'),
-                    ),
-                  if (data.tasksOpen > 0)
-                    AjStatCard(
-                      label: 'Open Tasks',
-                      value: '${data.tasksOpen}',
-                      icon: Icons.task_alt_rounded,
-                      accentColor: Colors.purple,
-                    ),
-                  // Active (still in the pipeline, not won/lost) — not a read/unread count, which
-                  // isn't something actually tracked here.
-                  if (data.leadsActive > 0)
-                    AjStatCard(
-                      label: 'Leads',
-                      value: '${data.leadsActive}',
-                      icon: Icons.person_search_rounded,
-                      accentColor: Colors.green,
-                      onTap: () => context.go('/leads'),
-                    ),
-                  if (data.chatUnread > 0)
-                    AjStatCard(
-                      label: 'Live Chat',
-                      value: '${data.chatUnread}',
-                      icon: Icons.chat_bubble_outline_rounded,
-                      accentColor: Colors.teal,
-                      onTap: () => context.go('/live-chat'),
-                    ),
-                  AjStatCard(
-                    label: 'AJPhone',
-                    value: '',
-                    icon: Icons.phone_in_talk_rounded,
-                    accentColor: Colors.indigo,
-                    onTap: () => context.go('/ajphone'),
-                  ),
-                  AjStatCard(
-                    label: 'Mail',
-                    value: '',
-                    icon: Icons.mail_outline_rounded,
-                    accentColor: Colors.amber.shade800,
-                    onTap: () => context.go('/mail'),
-                  ),
-                  AjStatCard(
-                    label: 'Files',
-                    value: '',
-                    icon: Icons.folder_outlined,
-                    accentColor: Colors.brown,
-                    onTap: () => context.go('/files'),
-                  ),
-                  AjStatCard(
-                    label: 'Gmail Intake',
-                    value: '',
-                    icon: Icons.move_to_inbox_rounded,
-                    accentColor: Colors.pink,
-                    onTap: () => context.go('/gmail-intake'),
-                  ),
-                ],
-              ),
+              const Center(child: _SyncAllButton()),
+              const SizedBox(height: 16),
+              // Every menu destination gets a tile now — no more hide-if-zero. Ordering does the
+              // work instead: tiles with a pending count sort to the top (highest count first),
+              // then everything else keeps a fixed, sensible order. No "Recent" section label —
+              // it's one continuous grid, the sort is the only signal.
+              _DashboardTiles(data: data),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SyncAllButton extends ConsumerStatefulWidget {
+  const _SyncAllButton();
+
+  @override
+  ConsumerState<_SyncAllButton> createState() => _SyncAllButtonState();
+}
+
+class _SyncAllButtonState extends ConsumerState<_SyncAllButton> {
+  bool _running = false;
+
+  Future<void> _run() async {
+    setState(() => _running = true);
+    try {
+      final runKey = await OpsApi.instance.triggerSync();
+      Map<String, dynamic> status = {'done': false};
+      // Same poll cadence/timeout as AJOps web's Full Sync Now button.
+      for (var i = 0; i < 60 && !(status['done'] == true); i++) {
+        await Future.delayed(const Duration(milliseconds: 1500));
+        status = await OpsApi.instance.getSyncRunStatus(runKey);
+      }
+      if (!mounted) return;
+      final synced = status['records_synced'];
+      final errors = (status['errors'] as List<dynamic>?) ?? const [];
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          status['done'] == true
+              ? (errors.isEmpty ? 'Sync complete${synced != null ? ' — $synced records' : ''}.' : 'Sync finished with ${errors.length} error(s).')
+              : 'Sync is still running in the background.',
+        ),
+      ));
+      ref.invalidate(dashboardProvider);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sync failed: $e')));
+    } finally {
+      if (mounted) setState(() => _running = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: _running ? null : _run,
+      icon: _running
+          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+          : const Icon(Icons.sync_rounded, size: 18),
+      label: Text(_running ? 'Syncing…' : 'Sync All'),
+    );
+  }
+}
+
+class _Tile {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final String? route; // null = no dedicated screen exists for this yet (e.g. Open Tasks)
+  final int pending; // 0 = no live count available for this destination
+  final int order; // fallback ordering among tiles that all have pending == 0
+
+  const _Tile({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.route,
+    required this.pending,
+    required this.order,
+  });
+}
+
+class _DashboardTiles extends StatelessWidget {
+  final OpsSummaryModel data;
+  const _DashboardTiles({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final tiles = [
+      _Tile(label: 'Service Requests', icon: Icons.support_agent_rounded, color: Colors.orange, route: '/service-requests', pending: data.serviceRequestsNeedsAction, order: 0),
+      // Active (still in the pipeline, not won/lost) — not a read/unread count, which isn't
+      // something actually tracked here. Always shown regardless of the count, unlike the others.
+      _Tile(label: 'Leads', icon: Icons.person_search_rounded, color: Colors.green, route: '/leads', pending: data.leadsActive, order: 2),
+      _Tile(label: 'Live Chat', icon: Icons.chat_bubble_outline_rounded, color: Colors.teal, route: '/live-chat', pending: data.chatUnread, order: 3),
+      // No live count available from /ops/summary for these — fixed fallback order below.
+      _Tile(label: 'Customers', icon: Icons.people_alt_rounded, color: Colors.blue, route: '/customers', pending: 0, order: 4),
+      _Tile(label: 'UPOS Temps', icon: Icons.thermostat_rounded, color: Colors.cyan, route: '/upos-temps', pending: 0, order: 5),
+      _Tile(label: 'Mail', icon: Icons.mail_outline_rounded, color: Colors.amber.shade800, route: '/mail', pending: 0, order: 6),
+      _Tile(label: 'Files', icon: Icons.folder_outlined, color: Colors.brown, route: '/files', pending: 0, order: 7),
+      _Tile(label: 'Gmail Intake', icon: Icons.move_to_inbox_rounded, color: Colors.pink, route: '/gmail-intake', pending: 0, order: 8),
+      _Tile(label: 'AJPhone', icon: Icons.phone_in_talk_rounded, color: Colors.indigo, route: '/ajphone', pending: 0, order: 9),
+    ];
+
+    // Compound sort, not relying on List.sort's stability: pending-bearing tiles first (highest
+    // count first), then the rest in their fixed fallback order.
+    tiles.sort((a, b) {
+      if ((a.pending > 0) != (b.pending > 0)) return a.pending > 0 ? -1 : 1;
+      if (a.pending != b.pending) return b.pending.compareTo(a.pending);
+      return a.order.compareTo(b.order);
+    });
+
+    return GridView.count(
+      crossAxisCount: 3,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 1.0,
+      children: tiles.map((t) {
+        return AjStatCard(
+          label: t.label,
+          value: t.pending > 0 || t.label == 'Leads' ? '${t.pending}' : '',
+          icon: t.icon,
+          accentColor: t.color,
+          onTap: t.route == null ? null : () => context.go(t.route!),
+        );
+      }).toList(),
     );
   }
 }
