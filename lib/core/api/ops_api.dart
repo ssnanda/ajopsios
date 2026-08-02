@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'api_client.dart';
 import 'api_endpoints.dart';
 import '../models/ops_summary_model.dart';
@@ -7,6 +8,11 @@ import '../models/staff_model.dart';
 import '../models/chat_session_model.dart';
 import '../models/chat_message_model.dart';
 import '../models/upos_device_model.dart';
+import '../models/lead_model.dart';
+import '../models/customer_model.dart';
+import '../models/mail_item_model.dart';
+import '../models/customer_file_model.dart';
+import '../models/gmail_intake_item_model.dart';
 
 /// Thin wrapper around the shared Dio client for the `/ops/*` endpoints.
 /// Mirrors AJOps' own AJCoreClient (ajops/src/lib/ajcore/client.ts) so both
@@ -158,5 +164,207 @@ class OpsApi {
   Future<void> setUposFanMode(String mode, {String? deviceId}) async {
     final path = deviceId == null ? ApiEndpoints.uposTempsFanBulk : ApiEndpoints.uposTempsDeviceFan(deviceId);
     await ApiClient.instance.dio.post(path, data: {'mode': mode});
+  }
+
+  // ── Leads ────────────────────────────────────────────────────────────────
+  // No server-side status/pipeline filter — AJOps web filters client-side over
+  // the full list too, so this mirrors that rather than being a mobile gap.
+
+  Future<List<Lead>> getLeads({String? search}) async {
+    final resp = await ApiClient.instance.dio.get(
+      ApiEndpoints.leads,
+      queryParameters: {
+        if (search != null && search.isNotEmpty) 'search': search,
+        'per_page': '500',
+      },
+    );
+    final list = (resp.data as Map<String, dynamic>)['leads'] as List<dynamic>? ?? [];
+    return list.map((e) => Lead.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<Lead> getLead(int id) async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.lead(id));
+    return Lead.fromJson(resp.data as Map<String, dynamic>);
+  }
+
+  Future<void> addLeadNote(int id, String note) async {
+    await ApiClient.instance.dio.post(ApiEndpoints.leadNotes(id), data: {'note': note});
+  }
+
+  /// Advances (or reverts) the pipeline stage — the same endpoint AJOps' web
+  /// stage-stepper uses. followUpAt only meaningful for "future_follow_up".
+  Future<void> setLeadPipelineStatus(
+    int id,
+    String leadStatus, {
+    String? note,
+    String? stripeCustomerId,
+    String? followUpAt,
+  }) async {
+    await ApiClient.instance.dio.patch(
+      ApiEndpoints.leadPipelineStatus(id),
+      data: {
+        'lead_status': leadStatus,
+        if (note != null) 'note': note,
+        if (stripeCustomerId != null) 'stripe_customer_id': stripeCustomerId,
+        if (followUpAt != null) 'follow_up_at': followUpAt,
+      },
+    );
+  }
+
+  // ── Customers ────────────────────────────────────────────────────────────
+
+  Future<List<Customer>> getCustomers({String? search}) async {
+    final resp = await ApiClient.instance.dio.get(
+      ApiEndpoints.customers,
+      queryParameters: {
+        if (search != null && search.isNotEmpty) 'search': search,
+        'per_page': '500',
+      },
+    );
+    final list = (resp.data as Map<String, dynamic>)['customers'] as List<dynamic>? ?? [];
+    return list.map((e) => Customer.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<CustomerDetail> getCustomerDetail(String stripeCustomerId) async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.customer(stripeCustomerId));
+    return CustomerDetail.fromJson(resp.data as Map<String, dynamic>);
+  }
+
+  /// action: enable | disable | archive | restore | reset_password | send_welcome
+  Future<void> runCustomerAction(String stripeCustomerId, String action) async {
+    await ApiClient.instance.dio.post(ApiEndpoints.customerAction(stripeCustomerId), data: {'action': action});
+  }
+
+  // ── Mail ─────────────────────────────────────────────────────────────────
+
+  Future<(List<MailItem>, Map<String, int>)> getMailItems({String? search, String? status}) async {
+    final resp = await ApiClient.instance.dio.get(
+      ApiEndpoints.mail,
+      queryParameters: {
+        if (search != null && search.isNotEmpty) 'search': search,
+        if (status != null) 'status': status,
+        'per_page': '200',
+      },
+    );
+    final data = resp.data as Map<String, dynamic>;
+    final items = (data['mail_items'] as List<dynamic>? ?? []).map((e) => MailItem.fromJson(e as Map<String, dynamic>)).toList();
+    final statsJson = data['stats'] as Map<String, dynamic>? ?? {};
+    final stats = statsJson.map((k, v) => MapEntry(k, int.tryParse(v?.toString() ?? '0') ?? 0));
+    return (items, stats);
+  }
+
+  /// Multipart create — "scan" is a file field (image/PDF), everything else
+  /// is a plain string field. scanFilePath null = no scan attached yet.
+  Future<MailItem> createMailItem({
+    required String recipientName,
+    required String mailType,
+    String? senderName,
+    String? carrier,
+    String? trackingNumber,
+    String? description,
+    String? stripeCustomerId,
+    String? scanFilePath,
+  }) async {
+    final form = FormData.fromMap({
+      'recipient_name': recipientName,
+      'mail_type': mailType,
+      if (senderName != null && senderName.isNotEmpty) 'sender_name': senderName,
+      if (carrier != null && carrier.isNotEmpty) 'carrier': carrier,
+      if (trackingNumber != null && trackingNumber.isNotEmpty) 'tracking_number': trackingNumber,
+      if (description != null && description.isNotEmpty) 'description': description,
+      if (stripeCustomerId != null && stripeCustomerId.isNotEmpty) 'stripe_customer_id': stripeCustomerId,
+      if (scanFilePath != null) 'scan': await MultipartFile.fromFile(scanFilePath),
+    });
+    final resp = await ApiClient.instance.dio.post(ApiEndpoints.mail, data: form);
+    return MailItem.fromJson(resp.data as Map<String, dynamic>);
+  }
+
+  // ── Files ────────────────────────────────────────────────────────────────
+
+  Future<List<CustomerFile>> getFiles({String? search, String? category}) async {
+    final resp = await ApiClient.instance.dio.get(
+      ApiEndpoints.files,
+      queryParameters: {
+        if (search != null && search.isNotEmpty) 'search': search,
+        if (category != null && category.isNotEmpty) 'category': category,
+        'per_page': '200',
+      },
+    );
+    final list = (resp.data as Map<String, dynamic>)['files'] as List<dynamic>? ?? [];
+    return list.map((e) => CustomerFile.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Multipart create — "file" is the attachment field, everything else is a
+  /// plain string field. assignedEmails is a space/comma/semicolon-separated
+  /// list (matches AJOps web), not a JSON array.
+  Future<CustomerFile> createFile({
+    required String filePath,
+    String? title,
+    String? category,
+    String? description,
+    String? assignedEmails,
+  }) async {
+    final form = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath),
+      if (title != null && title.isNotEmpty) 'title': title,
+      if (category != null && category.isNotEmpty) 'category': category,
+      if (description != null && description.isNotEmpty) 'description': description,
+      if (assignedEmails != null && assignedEmails.isNotEmpty) 'assigned_emails': assignedEmails,
+    });
+    final resp = await ApiClient.instance.dio.post(ApiEndpoints.files, data: form);
+    return CustomerFile.fromJson(resp.data as Map<String, dynamic>);
+  }
+
+  // ── Gmail Intake ─────────────────────────────────────────────────────────
+
+  Future<(List<GmailIntakeItem>, Map<String, int>)> getGmailIntakeItems({String? search, String? status}) async {
+    final resp = await ApiClient.instance.dio.get(
+      ApiEndpoints.gmailIntake,
+      queryParameters: {
+        if (search != null && search.isNotEmpty) 'search': search,
+        if (status != null) 'status': status,
+        'per_page': '200',
+      },
+    );
+    final data = resp.data as Map<String, dynamic>;
+    final items = (data['items'] as List<dynamic>? ?? []).map((e) => GmailIntakeItem.fromJson(e as Map<String, dynamic>)).toList();
+    final statsJson = data['stats'] as Map<String, dynamic>? ?? {};
+    final stats = statsJson.map((k, v) => MapEntry(k, int.tryParse(v?.toString() ?? '0') ?? 0));
+    return (items, stats);
+  }
+
+  Future<GmailIntakePreview> getGmailIntakePreview(int id) async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.gmailIntakePreview(id));
+    return GmailIntakePreview.fromJson(resp.data as Map<String, dynamic>);
+  }
+
+  Future<void> resolveGmailIntakeItem(int id, {String? stripeCustomerId}) async {
+    await ApiClient.instance.dio.post(
+      '${ApiEndpoints.gmailIntakeItem(id)}/resolve',
+      data: {'stripe_customer_id': stripeCustomerId ?? ''},
+    );
+  }
+
+  /// Files the message's attachments onto a customer's file record.
+  Future<void> fileGmailIntakeItem(
+    int id, {
+    required String stripeCustomerId,
+    String? tag,
+    List<String>? attachmentIds,
+    bool notify = false,
+  }) async {
+    await ApiClient.instance.dio.post(
+      ApiEndpoints.gmailIntakeFile(id),
+      data: {
+        'stripe_customer_id': stripeCustomerId,
+        if (tag != null && tag.isNotEmpty) 'tag': tag,
+        if (attachmentIds != null) 'attachments': attachmentIds,
+        'notify': notify,
+      },
+    );
+  }
+
+  Future<void> processGmailIntakeNow() async {
+    await ApiClient.instance.dio.post('${ApiEndpoints.gmailIntake}/process');
   }
 }

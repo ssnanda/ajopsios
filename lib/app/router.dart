@@ -5,9 +5,14 @@ import '../core/auth/auth_state.dart';
 import '../core/widgets/coming_soon_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/login_screen.dart';
+import '../features/customers/screens/customers_screen.dart';
 import '../features/dashboard/screens/dashboard_screen.dart';
+import '../features/files/screens/files_screen.dart';
+import '../features/gmail_intake/screens/gmail_intake_screen.dart';
 import '../features/live_chat/screens/chat_conversation_by_id_screen.dart';
 import '../features/live_chat/screens/live_chat_screen.dart';
+import '../features/leads/screens/leads_screen.dart';
+import '../features/mail/screens/mail_screen.dart';
 import '../features/more/screens/more_screen.dart';
 import '../features/service_requests/screens/service_requests_screen.dart';
 import '../features/upos_temps/screens/upos_temps_screen.dart';
@@ -81,11 +86,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/customers',
-            builder: (context, state) => const ComingSoonScreen(title: 'Customers', icon: Icons.people_alt_rounded),
+            builder: (context, state) => const CustomersScreen(),
           ),
           GoRoute(
             path: '/leads',
-            builder: (context, state) => const ComingSoonScreen(title: 'Leads', icon: Icons.person_search_rounded),
+            builder: (context, state) => const LeadsScreen(),
           ),
           GoRoute(
             path: '/upos-temps',
@@ -93,15 +98,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/mail',
-            builder: (context, state) => const ComingSoonScreen(title: 'Mail', icon: Icons.mail_outline_rounded),
+            builder: (context, state) => const MailScreen(),
           ),
           GoRoute(
             path: '/files',
-            builder: (context, state) => const ComingSoonScreen(title: 'Files', icon: Icons.folder_outlined),
+            builder: (context, state) => const FilesScreen(),
           ),
           GoRoute(
             path: '/gmail-intake',
-            builder: (context, state) => const ComingSoonScreen(title: 'Gmail Intake', icon: Icons.move_to_inbox_rounded),
+            builder: (context, state) => const GmailIntakeScreen(),
           ),
           GoRoute(
             path: '/ajphone',

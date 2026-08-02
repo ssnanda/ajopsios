@@ -42,4 +42,29 @@ class ApiEndpoints {
   static const String uposTempsFanBulk = '/ops/upos-temps/fan';
   static String uposTempsDeviceSystem(String deviceId) => '/ops/upos-temps/devices/$deviceId/system';
   static String uposTempsDeviceFan(String deviceId) => '/ops/upos-temps/devices/$deviceId/fan';
+
+  // ── Leads ────────────────────────────────────────────────────────────────
+  static const String leads = '/ops/leads';
+  static String lead(int id) => '/ops/leads/$id';
+  static String leadNotes(int id) => '/ops/leads/$id/notes';
+  static String leadPipelineStatus(int id) => '/ops/leads/$id/pipeline-status';
+
+  // ── Customers ────────────────────────────────────────────────────────────
+  static const String customers = '/ops/customers';
+  static String customer(String stripeCustomerId) => '/ops/customers/$stripeCustomerId';
+  static String customerAction(String stripeCustomerId) => '/ops/customers/$stripeCustomerId/action';
+
+  // ── Mail ─────────────────────────────────────────────────────────────────
+  static const String mail = '/ops/mail';
+  static String mailItem(int id) => '/ops/mail/$id';
+
+  // ── Files ────────────────────────────────────────────────────────────────
+  static const String files = '/ops/files';
+  static String file(int id) => '/ops/files/$id';
+
+  // ── Gmail Intake ─────────────────────────────────────────────────────────
+  static const String gmailIntake = '/ops/gmail-intake';
+  static String gmailIntakeItem(int id) => '/ops/gmail-intake/$id';
+  static String gmailIntakePreview(int id) => '/ops/gmail-intake/$id/preview';
+  static String gmailIntakeFile(int id) => '/ops/gmail-intake/$id/file';
 }

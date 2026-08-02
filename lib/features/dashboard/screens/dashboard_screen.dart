@@ -53,26 +53,41 @@ class DashboardScreen extends ConsumerWidget {
                 crossAxisSpacing: 12,
                 childAspectRatio: 1.3,
                 children: [
+                  // Customers and Subscriptions tiles removed per explicit ask. Service
+                  // Requests/Open Tasks/Leads/Chat only show when there's actually something
+                  // needing attention — a "0" tile is just noise on a small screen.
+                  if (data.serviceRequestsNeedsAction > 0)
+                    AjStatCard(
+                      label: 'Service Requests',
+                      value: '${data.serviceRequestsNeedsAction}',
+                      icon: Icons.support_agent_rounded,
+                      onTap: () => context.go('/service-requests'),
+                    ),
+                  if (data.tasksOpen > 0)
+                    AjStatCard(
+                      label: 'Open Tasks',
+                      value: '${data.tasksOpen}',
+                      icon: Icons.task_alt_rounded,
+                    ),
+                  if (data.leadsUnread > 0)
+                    AjStatCard(
+                      label: 'Leads',
+                      value: '${data.leadsUnread}',
+                      icon: Icons.person_search_rounded,
+                      onTap: () => context.go('/leads'),
+                    ),
+                  if (data.chatUnread > 0)
+                    AjStatCard(
+                      label: 'Live Chat',
+                      value: '${data.chatUnread}',
+                      icon: Icons.chat_bubble_outline_rounded,
+                      onTap: () => context.go('/live-chat'),
+                    ),
                   AjStatCard(
-                    label: 'Active Customers',
-                    value: '${data.customers}',
-                    icon: Icons.people_outline_rounded,
-                  ),
-                  AjStatCard(
-                    label: 'Open Tasks',
-                    value: '${data.tasks}',
-                    icon: Icons.task_alt_rounded,
-                  ),
-                  AjStatCard(
-                    label: 'Service Requests',
-                    value: '${data.serviceRequests}',
-                    icon: Icons.support_agent_rounded,
-                    onTap: () => context.go('/service-requests'),
-                  ),
-                  AjStatCard(
-                    label: 'Subscriptions',
-                    value: '${data.subscriptions}',
-                    icon: Icons.autorenew_rounded,
+                    label: 'AJPhone',
+                    value: '',
+                    icon: Icons.phone_in_talk_rounded,
+                    onTap: () => context.go('/ajphone'),
                   ),
                 ],
               ),

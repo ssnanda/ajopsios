@@ -39,6 +39,10 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Used to scan mail and attach photos to files.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Used to attach an existing photo when scanning mail or uploading a file.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSExceptionDomains</key>

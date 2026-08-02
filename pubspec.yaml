@@ -1,7 +1,7 @@
 name: ajopsios
 description: "AJ Ops mobile — staff app for NC LLC Agents, sharing core auth/api/storage with ajcoreios."
 publish_to: 'none'
-version: 1.0.11+6
+version: 1.0.12+7
 
 environment:
   sdk: ^3.12.2
@@ -43,6 +43,13 @@ dependencies:
   # scheme, not Universal Links — Associated Domains also needs a paid
   # Developer account, same restriction as push.
   app_links: ^6.3.3
+
+  # Mail scan capture (camera/gallery) and Files attachment picker (any file type)
+  image_picker: ^1.1.2
+  file_picker: ^8.1.7
+
+  # Opening a File's file_url in the system browser/viewer
+  url_launcher: ^6.3.1
 
   # Icons
   cupertino_icons: ^1.0.8
