@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 /// Local (on-device) notifications only — no APNs/remote push. This app is
@@ -14,6 +15,14 @@ class NotificationService {
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _initialized = false;
 
+  // Broadcast rather than single-subscription since the app-level listener that navigates on tap
+  // (see AjOpsApp) may not have subscribed yet the instant a tap comes in during startup.
+  final _tapController = StreamController<String>.broadcast();
+
+  /// Emits the route path to navigate to whenever the user taps a notification. Listened to once,
+  /// at the app root (AjOpsApp), which calls router.go(path).
+  Stream<String> get onNotificationTapped => _tapController.stream;
+
   Future<void> init() async {
     if (_initialized) return;
     _initialized = true;
@@ -23,7 +32,12 @@ class NotificationService {
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
-    await _plugin.initialize(const InitializationSettings(iOS: darwinSettings));
+    await _plugin.initialize(
+      const InitializationSettings(iOS: darwinSettings),
+      onDidReceiveNotificationResponse: (response) {
+        _tapController.add(response.payload ?? '/live-chat');
+      },
+    );
   }
 
   /// Always carries the CURRENT total open-chat count as the app icon badge
@@ -33,7 +47,12 @@ class NotificationService {
   /// only govern in-app foreground presentation, not background delivery, so
   /// a "silent" badge-sync call could still surface as an empty banner while
   /// backgrounded.
-  Future<void> showNewMessage({required String title, required String body, required int badgeCount}) async {
+  Future<void> showNewMessage({
+    required String title,
+    required String body,
+    required int badgeCount,
+    String payload = '/live-chat',
+  }) async {
     await _plugin.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title,
@@ -46,6 +65,7 @@ class NotificationService {
           badgeNumber: badgeCount,
         ),
       ),
+      payload: payload,
     );
   }
 }

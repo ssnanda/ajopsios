@@ -88,6 +88,7 @@ bump_version() {
 
   read -r version_part build_part <<< "$(parse_version "$current")"
   IFS='.' read -r major minor patch <<< "$version_part"
+  build="$build_part"
 
   case "$part" in
     patch) patch=$((patch + 1)); build=$((build + 1)) ;;
