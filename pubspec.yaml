@@ -1,7 +1,7 @@
 name: ajopsios
 description: "AJ Ops mobile — staff app for NC LLC Agents, sharing core auth/api/storage with ajcoreios."
 publish_to: 'none'
-version: 1.0.2+1
+version: 1.0.4+1
 
 environment:
   sdk: ^3.12.2
@@ -30,6 +30,9 @@ dependencies:
 
   # Internationalisation & date formatting
   intl: ^0.19.0
+
+  # App version display (reads the actual bundled version, not a hand-maintained constant)
+  package_info_plus: ^8.1.2
 
   # Icons
   cupertino_icons: ^1.0.8

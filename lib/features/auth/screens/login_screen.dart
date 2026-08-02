@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/auth_state.dart';
+import '../../../core/widgets/app_version_label.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -109,6 +110,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                         : const Text('Sign In'),
                   ),
+                  const SizedBox(height: 24),
+                  const Center(child: AppVersionLabel()),
                 ],
               ),
             ),

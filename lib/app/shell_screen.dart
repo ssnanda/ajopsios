@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../core/widgets/app_version_label.dart';
+import '../features/live_chat/providers/live_chat_provider.dart';
 
-/// v1 nav: Dashboard + Service Requests only (see README scope decision —
-/// Customers/Leads/Billing/etc. land in later milestones as bottom-nav
-/// destinations, or move to a drawer once there are more than ~5).
-class ShellScreen extends StatelessWidget {
+/// Bottom nav holds the 4 most-used destinations; everything past that
+/// (Customers, Leads, UPOS Temps, Mail, Files, Gmail Intake, AJPhone) lives
+/// behind "More" rather than crowding a phone-width NavigationBar.
+class ShellScreen extends ConsumerWidget {
   final Widget child;
   const ShellScreen({super.key, required this.child});
 
   static const _tabs = [
     _Tab(label: 'Dashboard', icon: Icons.dashboard_rounded, path: '/dashboard'),
     _Tab(label: 'Requests', icon: Icons.support_agent_rounded, path: '/service-requests'),
+    _Tab(label: 'Chat', icon: Icons.chat_bubble_outline_rounded, path: '/live-chat'),
+    _Tab(label: 'More', icon: Icons.more_horiz_rounded, path: '/more'),
   ];
 
   int _currentIndex(BuildContext context) {
@@ -18,17 +23,38 @@ class ShellScreen extends StatelessWidget {
     for (int i = 0; i < _tabs.length; i++) {
       if (loc.startsWith(_tabs[i].path)) return i;
     }
-    return 0;
+    // Anything reached via "More" (Customers, Leads, ...) still highlights
+    // the More tab rather than falling back to Dashboard.
+    return _tabs.length - 1;
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Only truthy while the Chat tab itself is mounted (autoDispose provider),
+    // so this doesn't run a background poll while on other tabs.
+    final openChatCount = ref.watch(chatListProvider.select((s) => s.openCount));
+
     return Scaffold(
-      body: child,
+      body: Stack(
+        children: [
+          child,
+          const Positioned(
+            right: 10,
+            bottom: 6,
+            child: IgnorePointer(child: AppVersionLabel()),
+          ),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex(context),
         onDestinationSelected: (i) => context.go(_tabs[i].path),
-        destinations: _tabs.map((t) => NavigationDestination(icon: Icon(t.icon), label: t.label)).toList(),
+        destinations: _tabs.map((t) {
+          final icon = Icon(t.icon);
+          return NavigationDestination(
+            icon: t.path == '/live-chat' && openChatCount > 0 ? Badge(label: Text('$openChatCount'), child: icon) : icon,
+            label: t.label,
+          );
+        }).toList(),
       ),
     );
   }

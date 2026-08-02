@@ -25,4 +25,12 @@ class ApiEndpoints {
   static String serviceRequestQuickAction(int id) => '/ops/service-requests/$id/quick-action';
   static String serviceRequestHistory(int id) => '/ops/service-requests/$id/history';
   static const String serviceRequestsBulk = '/ops/service-requests/bulk';
+
+  // ── Live Chat ───────────────────────────────────────────────────────────
+  static const String chatSessions = '/ops/chat/sessions';
+  static String chatSessionMessages(int id) => '/ops/chat/sessions/$id/messages';
+  static String chatSessionReply(int id) => '/ops/chat/sessions/$id/reply';
+  static String chatSessionClaim(int id) => '/ops/chat/sessions/$id/claim';
+  static String chatSessionUnclaim(int id) => '/ops/chat/sessions/$id/unclaim';
+  static String chatSessionClose(int id) => '/ops/chat/sessions/$id/close';
 }

@@ -4,6 +4,8 @@ import '../models/ops_summary_model.dart';
 import '../models/ops_service_request_model.dart';
 import '../models/service_request_history_model.dart';
 import '../models/staff_model.dart';
+import '../models/chat_session_model.dart';
+import '../models/chat_message_model.dart';
 
 /// Thin wrapper around the shared Dio client for the `/ops/*` endpoints.
 /// Mirrors AJOps' own AJCoreClient (ajops/src/lib/ajcore/client.ts) so both
@@ -88,5 +90,48 @@ class OpsApi {
         if (assignedUserId != null) 'assigned_user_id': assignedUserId,
       },
     );
+  }
+
+  // ── Live Chat ────────────────────────────────────────────────────────────
+
+  Future<List<ChatSession>> getChatSessions({String? status}) async {
+    final resp = await ApiClient.instance.dio.get(
+      ApiEndpoints.chatSessions,
+      queryParameters: {
+        if (status != null) 'status': status,
+        'per_page': '200',
+      },
+    );
+    final list = (resp.data as Map<String, dynamic>)['sessions'] as List<dynamic>? ?? [];
+    return list.map((e) => ChatSession.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<List<ChatMessage>> getChatSessionMessages(int id) async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.chatSessionMessages(id));
+    final list = (resp.data as Map<String, dynamic>)['messages'] as List<dynamic>? ?? [];
+    return list.map((e) => ChatMessage.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<ChatMessage> replyToChatSession(int id, String body) async {
+    final resp = await ApiClient.instance.dio.post(
+      ApiEndpoints.chatSessionReply(id),
+      data: {'body': body},
+    );
+    return ChatMessage.fromJson((resp.data as Map<String, dynamic>)['message'] as Map<String, dynamic>);
+  }
+
+  Future<ChatSession> claimChatSession(int id) async {
+    final resp = await ApiClient.instance.dio.post(ApiEndpoints.chatSessionClaim(id));
+    return ChatSession.fromJson((resp.data as Map<String, dynamic>)['session'] as Map<String, dynamic>);
+  }
+
+  Future<ChatSession> unclaimChatSession(int id) async {
+    final resp = await ApiClient.instance.dio.post(ApiEndpoints.chatSessionUnclaim(id));
+    return ChatSession.fromJson((resp.data as Map<String, dynamic>)['session'] as Map<String, dynamic>);
+  }
+
+  Future<ChatSession> closeChatSession(int id) async {
+    final resp = await ApiClient.instance.dio.post(ApiEndpoints.chatSessionClose(id));
+    return ChatSession.fromJson((resp.data as Map<String, dynamic>)['session'] as Map<String, dynamic>);
   }
 }
