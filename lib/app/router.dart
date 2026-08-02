@@ -21,6 +21,16 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/dashboard',
     redirect: (context, state) {
+      // iOS reports an opened ajops:// deep link (see DeepLinkService/AppDelegate) to go_router's
+      // own OS-level route listener as the RAW location string (e.g. "ajops://live-chat/") — go_router
+      // treats that as a path to match against the route table, which of course never matches
+      // ("No route for location: ajops://live-chat/"). Rewrite it to the actual in-app path first;
+      // go_router re-runs redirect() on the result, so the auth check below still applies normally.
+      if (state.uri.scheme == 'ajops') {
+        final host = state.uri.host;
+        return host.isNotEmpty ? '/$host' : '/live-chat';
+      }
+
       final authState = ref.read(authProvider);
       final isAuth = authState.status == AuthStatus.authenticated;
       final isLoading = authState.status == AuthStatus.unknown;
