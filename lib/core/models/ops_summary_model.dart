@@ -10,6 +10,7 @@ class OpsSummaryModel {
   final int serviceRequestsNeedsAction;
   final int leads;
   final int leadsUnread;
+  final int leadsActive;
   final int chatUnread;
 
   const OpsSummaryModel({
@@ -22,6 +23,7 @@ class OpsSummaryModel {
     required this.serviceRequestsNeedsAction,
     required this.leads,
     required this.leadsUnread,
+    required this.leadsActive,
     required this.chatUnread,
   });
 
@@ -37,6 +39,7 @@ class OpsSummaryModel {
       serviceRequestsNeedsAction: asInt(json['service_requests_needs_action']),
       leads: asInt(json['leads']),
       leadsUnread: asInt(json['leads_unread']),
+      leadsActive: asInt(json['leads_active']),
       chatUnread: asInt(json['chat_unread']),
     );
   }

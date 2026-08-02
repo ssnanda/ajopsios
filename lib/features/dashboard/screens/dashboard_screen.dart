@@ -45,8 +45,8 @@ class DashboardScreen extends ConsumerWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-              // 3 columns instead of 2 — smaller tiles now that Mail/Files/Gmail Intake shortcuts
-              // share the screen too, so more fits without scrolling.
+              // 3 columns, one flowing grid (no section label) — smaller tiles, each with its own
+              // accent color rather than every tile sharing the same theme primary blue.
               GridView.count(
                 crossAxisCount: 3,
                 shrinkWrap: true,
@@ -63,6 +63,7 @@ class DashboardScreen extends ConsumerWidget {
                       label: 'Service Requests',
                       value: '${data.serviceRequestsNeedsAction}',
                       icon: Icons.support_agent_rounded,
+                      accentColor: Colors.orange,
                       onTap: () => context.go('/service-requests'),
                     ),
                   if (data.tasksOpen > 0)
@@ -70,12 +71,16 @@ class DashboardScreen extends ConsumerWidget {
                       label: 'Open Tasks',
                       value: '${data.tasksOpen}',
                       icon: Icons.task_alt_rounded,
+                      accentColor: Colors.purple,
                     ),
-                  if (data.leadsUnread > 0)
+                  // Active (still in the pipeline, not won/lost) — not a read/unread count, which
+                  // isn't something actually tracked here.
+                  if (data.leadsActive > 0)
                     AjStatCard(
                       label: 'Leads',
-                      value: '${data.leadsUnread}',
+                      value: '${data.leadsActive}',
                       icon: Icons.person_search_rounded,
+                      accentColor: Colors.green,
                       onTap: () => context.go('/leads'),
                     ),
                   if (data.chatUnread > 0)
@@ -83,33 +88,35 @@ class DashboardScreen extends ConsumerWidget {
                       label: 'Live Chat',
                       value: '${data.chatUnread}',
                       icon: Icons.chat_bubble_outline_rounded,
+                      accentColor: Colors.teal,
                       onTap: () => context.go('/live-chat'),
                     ),
                   AjStatCard(
                     label: 'AJPhone',
                     value: '',
                     icon: Icons.phone_in_talk_rounded,
+                    accentColor: Colors.indigo,
                     onTap: () => context.go('/ajphone'),
                   ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Text('Shortcuts', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 10),
-              GridView.count(
-                crossAxisCount: 3,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                childAspectRatio: 1.0,
-                children: [
-                  AjStatCard(label: 'Mail', value: '', icon: Icons.mail_outline_rounded, onTap: () => context.go('/mail')),
-                  AjStatCard(label: 'Files', value: '', icon: Icons.folder_outlined, onTap: () => context.go('/files')),
+                  AjStatCard(
+                    label: 'Mail',
+                    value: '',
+                    icon: Icons.mail_outline_rounded,
+                    accentColor: Colors.amber.shade800,
+                    onTap: () => context.go('/mail'),
+                  ),
+                  AjStatCard(
+                    label: 'Files',
+                    value: '',
+                    icon: Icons.folder_outlined,
+                    accentColor: Colors.brown,
+                    onTap: () => context.go('/files'),
+                  ),
                   AjStatCard(
                     label: 'Gmail Intake',
                     value: '',
                     icon: Icons.move_to_inbox_rounded,
+                    accentColor: Colors.pink,
                     onTap: () => context.go('/gmail-intake'),
                   ),
                 ],
