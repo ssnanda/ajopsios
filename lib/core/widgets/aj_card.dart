@@ -61,30 +61,39 @@ class AjStatCard extends StatelessWidget {
 
     return AjCard(
       onTap: onTap,
+      padding: const EdgeInsets.all(10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: accent, size: 22),
+            child: Icon(icon, color: accent, size: 18),
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: theme.colorScheme.onSurface,
+          const SizedBox(height: 8),
+          // Shortcut-style tiles (Mail, Files, AJPhone...) pass an empty value — skip the number
+          // line entirely rather than leaving a blank headline-sized gap above the label.
+          if (value.isNotEmpty) ...[
+            Text(
+              value,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
-          ),
-          const SizedBox(height: 2),
+            const SizedBox(height: 1),
+          ],
           Text(
             label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 11,
             ),
           ),
         ],

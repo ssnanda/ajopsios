@@ -35,10 +35,31 @@ class Customer {
       name: json['name'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
       description: json['description'] as String? ?? '',
-      address: json['address'] as String? ?? '',
+      address: _formatAddress(json['address']),
       portalStatus: json['portal_status'] as String? ?? '',
-      enabledPortal: json['enabled_portal'] == true || json['enabled_portal'] == '1',
+      enabledPortal: json['enabled_portal'] == true || json['enabled_portal'].toString() == '1',
     );
+  }
+
+  /// AJCore returns address as a structured object ({line1, line2, city, state,
+  /// postal_code, country}), not a flat string — this was previously parsed as
+  /// `json['address'] as String?`, which throws a TypeError on every row (a Map
+  /// isn't a String) and silently crashed the whole customer list into an error
+  /// state. Also defensively handles a plain string, in case a row somewhere
+  /// stores it that way instead.
+  static String _formatAddress(dynamic value) {
+    if (value is String) return value;
+    if (value is Map) {
+      final parts = [
+        value['line1'],
+        value['line2'],
+        value['city'],
+        value['state'],
+        value['postal_code'],
+      ].map((e) => (e ?? '').toString().trim()).where((e) => e.isNotEmpty);
+      return parts.join(', ');
+    }
+    return '';
   }
 
   String get displayName => name.isNotEmpty ? name : (email.isNotEmpty ? email : stripeCustomerId);

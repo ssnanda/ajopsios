@@ -69,6 +69,7 @@ class MailNotifier extends StateNotifier<MailState> {
     String? trackingNumber,
     String? description,
     String? scanFilePath,
+    String? stripeCustomerId,
   }) async {
     state = state.copyWith(creating: true);
     try {
@@ -79,6 +80,7 @@ class MailNotifier extends StateNotifier<MailState> {
         trackingNumber: trackingNumber,
         description: description,
         scanFilePath: scanFilePath,
+        stripeCustomerId: stripeCustomerId,
       );
       state = state.copyWith(creating: false);
       await load();

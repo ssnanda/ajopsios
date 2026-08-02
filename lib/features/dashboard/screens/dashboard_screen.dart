@@ -45,13 +45,15 @@ class DashboardScreen extends ConsumerWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
+              // 3 columns instead of 2 — smaller tiles now that Mail/Files/Gmail Intake shortcuts
+              // share the screen too, so more fits without scrolling.
               GridView.count(
-                crossAxisCount: 2,
+                crossAxisCount: 3,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.3,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 1.0,
                 children: [
                   // Customers and Subscriptions tiles removed per explicit ask. Service
                   // Requests/Open Tasks/Leads/Chat only show when there's actually something
@@ -92,21 +94,25 @@ class DashboardScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 20),
-              AjCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Quick Links', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.support_agent_rounded),
-                      title: const Text('Service Requests queue'),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () => context.go('/service-requests'),
-                    ),
-                  ],
-                ),
+              Text('Shortcuts', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 10),
+              GridView.count(
+                crossAxisCount: 3,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 1.0,
+                children: [
+                  AjStatCard(label: 'Mail', value: '', icon: Icons.mail_outline_rounded, onTap: () => context.go('/mail')),
+                  AjStatCard(label: 'Files', value: '', icon: Icons.folder_outlined, onTap: () => context.go('/files')),
+                  AjStatCard(
+                    label: 'Gmail Intake',
+                    value: '',
+                    icon: Icons.move_to_inbox_rounded,
+                    onTap: () => context.go('/gmail-intake'),
+                  ),
+                ],
               ),
             ],
           ),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/models/customer_model.dart';
 import '../../../core/models/mail_item_model.dart';
+import '../../../core/widgets/customer_picker.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
@@ -180,6 +182,7 @@ class _AddMailSheetState extends State<_AddMailSheet> {
   final _descriptionCtrl = TextEditingController();
   String _mailType = 'letter';
   XFile? _scan;
+  Customer? _customer;
   bool _submitting = false;
 
   @override
@@ -206,6 +209,7 @@ class _AddMailSheetState extends State<_AddMailSheet> {
       trackingNumber: _trackingCtrl.text.trim(),
       description: _descriptionCtrl.text.trim(),
       scanFilePath: _scan?.path,
+      stripeCustomerId: _customer?.stripeCustomerId,
     );
     if (!mounted) return;
     setState(() => _submitting = false);
@@ -242,6 +246,22 @@ class _AddMailSheetState extends State<_AddMailSheet> {
               decoration: const InputDecoration(labelText: 'Mail type'),
               items: mailTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
               onChanged: (v) => setState(() => _mailType = v ?? 'letter'),
+            ),
+            const SizedBox(height: 10),
+            InkWell(
+              onTap: () async {
+                final picked = await pickCustomer(context);
+                if (picked != null) setState(() => _customer = picked);
+              },
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: 'Customer (optional)',
+                  suffixIcon: _customer == null
+                      ? const Icon(Icons.search_rounded)
+                      : IconButton(icon: const Icon(Icons.clear_rounded), onPressed: () => setState(() => _customer = null)),
+                ),
+                child: Text(_customer?.displayName ?? 'Not linked to a customer'),
+              ),
             ),
             const SizedBox(height: 10),
             TextField(controller: _senderCtrl, decoration: const InputDecoration(labelText: 'Sender')),
