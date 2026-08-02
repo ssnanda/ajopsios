@@ -3,7 +3,7 @@ set -euo pipefail
 
 # AJ Ops — iOS IPA builder (production)
 # ----------------------------------------
-# Builds a production IPA pointed at https://ops.ncllcagents.com
+# Builds a production IPA pointed at https://ncllcagents.com (the AJCore Master site)
 # Output: ~/Documents/GitHub/ipa/ajopsios.ipa
 #
 # Common runs:
@@ -19,17 +19,18 @@ IPA_BUILD_PATH="$ROOT_DIR/build/ios/ipa/ajopsios.ipa"
 IPA_FINAL_PATH="$IPA_OUTPUT_DIR/ajopsios.ipa"
 GITHUB_REPO="ssnanda/ajopsios"
 TAG_PREFIX="v"
-API_BASE_URL="https://ops.ncllcagents.com/wp-json/ajcore/v1"
+API_BASE_URL="https://ncllcagents.com/wp-json/ajcore/v1"
 
 GITHUB_RELEASE="false"
 GIT_COMMIT="false"
 GIT_PUSH="false"
 SKIP_CLEAN="false"
 DELETE_ONLY="false"
+BUMP_COMMIT="true"
 
 usage() {
   cat <<'USAGE'
-AJ Ops — iOS IPA builder (production: https://ops.ncllcagents.com).
+AJ Ops — iOS IPA builder (production: https://ncllcagents.com).
 
 Usage:
   ./bin/build-ipa.sh [options]
@@ -44,6 +45,8 @@ Options:
   --version X.Y.Z+B
   --bump patch|minor|major|build
   --no-bump
+  --no-bump-commit      Leave the version bump uncommitted (old behavior — not recommended,
+                         leaves pubspec.yaml dirty for the whole build)
   --delete              Delete old IPA and exit (no build)
   --repo OWNER/REPO
   --github-release
@@ -211,6 +214,19 @@ build_ipa() {
   [[ -f "$IPA_FINAL_PATH" ]] || { echo "Error: Failed to move IPA to $IPA_FINAL_PATH" >&2; exit 1; }
 }
 
+commit_version_bump() {
+  require_git
+  cd "$ROOT_DIR"
+
+  if git diff --quiet -- "$PUBSPEC_FILE"; then
+    return 0
+  fi
+
+  git add "$PUBSPEC_FILE"
+  git commit -m "Bump version to $VERSION"
+  echo "Git: committed version bump ($VERSION)"
+}
+
 git_commit_release_files() {
   require_git
   cd "$ROOT_DIR"
@@ -283,6 +299,7 @@ while [[ $# -gt 0 ]]; do
     --version) VERSION_OVERRIDE="${2:-}"; shift 2 ;;
     --bump) BUMP_PART="${2:-}"; shift 2 ;;
     --no-bump) NO_BUMP="true"; shift ;;
+    --no-bump-commit) BUMP_COMMIT="false"; shift ;;
     --delete) DELETE_ONLY="true"; shift ;;
     --repo) GITHUB_REPO="${2:-}"; shift 2 ;;
     --github-release) GITHUB_RELEASE="true"; shift ;;
@@ -333,6 +350,22 @@ fi
 
 validate_version "$NEXT_VERSION"
 
+# Guard against stacking a bump on top of an already-uncommitted one: CURRENT_VERSION above was
+# read straight off disk, not from the last commit, so a previous run that bumped pubspec.yaml
+# but never got committed would otherwise get silently bumped again from here instead of from the
+# actual last release.
+if [[ "$NEXT_VERSION" != "$CURRENT_VERSION" ]] \
+  && git -C "$ROOT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
+  && ! git -C "$ROOT_DIR" diff --quiet -- "$PUBSPEC_FILE" 2>/dev/null; then
+  echo "" >&2
+  echo "Warning: pubspec.yaml is already uncommitted at $CURRENT_VERSION (left over from a prior run)." >&2
+  echo "Bumping to $NEXT_VERSION now would stack this bump on top of that uncommitted one." >&2
+  if ! ask_yes_no "Continue anyway?" n; then
+    echo "Aborted. Commit or discard the pending pubspec.yaml change first (git diff pubspec.yaml), then re-run." >&2
+    exit 1
+  fi
+fi
+
 if [[ "$NEXT_VERSION" != "$CURRENT_VERSION" ]]; then
   set_version "$NEXT_VERSION"
 fi
@@ -350,6 +383,23 @@ echo "New version:     $VERSION"
 echo "════════════════════════════════════════"
 echo ""
 
+# Committed BEFORE the (long) build starts, not after — a version bump left dirty for the whole
+# flutter build ipa duration is exactly the exposed window that let an unrelated manual commit
+# during a build accidentally sweep up an in-progress bump. --no-bump-commit restores old behavior.
+if [[ "$NEXT_VERSION" != "$CURRENT_VERSION" && "$BUMP_COMMIT" == "true" ]]; then
+  commit_version_bump
+fi
+
+# Tag + push ALSO happen before the build now, not after — so the version bump is fully committed
+# AND pushed to GitHub regardless of whether the build that follows succeeds or fails. Previously
+# this ran after build_ipa(), so a failed/retried build could leave a committed-but-unpushed bump
+# sitting only on this machine. The .ipa itself is never git-committed (see git_commit_release_files
+# excluding *.ipa) — it's uploaded separately as a GitHub Release asset once the build succeeds.
+if [[ "$GIT_PUSH" == "true" || "$GITHUB_RELEASE" == "true" ]]; then
+  git_create_tag
+  git_push_release
+fi
+
 delete_old_ipa
 build_ipa
 
@@ -357,13 +407,7 @@ if [[ "$GIT_COMMIT" == "true" ]]; then
   git_commit_release_files
 fi
 
-if [[ "$GIT_PUSH" == "true" ]]; then
-  git_create_tag
-  git_push_release
-fi
-
 if [[ "$GITHUB_RELEASE" == "true" ]]; then
-  git_create_tag
   publish_github_release
 fi
 

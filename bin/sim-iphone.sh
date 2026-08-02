@@ -24,7 +24,7 @@ Usage:
   ./bin/sim-iphone.sh [options]
 
 Options:
-  --prod        Use production server (https://ops.ncllcagents.com) instead of local DDEV
+  --prod        Use production server (https://ncllcagents.com) instead of local DDEV
   --device ID   Simulator UDID (default: configured iPhone)
   --help
 
@@ -45,7 +45,7 @@ flutter config --no-enable-swift-package-manager 2>/dev/null || true
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --prod)     API_BASE_URL="https://ops.ncllcagents.com/wp-json/ajcore/v1"; shift ;;
+    --prod)     API_BASE_URL="https://ncllcagents.com/wp-json/ajcore/v1"; shift ;;
     --device)   DEVICE_ID="${2:-}"; shift 2 ;;
     --help|-h)  usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage; exit 1 ;;

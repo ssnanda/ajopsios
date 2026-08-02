@@ -3,17 +3,17 @@ set -e
 
 # AJ Ops — physical device launcher
 # ------------------------------------
-# Defaults to the LIVE production server (https://ops.ncllcagents.com) since
-# a real device in your pocket should talk to the real backend, not your
-# laptop's local DDEV site. Use --local if you specifically want to point a
-# physical device at local DDEV for debugging.
+# Defaults to the LIVE production server (https://ncllcagents.com, the AJCore
+# Master site) since a real device in your pocket should talk to the real
+# backend, not your laptop's local DDEV site. Use --local if you specifically
+# want to point a physical device at local DDEV for debugging.
 #
 # Common runs:
 #   ./bin/device-run.sh
 #   ./bin/device-run.sh --local
 #   ./bin/device-run.sh --device 00008130-00116C4800A1401C
 
-API_BASE_URL="https://ops.ncllcagents.com/wp-json/ajcore/v1"
+API_BASE_URL="https://ncllcagents.com/wp-json/ajcore/v1"
 DEVICE_ID=""
 PID_FILE="/tmp/ajopsios_flutter.pid"
 
