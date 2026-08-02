@@ -87,7 +87,6 @@ class ChatListNotifier extends StateNotifier<ChatListState> {
     }
 
     if (_hasLoadedOnce && changed.isNotEmpty) {
-      final openCount = sessions.where((s) => s.isOpen).length;
       final title = changed.length == 1 ? 'New Live Chat message' : 'New Live Chat activity';
       final body = changed.length == 1
           ? 'From ${changed.first.displayName}'
@@ -95,7 +94,7 @@ class ChatListNotifier extends StateNotifier<ChatListState> {
       // Deep-links straight to the conversation when there's exactly one; falls back to the list
       // (the default payload) when several changed at once, since there's no single "the" chat to jump to.
       final payload = changed.length == 1 ? '/live-chat/${changed.first.id}' : '/live-chat';
-      NotificationService.instance.showNewMessage(title: title, body: body, badgeCount: openCount, payload: payload);
+      NotificationService.instance.showNewMessage(title: title, body: body, payload: payload);
     }
     _hasLoadedOnce = true;
   }

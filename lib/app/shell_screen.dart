@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../core/services/app_badge_sync_provider.dart';
 import '../core/widgets/app_version_label.dart';
 import '../features/live_chat/providers/live_chat_provider.dart';
 
@@ -30,9 +31,11 @@ class ShellScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Only truthy while the Chat tab itself is mounted (autoDispose provider),
-    // so this doesn't run a background poll while on other tabs.
+    // ShellScreen wraps every authenticated tab (it's the ShellRoute's persistent shell), so
+    // watching these here — not just from within the Live Chat screen — keeps both the tab badge
+    // and the app icon badge polling continuously across the whole app, not just while on Chat.
     final openChatCount = ref.watch(chatListProvider.select((s) => s.openCount));
+    ref.watch(appBadgeSyncProvider);
 
     return Scaffold(
       body: Stack(

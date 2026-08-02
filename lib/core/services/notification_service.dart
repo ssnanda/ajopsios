@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 /// Local (on-device) notifications only — no APNs/remote push. This app is
@@ -40,32 +41,39 @@ class NotificationService {
     );
   }
 
-  /// Always carries the CURRENT total open-chat count as the app icon badge
-  /// number, alongside a visible alert for the new activity that triggered
-  /// it — kept as one combined call (rather than a separate silent badge-only
-  /// path) since DarwinNotificationDetails' presentAlert/Badge/Sound flags
-  /// only govern in-app foreground presentation, not background delivery, so
-  /// a "silent" badge-sync call could still surface as an empty banner while
-  /// backgrounded.
+  /// Visible alert only — badge count is NOT set here. flutter_local_notifications has no
+  /// dedicated "set badge only" API; its badgeNumber only rides along with an actual .show()
+  /// call, and that call's presentAlert/Badge/Sound flags govern in-app FOREGROUND presentation
+  /// only, not background delivery — so using it as the badge's source of truth risks a stray
+  /// empty banner if a sync fires while backgrounded. setBadgeCount() (via flutter_app_badger,
+  /// which touches nothing notification-related) is the single source of truth for the badge —
+  /// see AppBadgeSyncNotifier, which polls /ops/summary and keeps it current independently of
+  /// whether any alert happens to fire.
   Future<void> showNewMessage({
     required String title,
     required String body,
-    required int badgeCount,
     String payload = '/live-chat',
   }) async {
     await _plugin.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title,
       body,
-      NotificationDetails(
-        iOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-          badgeNumber: badgeCount,
-        ),
+      const NotificationDetails(
+        iOS: DarwinNotificationDetails(presentAlert: true, presentBadge: false, presentSound: true),
       ),
       payload: payload,
     );
+  }
+
+  Future<void> setBadgeCount(int count) async {
+    try {
+      if (count <= 0) {
+        await FlutterAppBadger.removeBadge();
+      } else {
+        await FlutterAppBadger.updateBadgeCount(count);
+      }
+    } catch (_) {
+      // Badge sync is best-effort — never worth surfacing a failure for.
+    }
   }
 }

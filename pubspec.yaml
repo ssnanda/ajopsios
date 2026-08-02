@@ -1,7 +1,7 @@
 name: ajopsios
 description: "AJ Ops mobile — staff app for NC LLC Agents, sharing core auth/api/storage with ajcoreios."
 publish_to: 'none'
-version: 1.0.12+7
+version: 1.0.13+8
 
 environment:
   sdk: ^3.12.2
@@ -34,10 +34,19 @@ dependencies:
   # App version display (reads the actual bundled version, not a hand-maintained constant)
   package_info_plus: ^8.1.2
 
-  # Live Chat alerts (local notifications + app icon badge). Deliberately NOT
-  # firebase_messaging/APNs — this app is sideloaded without a paid Apple
-  # Developer account, which real push notifications require.
+  # Live Chat alerts (local notifications). Deliberately NOT firebase_messaging/APNs —
+  # this app is sideloaded without a paid Apple Developer account, which real push
+  # notifications require.
   flutter_local_notifications: ^18.0.1
+
+  # App icon badge count — separate from flutter_local_notifications because that
+  # plugin has no dedicated "set badge only" API; its badgeNumber only rides along
+  # with an actual notification .show() call, whose presentAlert/Badge/Sound flags
+  # govern IN-APP FOREGROUND presentation only, not background delivery. A periodic
+  # badge-only sync could show a stray empty banner if it fires while backgrounded.
+  # This package sets UIApplication.applicationIconBadgeNumber directly, no
+  # notification involved at all.
+  flutter_app_badger: ^1.5.0
 
   # ajops:// deep links (SMS alert -> tap -> straight to Live Chat). Custom URL
   # scheme, not Universal Links — Associated Domains also needs a paid
