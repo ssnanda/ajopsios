@@ -1,7 +1,7 @@
 name: ajopsios
 description: "AJ Ops mobile — staff app for NC LLC Agents, sharing core auth/api/storage with ajcoreios."
 publish_to: 'none'
-version: 1.0.4+1
+version: 1.0.5+1
 
 environment:
   sdk: ^3.12.2
@@ -33,6 +33,11 @@ dependencies:
 
   # App version display (reads the actual bundled version, not a hand-maintained constant)
   package_info_plus: ^8.1.2
+
+  # Live Chat alerts (local notifications + app icon badge). Deliberately NOT
+  # firebase_messaging/APNs — this app is sideloaded without a paid Apple
+  # Developer account, which real push notifications require.
+  flutter_local_notifications: ^18.0.1
 
   # Icons
   cupertino_icons: ^1.0.8
