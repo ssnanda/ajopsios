@@ -10,7 +10,9 @@ Future<Customer?> pickCustomer(BuildContext context) {
   return showModalBottomSheet<Customer>(
     context: context,
     isScrollControlled: true,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
     builder: (ctx) => const _CustomerPickerSheet(),
   );
 }
@@ -48,14 +50,25 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
   }
 
   Future<void> _search(String query) async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
-      final results = await OpsApi.instance.getCustomers(search: query.isEmpty ? null : query);
+      final results = await OpsApi.instance.getCustomers(
+        search: query.isEmpty ? null : query,
+      );
       if (!mounted) return;
-      setState(() { _results = results; _loading = false; });
+      setState(() {
+        _results = results;
+        _loading = false;
+      });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _loading = false; _error = e.toString(); });
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
     }
   }
 
@@ -64,21 +77,30 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.75,
       child: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: Column(
           children: [
             Container(
               width: 40,
               height: 4,
               margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: TextField(
                 controller: _searchCtrl,
                 autofocus: true,
-                decoration: const InputDecoration(hintText: 'Search customers...', prefixIcon: Icon(Icons.search_rounded), isDense: true),
+                decoration: const InputDecoration(
+                  hintText: 'Search customers...',
+                  prefixIcon: Icon(Icons.search_rounded),
+                  isDense: true,
+                ),
                 onChanged: _onChanged,
               ),
             ),
@@ -87,20 +109,22 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
                   : _error != null
-                      ? Center(child: Text(_error!))
-                      : _results.isEmpty
-                          ? const Center(child: Text('No customers found.'))
-                          : ListView.builder(
-                              itemCount: _results.length,
-                              itemBuilder: (context, i) {
-                                final c = _results[i];
-                                return ListTile(
-                                  title: Text(c.displayName),
-                                  subtitle: Text(c.email.isNotEmpty ? c.email : c.stripeCustomerId),
-                                  onTap: () => Navigator.of(context).pop(c),
-                                );
-                              },
-                            ),
+                  ? Center(child: Text(_error!))
+                  : _results.isEmpty
+                  ? const Center(child: Text('No customers found.'))
+                  : ListView.builder(
+                      itemCount: _results.length,
+                      itemBuilder: (context, i) {
+                        final c = _results[i];
+                        return ListTile(
+                          title: Text(c.displayName),
+                          subtitle: Text(
+                            c.email.isNotEmpty ? c.email : c.stripeCustomerId,
+                          ),
+                          onTap: () => Navigator.of(context).pop(c),
+                        );
+                      },
+                    ),
             ),
           ],
         ),

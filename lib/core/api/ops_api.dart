@@ -291,8 +291,7 @@ class OpsApi {
     if (persistedStatus != leadStatus) {
       throw ApiException(
         statusCode: 502,
-        message:
-            'AJCore did not save the requested lead status ($leadStatus).',
+        message: 'AJCore did not save the requested lead status ($leadStatus).',
       );
     }
     return persistedStatus;

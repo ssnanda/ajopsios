@@ -22,30 +22,30 @@ class LeadDetailNotifier extends StateNotifier<LeadDetailState> {
   final _api = OpsApi.instance;
 
   Future<String?> addNote(String note) => _run(() async {
-        await _api.addLeadNote(state.lead.id, note);
-        final refreshed = await _api.getLead(state.lead.id);
-        state = state.copyWith(lead: refreshed);
-      });
+    await _api.addLeadNote(state.lead.id, note);
+    final refreshed = await _api.getLead(state.lead.id);
+    state = state.copyWith(lead: refreshed);
+  });
 
   Future<String?> setStage(
     String leadStatus, {
     String? stripeCustomerId,
     String? followUpAt,
   }) => _run(() async {
-        await _api.setLeadPipelineStatus(
-          state.lead.id,
-          leadStatus,
-          stripeCustomerId: stripeCustomerId,
-          followUpAt: followUpAt,
-        );
-        final refreshed = await _api.getLead(state.lead.id);
-        if (refreshed.leadStatus != leadStatus) {
-          throw StateError(
-            'AJCore returned ${refreshed.leadStatus} after saving $leadStatus.',
-          );
-        }
-        state = state.copyWith(lead: refreshed);
-      });
+    await _api.setLeadPipelineStatus(
+      state.lead.id,
+      leadStatus,
+      stripeCustomerId: stripeCustomerId,
+      followUpAt: followUpAt,
+    );
+    final refreshed = await _api.getLead(state.lead.id);
+    if (refreshed.leadStatus != leadStatus) {
+      throw StateError(
+        'AJCore returned ${refreshed.leadStatus} after saving $leadStatus.',
+      );
+    }
+    state = state.copyWith(lead: refreshed);
+  });
 
   Future<String?> _run(Future<void> Function() action) async {
     state = state.copyWith(busy: true);
@@ -60,6 +60,7 @@ class LeadDetailNotifier extends StateNotifier<LeadDetailState> {
   }
 }
 
-final leadDetailProvider = StateNotifierProvider.autoDispose.family<LeadDetailNotifier, LeadDetailState, Lead>(
-  (ref, lead) => LeadDetailNotifier(lead),
-);
+final leadDetailProvider = StateNotifierProvider.autoDispose
+    .family<LeadDetailNotifier, LeadDetailState, Lead>(
+      (ref, lead) => LeadDetailNotifier(lead),
+    );

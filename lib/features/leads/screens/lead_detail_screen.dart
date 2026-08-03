@@ -28,10 +28,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
     }
   }
 
-  Future<void> _setStage(
-    LeadDetailNotifier notifier,
-    String stage,
-  ) async {
+  Future<void> _setStage(LeadDetailNotifier notifier, String stage) async {
     if (stage != 'customer') {
       await _run(() => notifier.setStage(stage));
       return;
@@ -60,59 +57,86 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
         children: [
           _InfoCard(lead: lead),
           const SizedBox(height: 16),
-          Text('PIPELINE STAGE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey.shade600)),
+          Text(
+            'PIPELINE STAGE',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Colors.grey.shade600,
+            ),
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              ...leadPipelineStages.map((stage) => ChoiceChip(
-                    label: Text(leadPipelineLabels[stage] ?? stage),
-                    selected: lead.leadStatus == stage,
-                    onSelected: state.busy
-                        ? null
-                        : (_) => _setStage(notifier, stage),
-                  )),
+              ...leadPipelineStages.map(
+                (stage) => ChoiceChip(
+                  label: Text(leadPipelineLabels[stage] ?? stage),
+                  selected: lead.leadStatus == stage,
+                  onSelected: state.busy
+                      ? null
+                      : (_) => _setStage(notifier, stage),
+                ),
+              ),
               ChoiceChip(
                 label: const Text('Lost'),
                 selected: lead.leadStatus == 'lost',
                 selectedColor: Colors.red.shade100,
-                onSelected: state.busy ? null : (_) => _run(() => notifier.setStage('lost')),
+                onSelected: state.busy
+                    ? null
+                    : (_) => _run(() => notifier.setStage('lost')),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          Text('NOTES', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey.shade600)),
+          Text(
+            'NOTES',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Colors.grey.shade600,
+            ),
+          ),
           const SizedBox(height: 8),
           if (lead.notesList.isEmpty)
             Text('No notes yet.', style: TextStyle(color: Colors.grey.shade600))
           else
-            ...lead.notesList.map((n) => Card(
-                  elevation: 0,
-                  color: Colors.grey.shade50,
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(n.note),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${n.authorName.isNotEmpty ? n.authorName : "Staff"} · ${n.createdAt}',
-                          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+            ...lead.notesList.map(
+              (n) => Card(
+                elevation: 0,
+                color: Colors.grey.shade50,
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(n.note),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${n.authorName.isNotEmpty ? n.authorName : "Staff"} · ${n.createdAt}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                )),
+                ),
+              ),
+            ),
           const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: _noteCtrl,
-                  decoration: const InputDecoration(hintText: 'Add a note...', isDense: true, border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                    hintText: 'Add a note...',
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                  ),
                   minLines: 1,
                   maxLines: 3,
                 ),
@@ -145,17 +169,25 @@ class _InfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.grey.shade200)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (lead.company.isNotEmpty) _Row(icon: Icons.business_rounded, text: lead.company),
-            if (lead.email.isNotEmpty) _Row(icon: Icons.email_outlined, text: lead.email),
-            if (lead.phone.isNotEmpty) _Row(icon: Icons.phone_outlined, text: lead.phone),
-            if (lead.source.isNotEmpty) _Row(icon: Icons.source_outlined, text: lead.source),
-            if (lead.formTitle.isNotEmpty) _Row(icon: Icons.description_outlined, text: lead.formTitle),
+            if (lead.company.isNotEmpty)
+              _Row(icon: Icons.business_rounded, text: lead.company),
+            if (lead.email.isNotEmpty)
+              _Row(icon: Icons.email_outlined, text: lead.email),
+            if (lead.phone.isNotEmpty)
+              _Row(icon: Icons.phone_outlined, text: lead.phone),
+            if (lead.source.isNotEmpty)
+              _Row(icon: Icons.source_outlined, text: lead.source),
+            if (lead.formTitle.isNotEmpty)
+              _Row(icon: Icons.description_outlined, text: lead.formTitle),
             if (lead.notes.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(lead.notes, style: TextStyle(color: Colors.grey.shade700)),
