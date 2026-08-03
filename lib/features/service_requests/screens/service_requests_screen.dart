@@ -35,6 +35,7 @@ class _ServiceRequestsScreenState extends ConsumerState<ServiceRequestsScreen> {
       onAssign: (userId) => notifier.updateAssignee(r.id, userId),
       onAddNote: (note) => notifier.addNote(r.id, note),
       onCancel: () => notifier.updateServiceStatus(r.id, 'cancelled'),
+      onDelete: () => notifier.applyQuickAction(r.id, 'delete'),
     );
   }
 
@@ -138,45 +139,6 @@ class _ServiceRequestsScreenState extends ConsumerState<ServiceRequestsScreen> {
                                   content: Text(
                                     err ?? 'Customer notification sent.',
                                   ),
-                                ),
-                              );
-                          },
-                          onQuickAction: (action) async {
-                            if (action == 'delete' || action == 'cancel') {
-                              final confirmed = await showDialog<bool>(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  title: Text(
-                                    action == 'delete'
-                                        ? 'Delete request?'
-                                        : 'Cancel request?',
-                                  ),
-                                  content: const Text(
-                                    'This action changes the service request immediately.',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(ctx, false),
-                                      child: const Text('Back'),
-                                    ),
-                                    FilledButton(
-                                      onPressed: () => Navigator.pop(ctx, true),
-                                      child: const Text('Continue'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                              if (confirmed != true) return;
-                            }
-                            final err = await notifier.applyQuickAction(
-                              r.id,
-                              action,
-                            );
-                            if (context.mounted)
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(err ?? 'Action applied.'),
                                 ),
                               );
                           },
@@ -364,7 +326,6 @@ class _RequestCard extends StatelessWidget {
   final VoidCallback onToggleSelected;
   final void Function(String status) onStatusChange;
   final VoidCallback onNotify;
-  final void Function(String action) onQuickAction;
   final VoidCallback onTapHistory;
 
   const _RequestCard({
@@ -374,7 +335,6 @@ class _RequestCard extends StatelessWidget {
     required this.onToggleSelected,
     required this.onStatusChange,
     required this.onNotify,
-    required this.onQuickAction,
     required this.onTapHistory,
   });
 
@@ -453,25 +413,6 @@ class _RequestCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            if (r.quickActions.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(left: 40, bottom: 8),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: r.quickActions.entries
-                      .map(
-                        (entry) => OutlinedButton.icon(
-                          onPressed: busy
-                              ? null
-                              : () => onQuickAction(entry.key),
-                          icon: const Icon(Icons.bolt_rounded, size: 16),
-                          label: Text(entry.value),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
             Padding(
               padding: const EdgeInsets.only(left: 40),
               child: Row(

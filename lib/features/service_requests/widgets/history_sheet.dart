@@ -12,6 +12,7 @@ Future<void> showHistorySheet(
   required Future<String?> Function(int userId) onAssign,
   required Future<String?> Function(String note) onAddNote,
   required Future<String?> Function() onCancel,
+  required Future<String?> Function() onDelete,
 }) {
   return showModalBottomSheet(
     context: context,
@@ -25,6 +26,7 @@ Future<void> showHistorySheet(
       onAssign: onAssign,
       onAddNote: onAddNote,
       onCancel: onCancel,
+      onDelete: onDelete,
     ),
   );
 }
@@ -35,6 +37,7 @@ class _HistorySheetContent extends StatefulWidget {
   final Future<String?> Function(int userId) onAssign;
   final Future<String?> Function(String note) onAddNote;
   final Future<String?> Function() onCancel;
+  final Future<String?> Function() onDelete;
 
   const _HistorySheetContent({
     required this.request,
@@ -42,6 +45,7 @@ class _HistorySheetContent extends StatefulWidget {
     required this.onAssign,
     required this.onAddNote,
     required this.onCancel,
+    required this.onDelete,
   });
 
   @override
@@ -261,6 +265,58 @@ class _HistorySheetContentState extends State<_HistorySheetContent> {
                       .toList(),
                 );
               },
+            ),
+            const SizedBox(height: 20),
+            const Divider(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                Icons.delete_outline_rounded,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
+                'Delete Service Request',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: const Text('Permanently remove this request'),
+              onTap: _saving
+                  ? null
+                  : () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Delete service request?'),
+                          content: Text(
+                            'Permanently delete ${r.requestNumber.isNotEmpty ? r.requestNumber : r.serviceName}? This cannot be undone.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Back'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed != true || !context.mounted) return;
+                      setState(() => _saving = true);
+                      final err = await widget.onDelete();
+                      if (!context.mounted) return;
+                      if (err == null) {
+                        Navigator.pop(context);
+                      } else {
+                        setState(() => _saving = false);
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(err)));
+                      }
+                    },
             ),
           ],
         ),
