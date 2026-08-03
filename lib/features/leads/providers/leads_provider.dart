@@ -20,6 +20,7 @@ class LeadsState {
   final String? error;
   final LeadsView view;
   final String search;
+  final bool hideFutureFollowUp;
 
   const LeadsState({
     this.leads = const [],
@@ -27,6 +28,7 @@ class LeadsState {
     this.error,
     this.view = LeadsView.active,
     this.search = '',
+    this.hideFutureFollowUp = true,
   });
 
   LeadsState copyWith({
@@ -36,6 +38,7 @@ class LeadsState {
     bool clearError = false,
     LeadsView? view,
     String? search,
+    bool? hideFutureFollowUp,
   }) {
     return LeadsState(
       leads: leads ?? this.leads,
@@ -43,10 +46,14 @@ class LeadsState {
       error: clearError ? null : (error ?? this.error),
       view: view ?? this.view,
       search: search ?? this.search,
+      hideFutureFollowUp: hideFutureFollowUp ?? this.hideFutureFollowUp,
     );
   }
 
-  List<Lead> get filtered => leads.where(view.matches).toList();
+  List<Lead> get filtered => leads
+      .where(view.matches)
+      .where((lead) => !hideFutureFollowUp || !lead.isFutureFollowUp)
+      .toList();
 }
 
 class LeadsNotifier extends StateNotifier<LeadsState> {
@@ -67,6 +74,8 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
   }
 
   void setView(LeadsView view) => state = state.copyWith(view: view);
+
+  void setHideFutureFollowUp(bool value) => state = state.copyWith(hideFutureFollowUp: value);
 
   void setSearch(String value) {
     state = state.copyWith(search: value);

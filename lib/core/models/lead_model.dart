@@ -65,6 +65,13 @@ class Lead {
   bool get isWon => leadStatus == 'customer';
   bool get isLost => leadStatus == 'lost';
 
+  /// True while a Future Follow-Up lead's date hasn't arrived yet — once it's due, it's no longer "future".
+  bool get isFutureFollowUp {
+    if (leadStatus != 'future_follow_up' || leadFollowUpAt.isEmpty) return false;
+    final due = DateTime.tryParse(leadFollowUpAt);
+    return due != null && due.isAfter(DateTime.now());
+  }
+
   // Keyed by id for Riverpod .family caching.
   @override
   bool operator ==(Object other) => other is Lead && other.id == id;

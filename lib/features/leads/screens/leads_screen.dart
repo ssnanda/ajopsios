@@ -67,6 +67,18 @@ class _LeadsScreenState extends ConsumerState<LeadsScreen> {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FilterChip(
+                label: const Text('Hide Future Follow-up'),
+                selected: state.hideFutureFollowUp,
+                onSelected: notifier.setHideFutureFollowUp,
+                tooltip: "Leads marked Future Follow-Up with a date that hasn't arrived yet are hidden until that date.",
+              ),
+            ),
+          ),
           const SizedBox(height: 4),
           Expanded(
             child: state.loading
