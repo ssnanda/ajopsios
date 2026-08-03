@@ -72,6 +72,13 @@ class Lead {
     return due != null && due.isAfter(DateTime.now());
   }
 
+  /// Most recent staff note, excluding the auto-logged "Follow-up email sent." markers —
+  /// matches AJOps web's "latest" note shown in the leads table. Null if there are none.
+  LeadNote? get latestNote {
+    final human = notesList.where((n) => !n.note.startsWith('Follow-up email sent')).toList();
+    return human.isEmpty ? null : human.last;
+  }
+
   // Keyed by id for Riverpod .family caching.
   @override
   bool operator ==(Object other) => other is Lead && other.id == id;

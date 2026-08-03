@@ -140,6 +140,7 @@ class _LeadCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final latestNote = lead.latestNote;
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.grey.shade200)),
@@ -154,6 +155,30 @@ class _LeadCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '#${lead.id}',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            lead.siteLabel.isNotEmpty ? lead.siteLabel : 'Source form',
+                            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
                     Text(lead.displayName, style: const TextStyle(fontWeight: FontWeight.w700)),
                     if (lead.company.isNotEmpty)
                       Text(lead.company, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
@@ -167,6 +192,15 @@ class _LeadCard extends StatelessWidget {
                         ],
                       ],
                     ),
+                    if (latestNote != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        latestNote.note,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontStyle: FontStyle.italic),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -1,7 +1,7 @@
 name: ajopsios
 description: "AJ Ops mobile — staff app for NC LLC Agents, sharing core auth/api/storage with ajcoreios."
 publish_to: 'none'
-version: 1.0.35+30
+version: 1.0.36+31
 
 environment:
   sdk: ^3.12.2

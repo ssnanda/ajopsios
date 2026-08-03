@@ -27,6 +27,22 @@ class OpsSummaryModel {
     required this.chatUnread,
   });
 
+  OpsSummaryModel copyWith({int? leadsActive}) {
+    return OpsSummaryModel(
+      customers: customers,
+      products: products,
+      subscriptions: subscriptions,
+      tasks: tasks,
+      tasksOpen: tasksOpen,
+      serviceRequests: serviceRequests,
+      serviceRequestsNeedsAction: serviceRequestsNeedsAction,
+      leads: leads,
+      leadsUnread: leadsUnread,
+      leadsActive: leadsActive ?? this.leadsActive,
+      chatUnread: chatUnread,
+    );
+  }
+
   factory OpsSummaryModel.fromJson(Map<String, dynamic> json) {
     int asInt(dynamic v) => int.tryParse(v?.toString() ?? '0') ?? 0;
     return OpsSummaryModel(
