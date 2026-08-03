@@ -88,13 +88,16 @@ class OpsApi {
       );
     }
     final updated = data['service_request'];
-    if (updated is! Map) {
-      throw const ApiException(
-        statusCode: 502,
-        message: 'AJCore did not return the updated service request.',
-      );
+    if (updated is Map) {
+      return updated['service_status']?.toString() ?? serviceStatus ?? '';
     }
-    return updated['service_status']?.toString() ?? '';
+    if (data['success'] == true && serviceStatus != null) {
+      return serviceStatus;
+    }
+    throw const ApiException(
+      statusCode: 502,
+      message: 'AJCore did not confirm the service-request update.',
+    );
   }
 
   Future<void> notifyServiceRequest(int id) async {
@@ -128,7 +131,7 @@ class OpsApi {
     String? serviceStatus,
     int? assignedUserId,
   }) async {
-    await ApiClient.instance.dio.post(
+    final response = await ApiClient.instance.dio.post(
       ApiEndpoints.serviceRequestsBulk,
       data: {
         'ids': ids,
@@ -136,6 +139,16 @@ class OpsApi {
         if (assignedUserId != null) 'assigned_user_id': assignedUserId,
       },
     );
+    final data = response.data;
+    if (data is Map && data['success'] == false) {
+      final failed = int.tryParse(data['failed']?.toString() ?? '') ?? 0;
+      throw ApiException(
+        statusCode: 400,
+        message: failed > 0
+            ? 'AJCore could not update $failed selected service request(s).'
+            : 'AJCore could not update the selected service requests.',
+      );
+    }
   }
 
   // ── Live Chat ────────────────────────────────────────────────────────────
@@ -307,9 +320,10 @@ class OpsApi {
         'per_page': '500',
       },
     );
-    final list =
-        (resp.data as Map<String, dynamic>)['customers'] as List<dynamic>? ??
-        [];
+    final data = resp.data;
+    final list = data is Map
+        ? (data['customers'] as List<dynamic>? ?? const [])
+        : (data is List ? data : const <dynamic>[]);
     return list
         .map((e) => Customer.fromJson(e as Map<String, dynamic>))
         .toList();
