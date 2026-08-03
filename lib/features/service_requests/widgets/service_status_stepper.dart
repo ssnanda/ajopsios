@@ -23,10 +23,12 @@ class ServiceStatusStepper extends StatelessWidget {
 
     if (request.serviceStatus == 'cancelled') {
       return GestureDetector(
-        onTap: busy ? null : () {
-          final steps = request.pipelineSteps;
-          onChange(steps.isNotEmpty ? steps.first.key : 'new');
-        },
+        onTap: busy
+            ? null
+            : () {
+                final steps = request.pipelineSteps;
+                onChange(steps.isNotEmpty ? steps.first.key : 'new');
+              },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
@@ -35,7 +37,11 @@ class ServiceStatusStepper extends StatelessWidget {
           ),
           child: Text(
             'Cancelled — tap to reopen',
-            style: TextStyle(color: theme.colorScheme.onErrorContainer, fontWeight: FontWeight.w700, fontSize: 13),
+            style: TextStyle(
+              color: theme.colorScheme.onErrorContainer,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
           ),
         ),
       );
@@ -56,48 +62,65 @@ class ServiceStatusStepper extends StatelessWidget {
                 child: Container(
                   width: 20,
                   height: 3,
-                  color: i <= currentIdx ? Colors.green.shade300 : theme.colorScheme.outlineVariant,
+                  color: i <= currentIdx
+                      ? Colors.green.shade300
+                      : theme.colorScheme.outlineVariant,
                 ),
               ),
             SizedBox(
               width: 78,
-              child: Column(
-                children: [
-                  GestureDetector(
-                    onTap: busy ? null : () => onChange(steps[i].key),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: i < currentIdx
-                            ? Colors.green
-                            : i == currentIdx
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.surfaceContainerHighest,
-                        border: i == currentIdx
-                            ? Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.25), width: 5)
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: busy ? null : () => onChange(steps[i].key),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: i < currentIdx
+                              ? Colors.green
+                              : i == currentIdx
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.surfaceContainerHighest,
+                          border: i == currentIdx
+                              ? Border.all(
+                                  color: theme.colorScheme.primary.withValues(
+                                    alpha: 0.25,
+                                  ),
+                                  width: 5,
+                                )
+                              : null,
+                        ),
+                        child: i < currentIdx
+                            ? const Icon(
+                                Icons.check_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              )
                             : null,
                       ),
-                      child: i < currentIdx
-                          ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
-                          : null,
-                    ),
+                      const SizedBox(height: 6),
+                      Text(
+                        steps[i].value,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: i == currentIdx
+                              ? theme.colorScheme.onSurface
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    steps[i].value,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: i == currentIdx ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ],

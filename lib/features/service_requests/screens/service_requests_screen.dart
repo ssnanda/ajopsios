@@ -109,6 +109,12 @@ class _ServiceRequestsScreenState extends ConsumerState<ServiceRequestsScreen> {
                               ScaffoldMessenger.of(
                                 context,
                               ).showSnackBar(SnackBar(content: Text(err)));
+                            } else if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('SVC Status updated.'),
+                                ),
+                              );
                             }
                           },
                           onNotify: () async {

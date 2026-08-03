@@ -3,8 +3,8 @@ import '../../../core/api/ops_api.dart';
 import '../../../core/models/ops_service_request_model.dart';
 import '../../../core/models/staff_model.dart';
 
-/// Matches AJCore's view filters. Open on All so requests without a generated
-/// next-action button remain visible; Needs Action stays available as a filter.
+/// Matches AJCore's view filters. Needs Action is the default from both the
+/// Dashboard tile and Requests tab; All remains available as a manual filter.
 enum ServiceRequestsView { needsAction, all, active, completed }
 
 extension on ServiceRequestsView {
@@ -34,7 +34,7 @@ class ServiceRequestsState {
     this.staff = const [],
     this.loading = true,
     this.error,
-    this.view = ServiceRequestsView.all,
+    this.view = ServiceRequestsView.needsAction,
     this.search = '',
     this.selectedIds = const {},
     this.busyIds = const {},
