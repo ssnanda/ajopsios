@@ -3,9 +3,8 @@ import '../../../core/api/ops_api.dart';
 import '../../../core/models/ops_service_request_model.dart';
 import '../../../core/models/staff_model.dart';
 
-/// Matches the view filter semantics both web apps use: '' = needs action
-/// (default), 'all', 'service_active', 'service_completed' (OR-based —
-/// either the pay status or the service status reaching that value counts).
+/// Matches AJCore's view filters. Open on All so requests without a generated
+/// next-action button remain visible; Needs Action stays available as a filter.
 enum ServiceRequestsView { needsAction, all, active, completed }
 
 extension on ServiceRequestsView {
@@ -35,7 +34,7 @@ class ServiceRequestsState {
     this.staff = const [],
     this.loading = true,
     this.error,
-    this.view = ServiceRequestsView.needsAction,
+    this.view = ServiceRequestsView.all,
     this.search = '',
     this.selectedIds = const {},
     this.busyIds = const {},
