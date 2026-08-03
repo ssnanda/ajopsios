@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'api_client.dart';
 import 'api_endpoints.dart';
+import 'api_interceptors.dart';
 import '../models/ops_summary_model.dart';
 import '../models/ops_service_request_model.dart';
 import '../models/service_request_history_model.dart';
@@ -61,7 +62,7 @@ class OpsApi {
   /// Update one request's pay status / service status / admin notes / a new
   /// history note / assignee — same single endpoint used by the stepper,
   /// the assignee dropdown, and the notes form on both web apps.
-  Future<void> updateServiceRequest(
+  Future<String> updateServiceRequest(
     int id, {
     String? status,
     String? serviceStatus,
@@ -69,7 +70,7 @@ class OpsApi {
     String? note,
     int? assignedUserId,
   }) async {
-    await ApiClient.instance.dio.post(
+    final response = await ApiClient.instance.dio.post(
       ApiEndpoints.updateServiceRequest(id),
       data: {
         if (status != null) 'status': status,
@@ -79,6 +80,21 @@ class OpsApi {
         if (assignedUserId != null) 'assigned_user_id': assignedUserId,
       },
     );
+    final data = response.data;
+    if (data is! Map) {
+      throw const ApiException(
+        statusCode: 502,
+        message: 'AJCore returned an invalid service-request response.',
+      );
+    }
+    final updated = data['service_request'];
+    if (updated is! Map) {
+      throw const ApiException(
+        statusCode: 502,
+        message: 'AJCore did not return the updated service request.',
+      );
+    }
+    return updated['service_status']?.toString() ?? '';
   }
 
   Future<void> notifyServiceRequest(int id) async {
@@ -248,14 +264,14 @@ class OpsApi {
 
   /// Advances (or reverts) the pipeline stage — the same endpoint AJOps' web
   /// stage-stepper uses. followUpAt only meaningful for "future_follow_up".
-  Future<void> setLeadPipelineStatus(
+  Future<String> setLeadPipelineStatus(
     int id,
     String leadStatus, {
     String? note,
     String? stripeCustomerId,
     String? followUpAt,
   }) async {
-    await ApiClient.instance.dio.patch(
+    final response = await ApiClient.instance.dio.patch(
       ApiEndpoints.leadPipelineStatus(id),
       data: {
         'lead_status': leadStatus,
@@ -264,6 +280,22 @@ class OpsApi {
         if (followUpAt != null) 'follow_up_at': followUpAt,
       },
     );
+    final data = response.data;
+    if (data is! Map) {
+      throw const ApiException(
+        statusCode: 502,
+        message: 'AJCore returned an invalid lead-status response.',
+      );
+    }
+    final persistedStatus = data['lead_status']?.toString() ?? '';
+    if (persistedStatus != leadStatus) {
+      throw ApiException(
+        statusCode: 502,
+        message:
+            'AJCore did not save the requested lead status ($leadStatus).',
+      );
+    }
+    return persistedStatus;
   }
 
   // ── Customers ────────────────────────────────────────────────────────────

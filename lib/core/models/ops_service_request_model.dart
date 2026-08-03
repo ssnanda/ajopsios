@@ -95,6 +95,32 @@ class OpsServiceRequest {
       serviceStatusOptions.entries.where((e) => e.key != 'cancelled').toList();
 
   bool get hasCancelOption => serviceStatusOptions.containsKey('cancelled');
+
+  OpsServiceRequest copyWith({String? serviceStatus}) => OpsServiceRequest(
+    id: id,
+    requestNumber: requestNumber,
+    stripeCustomerId: stripeCustomerId,
+    serviceName: serviceName,
+    requestType: requestType,
+    status: status,
+    serviceStatus: serviceStatus ?? this.serviceStatus,
+    amount: amount,
+    currency: currency,
+    source: source,
+    sourceType: sourceType,
+    clientNotes: clientNotes,
+    adminNotes: adminNotes,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
+    customerName: customerName,
+    customerEmail: customerEmail,
+    needsAction: needsAction,
+    assignedUserId: assignedUserId,
+    assignedUserName: assignedUserName,
+    assignedUserEmail: assignedUserEmail,
+    serviceStatusOptions: serviceStatusOptions,
+    quickActions: quickActions,
+  );
 }
 
 class OpsServiceRequestStats {

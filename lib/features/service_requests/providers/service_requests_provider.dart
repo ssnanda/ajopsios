@@ -138,7 +138,24 @@ class ServiceRequestsNotifier extends StateNotifier<ServiceRequestsState> {
   Future<String?> updateServiceStatus(int id, String serviceStatus) async {
     state = state.copyWith(busyIds: {...state.busyIds, id});
     try {
-      await _api.updateServiceRequest(id, serviceStatus: serviceStatus);
+      final persistedStatus = await _api.updateServiceRequest(
+        id,
+        serviceStatus: serviceStatus,
+      );
+      if (persistedStatus != serviceStatus) {
+        state = state.copyWith(busyIds: {...state.busyIds}..remove(id));
+        return 'AJCore returned SVC Status "${persistedStatus.isEmpty ? 'unknown' : persistedStatus}" instead of "$serviceStatus".';
+      }
+      state = state.copyWith(
+        requests: state.requests
+            .map(
+              (request) => request.id == id
+                  ? request.copyWith(serviceStatus: persistedStatus)
+                  : request,
+            )
+            .toList(),
+        busyIds: {...state.busyIds}..remove(id),
+      );
       await load();
       return null;
     } catch (e) {

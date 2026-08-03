@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/lead_model.dart';
+import '../../../core/widgets/customer_picker.dart';
 import '../providers/lead_detail_provider.dart';
 
 class LeadDetailScreen extends ConsumerStatefulWidget {
@@ -27,6 +28,25 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
     }
   }
 
+  Future<void> _setStage(
+    LeadDetailNotifier notifier,
+    String stage,
+  ) async {
+    if (stage != 'customer') {
+      await _run(() => notifier.setStage(stage));
+      return;
+    }
+
+    final customer = await pickCustomer(context);
+    if (customer == null || !mounted) return;
+    await _run(
+      () => notifier.setStage(
+        'customer',
+        stripeCustomerId: customer.stripeCustomerId,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(leadDetailProvider(widget.lead));
@@ -49,7 +69,9 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
               ...leadPipelineStages.map((stage) => ChoiceChip(
                     label: Text(leadPipelineLabels[stage] ?? stage),
                     selected: lead.leadStatus == stage,
-                    onSelected: state.busy ? null : (_) => _run(() => notifier.setStage(stage)),
+                    onSelected: state.busy
+                        ? null
+                        : (_) => _setStage(notifier, stage),
                   )),
               ChoiceChip(
                 label: const Text('Lost'),

@@ -27,9 +27,23 @@ class LeadDetailNotifier extends StateNotifier<LeadDetailState> {
         state = state.copyWith(lead: refreshed);
       });
 
-  Future<String?> setStage(String leadStatus, {String? followUpAt}) => _run(() async {
-        await _api.setLeadPipelineStatus(state.lead.id, leadStatus, followUpAt: followUpAt);
+  Future<String?> setStage(
+    String leadStatus, {
+    String? stripeCustomerId,
+    String? followUpAt,
+  }) => _run(() async {
+        await _api.setLeadPipelineStatus(
+          state.lead.id,
+          leadStatus,
+          stripeCustomerId: stripeCustomerId,
+          followUpAt: followUpAt,
+        );
         final refreshed = await _api.getLead(state.lead.id);
+        if (refreshed.leadStatus != leadStatus) {
+          throw StateError(
+            'AJCore returned ${refreshed.leadStatus} after saving $leadStatus.',
+          );
+        }
         state = state.copyWith(lead: refreshed);
       });
 
