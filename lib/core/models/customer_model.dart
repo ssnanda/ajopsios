@@ -12,9 +12,11 @@ class Customer {
   final String phone;
   final String description;
   final String address;
-  final String portalStatus; // active | disabled | archived | without_portal_login
+  final String
+  portalStatus; // active | disabled | archived | without_portal_login
   final bool enabledPortal;
-  final List<String> serviceTypes; // active subscription / local-contract service names
+  final List<String>
+  serviceTypes; // active subscription / local-contract service names
 
   const Customer({
     required this.stripeCustomerId,
@@ -39,8 +41,14 @@ class Customer {
       description: json['description'] as String? ?? '',
       address: _formatAddress(json['address']),
       portalStatus: json['portal_status'] as String? ?? '',
-      enabledPortal: json['enabled_portal'] == true || json['enabled_portal'].toString() == '1',
-      serviceTypes: (json['service_types'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+      enabledPortal:
+          json['enabled_portal'] == true ||
+          json['enabled_portal'].toString() == '1',
+      serviceTypes:
+          (json['service_types'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
     );
   }
 
@@ -65,11 +73,13 @@ class Customer {
     return '';
   }
 
-  String get displayName => name.isNotEmpty ? name : (email.isNotEmpty ? email : stripeCustomerId);
+  String get displayName =>
+      name.isNotEmpty ? name : (email.isNotEmpty ? email : stripeCustomerId);
 
   // Keyed by stripeCustomerId for Riverpod .family caching.
   @override
-  bool operator ==(Object other) => other is Customer && other.stripeCustomerId == stripeCustomerId;
+  bool operator ==(Object other) =>
+      other is Customer && other.stripeCustomerId == stripeCustomerId;
 
   @override
   int get hashCode => stripeCustomerId.hashCode;
@@ -102,7 +112,11 @@ class CustomerDetail {
           .map((e) => CustomerSubscription.fromJson(e as Map<String, dynamic>))
           .toList(),
       serviceRequests: (json['service_requests'] as List<dynamic>? ?? [])
-          .map((e) => CustomerServiceRequestSummary.fromJson(e as Map<String, dynamic>))
+          .map(
+            (e) => CustomerServiceRequestSummary.fromJson(
+              e as Map<String, dynamic>,
+            ),
+          )
           .toList(),
     );
   }
@@ -113,30 +127,42 @@ class CustomerSubscription {
   final String status;
   final String priceLabel;
 
-  const CustomerSubscription({required this.id, required this.status, required this.priceLabel});
+  const CustomerSubscription({
+    required this.id,
+    required this.status,
+    required this.priceLabel,
+  });
 
-  factory CustomerSubscription.fromJson(Map<String, dynamic> json) => CustomerSubscription(
+  factory CustomerSubscription.fromJson(Map<String, dynamic> json) =>
+      CustomerSubscription(
         id: json['id']?.toString() ?? '',
         status: json['status'] as String? ?? '',
-        priceLabel: (json['price_label'] ?? json['product_name'] ?? json['nickname'])?.toString() ?? 'Subscription',
+        priceLabel:
+            (json['price_label'] ?? json['product_name'] ?? json['nickname'])
+                ?.toString() ??
+            'Subscription',
       );
 }
 
 class CustomerServiceRequestSummary {
   final int id;
+  final String requestNumber;
   final String serviceName;
   final String status;
   final String serviceStatus;
 
   const CustomerServiceRequestSummary({
     required this.id,
+    required this.requestNumber,
     required this.serviceName,
     required this.status,
     required this.serviceStatus,
   });
 
-  factory CustomerServiceRequestSummary.fromJson(Map<String, dynamic> json) => CustomerServiceRequestSummary(
+  factory CustomerServiceRequestSummary.fromJson(Map<String, dynamic> json) =>
+      CustomerServiceRequestSummary(
         id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+        requestNumber: json['service_request_number'] as String? ?? '',
         serviceName: json['service_name'] as String? ?? '',
         status: json['status'] as String? ?? '',
         serviceStatus: json['service_status'] as String? ?? '',

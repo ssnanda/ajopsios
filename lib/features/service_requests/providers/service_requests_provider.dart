@@ -10,11 +10,11 @@ enum ServiceRequestsView { needsAction, all, active, completed }
 
 extension on ServiceRequestsView {
   String? get queryValue => switch (this) {
-        ServiceRequestsView.needsAction => null,
-        ServiceRequestsView.all => 'all',
-        ServiceRequestsView.active => 'service_active',
-        ServiceRequestsView.completed => 'service_completed',
-      };
+    ServiceRequestsView.needsAction => null,
+    ServiceRequestsView.all => 'all',
+    ServiceRequestsView.active => 'active',
+    ServiceRequestsView.completed => 'completed',
+  };
 }
 
 class ServiceRequestsState {
@@ -26,7 +26,8 @@ class ServiceRequestsState {
   final ServiceRequestsView view;
   final String search;
   final Set<int> selectedIds;
-  final Set<int> busyIds; // requests currently mid-update, to disable their controls
+  final Set<int>
+  busyIds; // requests currently mid-update, to disable their controls
 
   const ServiceRequestsState({
     this.requests = const [],
@@ -113,8 +114,12 @@ class ServiceRequestsNotifier extends StateNotifier<ServiceRequestsState> {
   }
 
   void toggleSelectAll() {
-    final allSelected = state.requests.isNotEmpty && state.requests.every((r) => state.selectedIds.contains(r.id));
-    state = state.copyWith(selectedIds: allSelected ? {} : state.requests.map((r) => r.id).toSet());
+    final allSelected =
+        state.requests.isNotEmpty &&
+        state.requests.every((r) => state.selectedIds.contains(r.id));
+    state = state.copyWith(
+      selectedIds: allSelected ? {} : state.requests.map((r) => r.id).toSet(),
+    );
   }
 
   void clearSelection() => state = state.copyWith(selectedIds: {});
@@ -155,11 +160,42 @@ class ServiceRequestsNotifier extends StateNotifier<ServiceRequestsState> {
     }
   }
 
-  Future<String?> bulkApply({String? serviceStatus, int? assignedUserId}) async {
+  Future<String?> notifyCustomer(int id) async {
+    state = state.copyWith(busyIds: {...state.busyIds, id});
+    try {
+      await _api.notifyServiceRequest(id);
+      state = state.copyWith(busyIds: {...state.busyIds}..remove(id));
+      return null;
+    } catch (e) {
+      state = state.copyWith(busyIds: {...state.busyIds}..remove(id));
+      return e.toString();
+    }
+  }
+
+  Future<String?> applyQuickAction(int id, String action) async {
+    state = state.copyWith(busyIds: {...state.busyIds, id});
+    try {
+      await _api.applyServiceRequestQuickAction(id, action);
+      await load();
+      return null;
+    } catch (e) {
+      state = state.copyWith(busyIds: {...state.busyIds}..remove(id));
+      return e.toString();
+    }
+  }
+
+  Future<String?> bulkApply({
+    String? serviceStatus,
+    int? assignedUserId,
+  }) async {
     final ids = state.selectedIds.toList();
     if (ids.isEmpty) return 'No requests selected.';
     try {
-      await _api.bulkUpdateServiceRequests(ids, serviceStatus: serviceStatus, assignedUserId: assignedUserId);
+      await _api.bulkUpdateServiceRequests(
+        ids,
+        serviceStatus: serviceStatus,
+        assignedUserId: assignedUserId,
+      );
       state = state.copyWith(selectedIds: {});
       await load();
       return null;
@@ -169,6 +205,8 @@ class ServiceRequestsNotifier extends StateNotifier<ServiceRequestsState> {
   }
 }
 
-final serviceRequestsProvider = StateNotifierProvider.autoDispose<ServiceRequestsNotifier, ServiceRequestsState>(
-  (ref) => ServiceRequestsNotifier(),
-);
+final serviceRequestsProvider =
+    StateNotifierProvider.autoDispose<
+      ServiceRequestsNotifier,
+      ServiceRequestsState
+    >((ref) => ServiceRequestsNotifier());

@@ -16,7 +16,9 @@ Future<void> showHistorySheet(
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
     builder: (ctx) => _HistorySheetContent(
       request: request,
       staff: staff,
@@ -66,14 +68,18 @@ class _HistorySheetContentState extends State<_HistorySheetContent> {
   @override
   Widget build(BuildContext context) {
     final r = widget.request;
-    final canCancel = r.hasCancelOption && !['cancelled', 'completed'].contains(r.serviceStatus);
+    final canCancel =
+        r.hasCancelOption &&
+        !['cancelled', 'completed'].contains(r.serviceStatus);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.8,
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: ListView(
           controller: scrollController,
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -83,27 +89,41 @@ class _HistorySheetContentState extends State<_HistorySheetContent> {
                 width: 36,
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
             Text(r.serviceName, style: Theme.of(context).textTheme.titleMedium),
             Text(
               '${r.customerName.isNotEmpty ? r.customerName : r.stripeCustomerId} · ${r.customerEmail}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<int>(
-              initialValue: r.assignedUserId,
+              initialValue:
+                  r.assignedUserId == 0 ||
+                      widget.staff.any((s) => s.id == r.assignedUserId)
+                  ? r.assignedUserId
+                  : 0,
               decoration: const InputDecoration(labelText: 'Assignee'),
               items: [
                 const DropdownMenuItem(value: 0, child: Text('Unassigned')),
-                ...widget.staff.map((s) => DropdownMenuItem(value: s.id, child: Text(s.displayName))),
+                ...widget.staff.map(
+                  (s) =>
+                      DropdownMenuItem(value: s.id, child: Text(s.displayName)),
+                ),
               ],
               onChanged: (v) async {
                 if (v == null) return;
                 final err = await widget.onAssign(v);
                 if (err != null && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(err)));
                 }
               },
             ),
@@ -122,36 +142,55 @@ class _HistorySheetContentState extends State<_HistorySheetContent> {
                         : () async {
                             if (_noteCtrl.text.trim().isEmpty) return;
                             setState(() => _saving = true);
-                            final err = await widget.onAddNote(_noteCtrl.text.trim());
+                            final err = await widget.onAddNote(
+                              _noteCtrl.text.trim(),
+                            );
                             if (!context.mounted) return;
                             setState(() {
                               _saving = false;
-                              _future = OpsApi.instance.getServiceRequestHistory(r.id);
+                              _future = OpsApi.instance
+                                  .getServiceRequestHistory(r.id);
                             });
                             if (err == null) {
                               _noteCtrl.clear();
                             } else {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                              ScaffoldMessenger.of(
+                                context,
+                              ).showSnackBar(SnackBar(content: Text(err)));
                             }
                           },
                     child: _saving
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Text('Save Note'),
                   ),
                 ),
                 if (canCancel) ...[
                   const SizedBox(width: 8),
                   OutlinedButton(
-                    style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                    ),
                     onPressed: () async {
                       final confirmed = await showDialog<bool>(
                         context: context,
                         builder: (ctx) => AlertDialog(
                           title: Text('Cancel "${r.serviceName}"?'),
-                          content: const Text('This can be reopened later if needed.'),
+                          content: const Text(
+                            'This can be reopened later if needed.',
+                          ),
                           actions: [
-                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Back')),
-                            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Cancel Request')),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Back'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Cancel Request'),
+                            ),
                           ],
                         ),
                       );
@@ -161,7 +200,9 @@ class _HistorySheetContentState extends State<_HistorySheetContent> {
                           if (err == null) {
                             Navigator.pop(context);
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                            ScaffoldMessenger.of(
+                              context,
+                            ).showSnackBar(SnackBar(content: Text(err)));
                           }
                         }
                       }
@@ -177,27 +218,46 @@ class _HistorySheetContentState extends State<_HistorySheetContent> {
             FutureBuilder<List<ServiceRequestHistoryEntry>>(
               future: _future,
               builder: (context, snap) {
-                if (!snap.hasData) return const Padding(padding: EdgeInsets.all(24), child: AjLoadingIndicator());
+                if (!snap.hasData)
+                  return const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: AjLoadingIndicator(),
+                  );
                 final history = snap.data!;
                 if (history.isEmpty) {
-                  return const Text('No history yet.', style: TextStyle(color: Colors.grey));
+                  return const Text(
+                    'No history yet.',
+                    style: TextStyle(color: Colors.grey),
+                  );
                 }
                 return Column(
                   children: history
-                      .map((h) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(h.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                if (h.note.isNotEmpty) Text(h.note),
-                                Text(
-                                  h.actorEmail.isNotEmpty ? '${h.createdAt} · ${h.actorEmail}' : h.createdAt,
-                                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      .map(
+                        (h) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                h.title,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
                                 ),
-                              ],
-                            ),
-                          ))
+                              ),
+                              if (h.note.isNotEmpty) Text(h.note),
+                              Text(
+                                h.actorEmail.isNotEmpty
+                                    ? '${h.createdAt} · ${h.actorEmail}'
+                                    : h.createdAt,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
                       .toList(),
                 );
               },

@@ -28,8 +28,11 @@ class OpsApi {
 
   Future<List<StaffModel>> getStaff() async {
     final resp = await ApiClient.instance.dio.get(ApiEndpoints.staff);
-    final list = (resp.data as Map<String, dynamic>)['staff'] as List<dynamic>? ?? [];
-    return list.map((e) => StaffModel.fromJson(e as Map<String, dynamic>)).toList();
+    final list =
+        (resp.data as Map<String, dynamic>)['staff'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => StaffModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<(List<OpsServiceRequest>, OpsServiceRequestStats)> getServiceRequests({
@@ -40,9 +43,9 @@ class OpsApi {
     final resp = await ApiClient.instance.dio.get(
       ApiEndpoints.serviceRequests,
       queryParameters: {
-        if (status != null) 'request_status': status,
-        if (source != null) 'sr_source': source,
-        if (search != null && search.isNotEmpty) 's': search,
+        if (status != null) 'status': status,
+        if (source != null) 'source': source,
+        if (search != null && search.isNotEmpty) 'search': search,
       },
     );
     final data = resp.data as Map<String, dynamic>;
@@ -70,18 +73,38 @@ class OpsApi {
       ApiEndpoints.updateServiceRequest(id),
       data: {
         if (status != null) 'status': status,
-        if (serviceStatus != null) 'serviceStatus': serviceStatus,
-        if (adminNotes != null) 'adminNotes': adminNotes,
+        if (serviceStatus != null) 'service_status': serviceStatus,
+        if (adminNotes != null) 'admin_notes': adminNotes,
         if (note != null) 'note': note,
-        if (assignedUserId != null) 'assignedUserId': assignedUserId,
+        if (assignedUserId != null) 'assigned_user_id': assignedUserId,
       },
     );
   }
 
-  Future<List<ServiceRequestHistoryEntry>> getServiceRequestHistory(int id) async {
-    final resp = await ApiClient.instance.dio.get(ApiEndpoints.serviceRequestHistory(id));
-    final list = (resp.data as Map<String, dynamic>)['history'] as List<dynamic>? ?? [];
-    return list.map((e) => ServiceRequestHistoryEntry.fromJson(e as Map<String, dynamic>)).toList();
+  Future<void> notifyServiceRequest(int id) async {
+    await ApiClient.instance.dio.post(ApiEndpoints.serviceRequestNotify(id));
+  }
+
+  Future<void> applyServiceRequestQuickAction(int id, String action) async {
+    await ApiClient.instance.dio.post(
+      ApiEndpoints.serviceRequestQuickAction(id),
+      data: {'action': action},
+    );
+  }
+
+  Future<List<ServiceRequestHistoryEntry>> getServiceRequestHistory(
+    int id,
+  ) async {
+    final resp = await ApiClient.instance.dio.get(
+      ApiEndpoints.serviceRequestHistory(id),
+    );
+    final list =
+        (resp.data as Map<String, dynamic>)['history'] as List<dynamic>? ?? [];
+    return list
+        .map(
+          (e) => ServiceRequestHistoryEntry.fromJson(e as Map<String, dynamic>),
+        )
+        .toList();
   }
 
   Future<void> bulkUpdateServiceRequests(
@@ -109,14 +132,22 @@ class OpsApi {
         'per_page': '200',
       },
     );
-    final list = (resp.data as Map<String, dynamic>)['sessions'] as List<dynamic>? ?? [];
-    return list.map((e) => ChatSession.fromJson(e as Map<String, dynamic>)).toList();
+    final list =
+        (resp.data as Map<String, dynamic>)['sessions'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => ChatSession.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<List<ChatMessage>> getChatSessionMessages(int id) async {
-    final resp = await ApiClient.instance.dio.get(ApiEndpoints.chatSessionMessages(id));
-    final list = (resp.data as Map<String, dynamic>)['messages'] as List<dynamic>? ?? [];
-    return list.map((e) => ChatMessage.fromJson(e as Map<String, dynamic>)).toList();
+    final resp = await ApiClient.instance.dio.get(
+      ApiEndpoints.chatSessionMessages(id),
+    );
+    final list =
+        (resp.data as Map<String, dynamic>)['messages'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => ChatMessage.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<ChatMessage> replyToChatSession(int id, String body) async {
@@ -124,22 +155,36 @@ class OpsApi {
       ApiEndpoints.chatSessionReply(id),
       data: {'body': body},
     );
-    return ChatMessage.fromJson((resp.data as Map<String, dynamic>)['message'] as Map<String, dynamic>);
+    return ChatMessage.fromJson(
+      (resp.data as Map<String, dynamic>)['message'] as Map<String, dynamic>,
+    );
   }
 
   Future<ChatSession> claimChatSession(int id) async {
-    final resp = await ApiClient.instance.dio.post(ApiEndpoints.chatSessionClaim(id));
-    return ChatSession.fromJson((resp.data as Map<String, dynamic>)['session'] as Map<String, dynamic>);
+    final resp = await ApiClient.instance.dio.post(
+      ApiEndpoints.chatSessionClaim(id),
+    );
+    return ChatSession.fromJson(
+      (resp.data as Map<String, dynamic>)['session'] as Map<String, dynamic>,
+    );
   }
 
   Future<ChatSession> unclaimChatSession(int id) async {
-    final resp = await ApiClient.instance.dio.post(ApiEndpoints.chatSessionUnclaim(id));
-    return ChatSession.fromJson((resp.data as Map<String, dynamic>)['session'] as Map<String, dynamic>);
+    final resp = await ApiClient.instance.dio.post(
+      ApiEndpoints.chatSessionUnclaim(id),
+    );
+    return ChatSession.fromJson(
+      (resp.data as Map<String, dynamic>)['session'] as Map<String, dynamic>,
+    );
   }
 
   Future<ChatSession> closeChatSession(int id) async {
-    final resp = await ApiClient.instance.dio.post(ApiEndpoints.chatSessionClose(id));
-    return ChatSession.fromJson((resp.data as Map<String, dynamic>)['session'] as Map<String, dynamic>);
+    final resp = await ApiClient.instance.dio.post(
+      ApiEndpoints.chatSessionClose(id),
+    );
+    return ChatSession.fromJson(
+      (resp.data as Map<String, dynamic>)['session'] as Map<String, dynamic>,
+    );
   }
 
   // ── UPOS Temps ───────────────────────────────────────────────────────────
@@ -150,19 +195,25 @@ class OpsApi {
     final devices = (data['devices'] as List<dynamic>? ?? [])
         .map((e) => UposDevice.fromJson(e as Map<String, dynamic>))
         .toList();
-    final settings = UposSettingsStatus.fromJson(data['settings'] as Map<String, dynamic>? ?? {});
+    final settings = UposSettingsStatus.fromJson(
+      data['settings'] as Map<String, dynamic>? ?? {},
+    );
     return (devices, settings);
   }
 
   /// deviceId null = bulk (every configured device) — AJCore exposes these as
   /// separate route sets, not one endpoint with an optional deviceId.
   Future<void> setUposSystemMode(String mode, {String? deviceId}) async {
-    final path = deviceId == null ? ApiEndpoints.uposTempsSystemBulk : ApiEndpoints.uposTempsDeviceSystem(deviceId);
+    final path = deviceId == null
+        ? ApiEndpoints.uposTempsSystemBulk
+        : ApiEndpoints.uposTempsDeviceSystem(deviceId);
     await ApiClient.instance.dio.post(path, data: {'mode': mode});
   }
 
   Future<void> setUposFanMode(String mode, {String? deviceId}) async {
-    final path = deviceId == null ? ApiEndpoints.uposTempsFanBulk : ApiEndpoints.uposTempsDeviceFan(deviceId);
+    final path = deviceId == null
+        ? ApiEndpoints.uposTempsFanBulk
+        : ApiEndpoints.uposTempsDeviceFan(deviceId);
     await ApiClient.instance.dio.post(path, data: {'mode': mode});
   }
 
@@ -178,7 +229,8 @@ class OpsApi {
         'per_page': '500',
       },
     );
-    final list = (resp.data as Map<String, dynamic>)['leads'] as List<dynamic>? ?? [];
+    final list =
+        (resp.data as Map<String, dynamic>)['leads'] as List<dynamic>? ?? [];
     return list.map((e) => Lead.fromJson(e as Map<String, dynamic>)).toList();
   }
 
@@ -188,7 +240,10 @@ class OpsApi {
   }
 
   Future<void> addLeadNote(int id, String note) async {
-    await ApiClient.instance.dio.post(ApiEndpoints.leadNotes(id), data: {'note': note});
+    await ApiClient.instance.dio.post(
+      ApiEndpoints.leadNotes(id),
+      data: {'note': note},
+    );
   }
 
   /// Advances (or reverts) the pipeline stage — the same endpoint AJOps' web
@@ -221,23 +276,35 @@ class OpsApi {
         'per_page': '500',
       },
     );
-    final list = (resp.data as Map<String, dynamic>)['customers'] as List<dynamic>? ?? [];
-    return list.map((e) => Customer.fromJson(e as Map<String, dynamic>)).toList();
+    final list =
+        (resp.data as Map<String, dynamic>)['customers'] as List<dynamic>? ??
+        [];
+    return list
+        .map((e) => Customer.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<CustomerDetail> getCustomerDetail(String stripeCustomerId) async {
-    final resp = await ApiClient.instance.dio.get(ApiEndpoints.customer(stripeCustomerId));
+    final resp = await ApiClient.instance.dio.get(
+      ApiEndpoints.customer(stripeCustomerId),
+    );
     return CustomerDetail.fromJson(resp.data as Map<String, dynamic>);
   }
 
   /// action: enable | disable | archive | restore | reset_password | send_welcome
   Future<void> runCustomerAction(String stripeCustomerId, String action) async {
-    await ApiClient.instance.dio.post(ApiEndpoints.customerAction(stripeCustomerId), data: {'action': action});
+    await ApiClient.instance.dio.post(
+      ApiEndpoints.customerAction(stripeCustomerId),
+      data: {'action': action},
+    );
   }
 
   // ── Mail ─────────────────────────────────────────────────────────────────
 
-  Future<(List<MailItem>, Map<String, int>)> getMailItems({String? search, String? status}) async {
+  Future<(List<MailItem>, Map<String, int>)> getMailItems({
+    String? search,
+    String? status,
+  }) async {
     final resp = await ApiClient.instance.dio.get(
       ApiEndpoints.mail,
       queryParameters: {
@@ -247,9 +314,13 @@ class OpsApi {
       },
     );
     final data = resp.data as Map<String, dynamic>;
-    final items = (data['mail_items'] as List<dynamic>? ?? []).map((e) => MailItem.fromJson(e as Map<String, dynamic>)).toList();
+    final items = (data['mail_items'] as List<dynamic>? ?? [])
+        .map((e) => MailItem.fromJson(e as Map<String, dynamic>))
+        .toList();
     final statsJson = data['stats'] as Map<String, dynamic>? ?? {};
-    final stats = statsJson.map((k, v) => MapEntry(k, int.tryParse(v?.toString() ?? '0') ?? 0));
+    final stats = statsJson.map(
+      (k, v) => MapEntry(k, int.tryParse(v?.toString() ?? '0') ?? 0),
+    );
     return (items, stats);
   }
 
@@ -268,20 +339,31 @@ class OpsApi {
     final form = FormData.fromMap({
       'recipient_name': recipientName,
       'mail_type': mailType,
-      if (senderName != null && senderName.isNotEmpty) 'sender_name': senderName,
+      if (senderName != null && senderName.isNotEmpty)
+        'sender_name': senderName,
       if (carrier != null && carrier.isNotEmpty) 'carrier': carrier,
-      if (trackingNumber != null && trackingNumber.isNotEmpty) 'tracking_number': trackingNumber,
-      if (description != null && description.isNotEmpty) 'description': description,
-      if (stripeCustomerId != null && stripeCustomerId.isNotEmpty) 'stripe_customer_id': stripeCustomerId,
-      if (scanFilePath != null) 'scan': await MultipartFile.fromFile(scanFilePath),
+      if (trackingNumber != null && trackingNumber.isNotEmpty)
+        'tracking_number': trackingNumber,
+      if (description != null && description.isNotEmpty)
+        'description': description,
+      if (stripeCustomerId != null && stripeCustomerId.isNotEmpty)
+        'stripe_customer_id': stripeCustomerId,
+      if (scanFilePath != null)
+        'scan': await MultipartFile.fromFile(scanFilePath),
     });
-    final resp = await ApiClient.instance.dio.post(ApiEndpoints.mail, data: form);
+    final resp = await ApiClient.instance.dio.post(
+      ApiEndpoints.mail,
+      data: form,
+    );
     return MailItem.fromJson(resp.data as Map<String, dynamic>);
   }
 
   // ── Files ────────────────────────────────────────────────────────────────
 
-  Future<List<CustomerFile>> getFiles({String? search, String? category}) async {
+  Future<List<CustomerFile>> getFiles({
+    String? search,
+    String? category,
+  }) async {
     final resp = await ApiClient.instance.dio.get(
       ApiEndpoints.files,
       queryParameters: {
@@ -290,8 +372,11 @@ class OpsApi {
         'per_page': '200',
       },
     );
-    final list = (resp.data as Map<String, dynamic>)['files'] as List<dynamic>? ?? [];
-    return list.map((e) => CustomerFile.fromJson(e as Map<String, dynamic>)).toList();
+    final list =
+        (resp.data as Map<String, dynamic>)['files'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => CustomerFile.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   /// Multipart create — "file" is the attachment field, everything else is a
@@ -308,16 +393,24 @@ class OpsApi {
       'file': await MultipartFile.fromFile(filePath),
       if (title != null && title.isNotEmpty) 'title': title,
       if (category != null && category.isNotEmpty) 'category': category,
-      if (description != null && description.isNotEmpty) 'description': description,
-      if (assignedEmails != null && assignedEmails.isNotEmpty) 'assigned_emails': assignedEmails,
+      if (description != null && description.isNotEmpty)
+        'description': description,
+      if (assignedEmails != null && assignedEmails.isNotEmpty)
+        'assigned_emails': assignedEmails,
     });
-    final resp = await ApiClient.instance.dio.post(ApiEndpoints.files, data: form);
+    final resp = await ApiClient.instance.dio.post(
+      ApiEndpoints.files,
+      data: form,
+    );
     return CustomerFile.fromJson(resp.data as Map<String, dynamic>);
   }
 
   // ── Gmail Intake ─────────────────────────────────────────────────────────
 
-  Future<(List<GmailIntakeItem>, Map<String, int>)> getGmailIntakeItems({String? search, String? status}) async {
+  Future<(List<GmailIntakeItem>, Map<String, int>)> getGmailIntakeItems({
+    String? search,
+    String? status,
+  }) async {
     final resp = await ApiClient.instance.dio.get(
       ApiEndpoints.gmailIntake,
       queryParameters: {
@@ -327,18 +420,27 @@ class OpsApi {
       },
     );
     final data = resp.data as Map<String, dynamic>;
-    final items = (data['items'] as List<dynamic>? ?? []).map((e) => GmailIntakeItem.fromJson(e as Map<String, dynamic>)).toList();
+    final items = (data['items'] as List<dynamic>? ?? [])
+        .map((e) => GmailIntakeItem.fromJson(e as Map<String, dynamic>))
+        .toList();
     final statsJson = data['stats'] as Map<String, dynamic>? ?? {};
-    final stats = statsJson.map((k, v) => MapEntry(k, int.tryParse(v?.toString() ?? '0') ?? 0));
+    final stats = statsJson.map(
+      (k, v) => MapEntry(k, int.tryParse(v?.toString() ?? '0') ?? 0),
+    );
     return (items, stats);
   }
 
   Future<GmailIntakePreview> getGmailIntakePreview(int id) async {
-    final resp = await ApiClient.instance.dio.get(ApiEndpoints.gmailIntakePreview(id));
+    final resp = await ApiClient.instance.dio.get(
+      ApiEndpoints.gmailIntakePreview(id),
+    );
     return GmailIntakePreview.fromJson(resp.data as Map<String, dynamic>);
   }
 
-  Future<void> resolveGmailIntakeItem(int id, {String? stripeCustomerId}) async {
+  Future<void> resolveGmailIntakeItem(
+    int id, {
+    String? stripeCustomerId,
+  }) async {
     await ApiClient.instance.dio.post(
       '${ApiEndpoints.gmailIntakeItem(id)}/resolve',
       data: {'stripe_customer_id': stripeCustomerId ?? ''},
@@ -376,13 +478,19 @@ class OpsApi {
   /// jobs empty/omitted = full sync of every configured job (Stripe products,
   /// customers, subscriptions, invoices).
   Future<String> triggerSync({List<String> jobs = const []}) async {
-    final resp = await ApiClient.instance.dio.post(ApiEndpoints.sync, data: {'jobs': jobs});
+    final resp = await ApiClient.instance.dio.post(
+      ApiEndpoints.sync,
+      data: {'jobs': jobs},
+    );
     return (resp.data as Map<String, dynamic>)['run_key'] as String? ?? '';
   }
 
   /// Returns done/started/records_synced/errors for the given run.
   Future<Map<String, dynamic>> getSyncRunStatus(String runKey) async {
-    final resp = await ApiClient.instance.dio.get(ApiEndpoints.syncRunStatus, queryParameters: {'run_key': runKey});
+    final resp = await ApiClient.instance.dio.get(
+      ApiEndpoints.syncRunStatus,
+      queryParameters: {'run_key': runKey},
+    );
     return resp.data as Map<String, dynamic>;
   }
 }

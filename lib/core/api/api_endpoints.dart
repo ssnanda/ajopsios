@@ -22,13 +22,18 @@ class ApiEndpoints {
   // ── Service Requests ────────────────────────────────────────────────────
   static const String serviceRequests = '/ops/service-requests';
   static String updateServiceRequest(int id) => '/ops/service-requests/$id';
-  static String serviceRequestQuickAction(int id) => '/ops/service-requests/$id/quick-action';
-  static String serviceRequestHistory(int id) => '/ops/service-requests/$id/history';
+  static String serviceRequestQuickAction(int id) =>
+      '/ops/service-requests/$id/quick-action';
+  static String serviceRequestNotify(int id) =>
+      '/ops/service-requests/$id/notify';
+  static String serviceRequestHistory(int id) =>
+      '/ops/service-requests/$id/history';
   static const String serviceRequestsBulk = '/ops/service-requests/bulk';
 
   // ── Live Chat ───────────────────────────────────────────────────────────
   static const String chatSessions = '/ops/chat/sessions';
-  static String chatSessionMessages(int id) => '/ops/chat/sessions/$id/messages';
+  static String chatSessionMessages(int id) =>
+      '/ops/chat/sessions/$id/messages';
   static String chatSessionReply(int id) => '/ops/chat/sessions/$id/reply';
   static String chatSessionClaim(int id) => '/ops/chat/sessions/$id/claim';
   static String chatSessionUnclaim(int id) => '/ops/chat/sessions/$id/unclaim';
@@ -40,8 +45,10 @@ class ApiEndpoints {
   static const String uposTemps = '/ops/upos-temps';
   static const String uposTempsSystemBulk = '/ops/upos-temps/system';
   static const String uposTempsFanBulk = '/ops/upos-temps/fan';
-  static String uposTempsDeviceSystem(String deviceId) => '/ops/upos-temps/devices/$deviceId/system';
-  static String uposTempsDeviceFan(String deviceId) => '/ops/upos-temps/devices/$deviceId/fan';
+  static String uposTempsDeviceSystem(String deviceId) =>
+      '/ops/upos-temps/devices/$deviceId/system';
+  static String uposTempsDeviceFan(String deviceId) =>
+      '/ops/upos-temps/devices/$deviceId/fan';
 
   // ── Leads ────────────────────────────────────────────────────────────────
   static const String leads = '/ops/leads';
@@ -51,8 +58,10 @@ class ApiEndpoints {
 
   // ── Customers ────────────────────────────────────────────────────────────
   static const String customers = '/ops/customers';
-  static String customer(String stripeCustomerId) => '/ops/customers/$stripeCustomerId';
-  static String customerAction(String stripeCustomerId) => '/ops/customers/$stripeCustomerId/action';
+  static String customer(String stripeCustomerId) =>
+      '/ops/customers/$stripeCustomerId';
+  static String customerAction(String stripeCustomerId) =>
+      '/ops/customers/$stripeCustomerId/action';
 
   // ── Mail ─────────────────────────────────────────────────────────────────
   static const String mail = '/ops/mail';

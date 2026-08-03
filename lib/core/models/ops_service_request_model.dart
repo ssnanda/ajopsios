@@ -3,6 +3,7 @@
 /// clients read the same endpoint.
 class OpsServiceRequest {
   final int id;
+  final String requestNumber;
   final String stripeCustomerId;
   final String serviceName;
   final String requestType;
@@ -22,11 +23,13 @@ class OpsServiceRequest {
   final int assignedUserId;
   final String assignedUserName;
   final String assignedUserEmail;
-  final Map<String, String> serviceStatusOptions; // ordered key -> label, drives the stepper
+  final Map<String, String>
+  serviceStatusOptions; // ordered key -> label, drives the stepper
   final Map<String, String> quickActions; // action key -> button label
 
   const OpsServiceRequest({
     required this.id,
+    required this.requestNumber,
     required this.stripeCustomerId,
     required this.serviceName,
     required this.requestType,
@@ -60,6 +63,7 @@ class OpsServiceRequest {
 
     return OpsServiceRequest(
       id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      requestNumber: json['service_request_number'] as String? ?? '',
       stripeCustomerId: json['stripe_customer_id'] as String? ?? '',
       serviceName: json['service_name'] as String? ?? '',
       requestType: json['request_type'] as String? ?? '',
@@ -76,7 +80,8 @@ class OpsServiceRequest {
       customerName: json['customer_name'] as String? ?? '',
       customerEmail: json['customer_email'] as String? ?? '',
       needsAction: json['needs_action'] == true,
-      assignedUserId: int.tryParse(json['assigned_user_id']?.toString() ?? '0') ?? 0,
+      assignedUserId:
+          int.tryParse(json['assigned_user_id']?.toString() ?? '0') ?? 0,
       assignedUserName: json['assigned_user_name'] as String? ?? '',
       assignedUserEmail: json['assigned_user_email'] as String? ?? '',
       serviceStatusOptions: asStringMap(json['service_status_options']),
@@ -118,5 +123,11 @@ class OpsServiceRequestStats {
     );
   }
 
-  static const empty = OpsServiceRequestStats(total: 0, needsAction: 0, active: 0, completed: 0, shown: 0);
+  static const empty = OpsServiceRequestStats(
+    total: 0,
+    needsAction: 0,
+    active: 0,
+    completed: 0,
+    shown: 0,
+  );
 }

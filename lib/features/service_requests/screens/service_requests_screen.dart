@@ -12,7 +12,8 @@ class ServiceRequestsScreen extends ConsumerStatefulWidget {
   const ServiceRequestsScreen({super.key});
 
   @override
-  ConsumerState<ServiceRequestsScreen> createState() => _ServiceRequestsScreenState();
+  ConsumerState<ServiceRequestsScreen> createState() =>
+      _ServiceRequestsScreenState();
 }
 
 class _ServiceRequestsScreenState extends ConsumerState<ServiceRequestsScreen> {
@@ -67,44 +68,123 @@ class _ServiceRequestsScreenState extends ConsumerState<ServiceRequestsScreen> {
               onSubmitted: notifier.setSearch,
             ),
           ),
-          _StatRow(stats: state.stats, view: state.view, onSelect: notifier.setView),
+          _StatRow(
+            stats: state.stats,
+            view: state.view,
+            onSelect: notifier.setView,
+          ),
           if (state.selectedIds.isNotEmpty)
             _BulkBar(state: state, notifier: notifier),
           Expanded(
             child: state.loading
                 ? const AjLoadingIndicator()
                 : state.error != null
-                    ? ErrorState(message: state.error!, onRetry: notifier.load)
-                    : state.requests.isEmpty
-                        ? const EmptyState(
-                            icon: Icons.inbox_outlined,
-                            title: 'No service requests',
-                            subtitle: 'Nothing matches the current filters.',
-                          )
-                        : RefreshIndicator(
-                            onRefresh: notifier.load,
-                            child: ListView.separated(
-                              padding: const EdgeInsets.all(12),
-                              itemCount: state.requests.length,
-                              separatorBuilder: (_, _) => const SizedBox(height: 10),
-                              itemBuilder: (context, i) {
-                                final r = state.requests[i];
-                                return _RequestCard(
-                                  request: r,
-                                  selected: state.selectedIds.contains(r.id),
-                                  busy: state.busyIds.contains(r.id),
-                                  onToggleSelected: () => notifier.toggleSelected(r.id),
-                                  onStatusChange: (status) async {
-                                    final err = await notifier.updateServiceStatus(r.id, status);
-                                    if (err != null && context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-                                    }
-                                  },
-                                  onTapHistory: () => _openHistory(r),
-                                );
-                              },
-                            ),
-                          ),
+                ? ErrorState(message: state.error!, onRetry: notifier.load)
+                : state.requests.isEmpty
+                ? const EmptyState(
+                    icon: Icons.inbox_outlined,
+                    title: 'No service requests',
+                    subtitle: 'Nothing matches the current filters.',
+                  )
+                : RefreshIndicator(
+                    onRefresh: notifier.load,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: state.requests.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, i) {
+                        final r = state.requests[i];
+                        return _RequestCard(
+                          request: r,
+                          selected: state.selectedIds.contains(r.id),
+                          busy: state.busyIds.contains(r.id),
+                          onToggleSelected: () => notifier.toggleSelected(r.id),
+                          onStatusChange: (status) async {
+                            final err = await notifier.updateServiceStatus(
+                              r.id,
+                              status,
+                            );
+                            if (err != null && context.mounted) {
+                              ScaffoldMessenger.of(
+                                context,
+                              ).showSnackBar(SnackBar(content: Text(err)));
+                            }
+                          },
+                          onNotify: () async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Notify customer?'),
+                                content: Text(
+                                  'Email ${r.customerEmail.isNotEmpty ? r.customerEmail : 'the customer'} about the current SVC Status?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text('Send Email'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirmed != true) return;
+                            final err = await notifier.notifyCustomer(r.id);
+                            if (context.mounted)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    err ?? 'Customer notification sent.',
+                                  ),
+                                ),
+                              );
+                          },
+                          onQuickAction: (action) async {
+                            if (action == 'delete' || action == 'cancel') {
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: Text(
+                                    action == 'delete'
+                                        ? 'Delete request?'
+                                        : 'Cancel request?',
+                                  ),
+                                  content: const Text(
+                                    'This action changes the service request immediately.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, false),
+                                      child: const Text('Back'),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      child: const Text('Continue'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirmed != true) return;
+                            }
+                            final err = await notifier.applyQuickAction(
+                              r.id,
+                              action,
+                            );
+                            if (context.mounted)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(err ?? 'Action applied.'),
+                                ),
+                              );
+                          },
+                          onTapHistory: () => _openHistory(r),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -117,7 +197,11 @@ class _StatRow extends StatelessWidget {
   final ServiceRequestsView view;
   final void Function(ServiceRequestsView) onSelect;
 
-  const _StatRow({required this.stats, required this.view, required this.onSelect});
+  const _StatRow({
+    required this.stats,
+    required this.view,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -143,10 +227,14 @@ class _StatRow extends StatelessWidget {
               width: 110,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: selected ? Theme.of(context).colorScheme.primaryContainer : Colors.white,
+                color: selected
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: selected ? Theme.of(context).colorScheme.primary : Colors.grey.shade300,
+                  color: selected
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.grey.shade300,
                   width: selected ? 1.5 : 1,
                 ),
               ),
@@ -154,8 +242,21 @@ class _StatRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('$count', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-                  Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.grey)),
+                  Text(
+                    '$count',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -182,25 +283,74 @@ class _BulkBar extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Text('${state.selectedIds.length} selected', style: const TextStyle(fontWeight: FontWeight.w700)),
+          Text(
+            '${state.selectedIds.length} selected',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
           const Spacer(),
           PopupMenuButton<String>(
             child: const Padding(
               padding: EdgeInsets.symmetric(horizontal: 8),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [Text('Assign to'), Icon(Icons.arrow_drop_down)]),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [Text('SVC Status'), Icon(Icons.arrow_drop_down)],
+              ),
+            ),
+            itemBuilder: (ctx) {
+              final options = <String, String>{};
+              for (final request in state.requests.where(
+                (r) => state.selectedIds.contains(r.id),
+              )) {
+                options.addAll(request.serviceStatusOptions);
+              }
+              options.remove('cancelled');
+              return options.entries
+                  .map(
+                    (entry) => PopupMenuItem(
+                      value: entry.key,
+                      child: Text(entry.value),
+                    ),
+                  )
+                  .toList();
+            },
+            onSelected: (value) async {
+              final err = await notifier.bulkApply(serviceStatus: value);
+              if (err != null && context.mounted)
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(err)));
+            },
+          ),
+          PopupMenuButton<String>(
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [Text('Assign to'), Icon(Icons.arrow_drop_down)],
+              ),
             ),
             itemBuilder: (ctx) => [
               const PopupMenuItem(value: '0', child: Text('Unassigned')),
-              ...state.staff.map((s) => PopupMenuItem(value: '${s.id}', child: Text(s.displayName))),
+              ...state.staff.map(
+                (s) =>
+                    PopupMenuItem(value: '${s.id}', child: Text(s.displayName)),
+              ),
             ],
             onSelected: (v) async {
-              final err = await notifier.bulkApply(assignedUserId: int.parse(v));
+              final err = await notifier.bulkApply(
+                assignedUserId: int.parse(v),
+              );
               if (err != null && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(err)));
               }
             },
           ),
-          TextButton(onPressed: notifier.clearSelection, child: const Text('Clear')),
+          TextButton(
+            onPressed: notifier.clearSelection,
+            child: const Text('Clear'),
+          ),
         ],
       ),
     );
@@ -213,6 +363,8 @@ class _RequestCard extends StatelessWidget {
   final bool busy;
   final VoidCallback onToggleSelected;
   final void Function(String status) onStatusChange;
+  final VoidCallback onNotify;
+  final void Function(String action) onQuickAction;
   final VoidCallback onTapHistory;
 
   const _RequestCard({
@@ -221,6 +373,8 @@ class _RequestCard extends StatelessWidget {
     required this.busy,
     required this.onToggleSelected,
     required this.onStatusChange,
+    required this.onNotify,
+    required this.onQuickAction,
     required this.onTapHistory,
   });
 
@@ -231,7 +385,11 @@ class _RequestCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: selected ? Theme.of(context).colorScheme.primary : Colors.grey.shade200),
+        side: BorderSide(
+          color: selected
+              ? Theme.of(context).colorScheme.primary
+              : Colors.grey.shade200,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -246,24 +404,74 @@ class _RequestCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(r.serviceName, style: const TextStyle(fontWeight: FontWeight.w700)),
                       Text(
-                        r.customerName.isNotEmpty ? r.customerName : r.stripeCustomerId,
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                        request.requestNumber.isNotEmpty
+                            ? request.requestNumber
+                            : '#${request.id}',
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      Text(
+                        r.serviceName,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        r.customerName.isNotEmpty
+                            ? r.customerName
+                            : r.stripeCustomerId,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                IconButton(icon: const Icon(Icons.more_vert_rounded), onPressed: onTapHistory),
+                IconButton(
+                  tooltip: 'Email current status',
+                  icon: const Icon(Icons.notifications_outlined),
+                  onPressed: busy ? null : onNotify,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.more_vert_rounded),
+                  onPressed: onTapHistory,
+                ),
               ],
             ),
             const SizedBox(height: 4),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.only(left: 40),
-              child: ServiceStatusStepper(request: r, busy: busy, onChange: onStatusChange),
+              child: ServiceStatusStepper(
+                request: r,
+                busy: busy,
+                onChange: onStatusChange,
+              ),
             ),
             const SizedBox(height: 8),
+            if (r.quickActions.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 40, bottom: 8),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: r.quickActions.entries
+                      .map(
+                        (entry) => OutlinedButton.icon(
+                          onPressed: busy
+                              ? null
+                              : () => onQuickAction(entry.key),
+                          icon: const Icon(Icons.bolt_rounded, size: 16),
+                          label: Text(entry.value),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.only(left: 40),
               child: Row(
@@ -272,7 +480,9 @@ class _RequestCard extends StatelessWidget {
                   const Spacer(),
                   Text(
                     r.amount > 0
-                        ? (r.currency.toLowerCase() == 'usd' ? '\$${r.amount.toStringAsFixed(2)}' : '${r.currency.toUpperCase()} ${r.amount.toStringAsFixed(2)}')
+                        ? (r.currency.toLowerCase() == 'usd'
+                              ? '\$${r.amount.toStringAsFixed(2)}'
+                              : '${r.currency.toUpperCase()} ${r.amount.toStringAsFixed(2)}')
                         : '—',
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
@@ -297,10 +507,17 @@ class _PayStatusBadge extends StatelessWidget {
     final color = isGood ? Colors.green : (isBad ? Colors.red : Colors.orange);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Text(
         status.replaceAll('_', ' '),
-        style: TextStyle(color: color.withValues(alpha: 0.9), fontWeight: FontWeight.w700, fontSize: 11),
+        style: TextStyle(
+          color: color.withValues(alpha: 0.9),
+          fontWeight: FontWeight.w700,
+          fontSize: 11,
+        ),
       ),
     );
   }
