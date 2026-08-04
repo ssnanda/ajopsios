@@ -3,15 +3,19 @@ import '../../../core/api/ops_api.dart';
 import '../../../core/models/lead_model.dart';
 import '../../../core/utils/error_utils.dart';
 
-enum LeadsView { active, won, lost, all }
+// Naming matches AJOps web and AJCore's WP-admin queue labels exactly: Active / Lost / Customer /
+// All — kept in sync deliberately so support conversations about "which queue" don't need
+// translating between apps.
+enum LeadsView { active, customer, lost, all }
 
-extension on LeadsView {
+extension LeadsViewMatcher on LeadsView {
   bool matches(Lead lead) => switch (this) {
         // A merged/duplicate lead keeps its old pipeline stage (e.g. "engaged") since merging
         // only sets status='duplicate' + merged_into_lead_id, not lead_status — so it must be
-        // excluded here explicitly, same as AJOps web's "inbox" view does.
+        // excluded here explicitly, same as AJOps web's "active" view does.
         LeadsView.active => !lead.isWon && !lead.isLost && !lead.isDuplicate,
-        LeadsView.won => lead.isWon,
+        // Bundles merged duplicates in with actual customers, same as AJOps web's "customer" view.
+        LeadsView.customer => lead.isWon || lead.isDuplicate,
         LeadsView.lost => lead.isLost,
         LeadsView.all => true,
       };
