@@ -116,7 +116,9 @@ class UposTempsNotifier extends StateNotifier<UposTempsState> {
   Future<void> load() async {
     state = state.copyWith(loading: true, clearError: true);
     try {
-      final (devices, settings) = await _api.getUposTemps();
+      final (loadedDevices, settings) = await _api.getUposTemps();
+      final devices = [...loadedDevices]
+        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       // First-ever load (no saved preference yet, prefs already checked in _loadPrefs): default
       // to showing everything — all devices, both/all locations — rather than an empty grid.
       final selectedIds = state.selectedIds ?? devices.map((d) => d.id).toSet();

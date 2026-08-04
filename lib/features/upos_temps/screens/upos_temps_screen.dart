@@ -99,20 +99,15 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
                     onChanged: (value) => setState(() => _searchQuery = value),
                   ),
                   const SizedBox(height: 10),
-                  if (state.locationIds.length > 1) ...[
-                    _LocationsCard(
-                      locationIds: state.locationIds,
-                      locationNames: state.locationNames,
-                      selectedLocationIds: state.selectedLocationIds ?? {},
-                      onToggleLocation: notifier.toggleLocationSelected,
-                    ),
-                    const SizedBox(height: 10),
-                  ],
                   _BulkControlCard(
                     busy:
                         state.busyDeviceKeys.contains('-system') ||
                         state.busyDeviceKeys.contains('-fan'),
                     deviceIds: visible.map((device) => device.id).toList(),
+                    locationIds: state.locationIds,
+                    locationNames: state.locationNames,
+                    selectedLocationIds: state.selectedLocationIds ?? {},
+                    onToggleLocation: notifier.toggleLocationSelected,
                     notifier: notifier,
                     runBulk: _runBulk,
                   ),
@@ -188,12 +183,20 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
 class _BulkControlCard extends StatelessWidget {
   final bool busy;
   final List<String> deviceIds;
+  final List<String> locationIds;
+  final Map<String, String> locationNames;
+  final Set<String> selectedLocationIds;
+  final void Function(String) onToggleLocation;
   final UposTempsNotifier notifier;
   final Future<void> Function(Future<String?> Function()) runBulk;
 
   const _BulkControlCard({
     required this.busy,
     required this.deviceIds,
+    required this.locationIds,
+    required this.locationNames,
+    required this.selectedLocationIds,
+    required this.onToggleLocation,
     required this.notifier,
     required this.runBulk,
   });
@@ -210,19 +213,27 @@ class _BulkControlCard extends StatelessWidget {
         side: BorderSide(color: Colors.grey.shade200),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'All thermostats',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-            Text(
-              'Send one system or fan mode to the ${deviceIds.length} thermostats shown for the selected location.',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 10),
+            if (locationIds.length > 1) ...[
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: locationIds
+                    .map(
+                      (id) => FilterChip(
+                        visualDensity: VisualDensity.compact,
+                        label: Text(locationNames[id] ?? id),
+                        selected: selectedLocationIds.contains(id),
+                        onSelected: (_) => onToggleLocation(id),
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: 8),
+            ],
             Text(
               'SYSTEM',
               style: TextStyle(
@@ -239,7 +250,7 @@ class _BulkControlCard extends StatelessWidget {
                 () => notifier.setSystemMode(m, deviceIds: deviceIds),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               'FAN',
               style: TextStyle(
@@ -254,64 +265,6 @@ class _BulkControlCard extends StatelessWidget {
               disabled: busy || deviceIds.isEmpty,
               onSelect: (m) =>
                   runBulk(() => notifier.setFanMode(m, deviceIds: deviceIds)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LocationsCard extends StatelessWidget {
-  final List<String> locationIds;
-  final Map<String, String> locationNames;
-  final Set<String> selectedLocationIds;
-  final void Function(String) onToggleLocation;
-
-  const _LocationsCard({
-    required this.locationIds,
-    required this.locationNames,
-    required this.selectedLocationIds,
-    required this.onToggleLocation,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Locations',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-            Text(
-              'Check the locations whose thermostats you want to show and control.',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 4),
-            ...locationIds.asMap().entries.map(
-              (entry) => CheckboxListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-                value: selectedLocationIds.contains(entry.value),
-                onChanged: (_) => onToggleLocation(entry.value),
-                title: Text(
-                  locationNames[entry.value] ?? 'Location ${entry.key + 1}',
-                ),
-                subtitle: Text(
-                  entry.value,
-                  style: const TextStyle(fontSize: 11),
-                ),
-              ),
             ),
           ],
         ),
