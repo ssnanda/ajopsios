@@ -51,11 +51,25 @@ class UposTempsState {
   }
 
   /// Unique location IDs across the fetched devices, in a stable (sorted) order.
-  List<String> get locationIds => devices.map((d) => d.locationId).toSet().toList()..sort();
+  List<String> get locationIds =>
+      devices.map((d) => d.locationId).toSet().toList()..sort();
+
+  Map<String, String> get locationNames => {
+    for (final device in devices)
+      device.locationId: device.locationName.isNotEmpty
+          ? device.locationName
+          : device.locationId,
+  };
 
   List<UposDevice> get visibleDevices {
     if (selectedIds == null || selectedLocationIds == null) return const [];
-    return devices.where((d) => selectedIds!.contains(d.id) && selectedLocationIds!.contains(d.locationId)).toList();
+    return devices
+        .where(
+          (d) =>
+              selectedIds!.contains(d.id) &&
+              selectedLocationIds!.contains(d.locationId),
+        )
+        .toList();
   }
 }
 
@@ -72,7 +86,11 @@ class UposTempsNotifier extends StateNotifier<UposTempsState> {
     final storedIds = prefs.getStringList(_selectedIdsPrefsKey);
     final storedLocationIds = prefs.getStringList(_selectedLocationIdsPrefsKey);
     state = state.copyWith(
-      selectedIds: storedIds != null ? storedIds.toSet() : (state.devices.isNotEmpty ? state.devices.map((d) => d.id).toSet() : null),
+      selectedIds: storedIds != null
+          ? storedIds.toSet()
+          : (state.devices.isNotEmpty
+                ? state.devices.map((d) => d.id).toSet()
+                : null),
       selectedLocationIds: storedLocationIds != null
           ? storedLocationIds.toSet()
           : (state.devices.isNotEmpty ? state.locationIds.toSet() : null),
@@ -81,12 +99,18 @@ class UposTempsNotifier extends StateNotifier<UposTempsState> {
 
   Future<void> _persistSelectedIds() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_selectedIdsPrefsKey, state.selectedIds?.toList() ?? []);
+    await prefs.setStringList(
+      _selectedIdsPrefsKey,
+      state.selectedIds?.toList() ?? [],
+    );
   }
 
   Future<void> _persistSelectedLocationIds() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_selectedLocationIdsPrefsKey, state.selectedLocationIds?.toList() ?? []);
+    await prefs.setStringList(
+      _selectedLocationIdsPrefsKey,
+      state.selectedLocationIds?.toList() ?? [],
+    );
   }
 
   Future<void> load() async {
@@ -137,26 +161,48 @@ class UposTempsNotifier extends StateNotifier<UposTempsState> {
     _persistSelectedLocationIds();
   }
 
-  Future<String?> setSystemMode(String mode, {String? deviceId}) =>
-      _runControl(key: '${deviceId ?? ""}-system', action: () => _api.setUposSystemMode(mode, deviceId: deviceId));
+  Future<String?> setSystemMode(
+    String mode, {
+    String? deviceId,
+    List<String>? deviceIds,
+  }) => _runControl(
+    key: '${deviceId ?? ""}-system',
+    action: () =>
+        _api.setUposSystemMode(mode, deviceId: deviceId, deviceIds: deviceIds),
+  );
 
-  Future<String?> setFanMode(String mode, {String? deviceId}) =>
-      _runControl(key: '${deviceId ?? ""}-fan', action: () => _api.setUposFanMode(mode, deviceId: deviceId));
+  Future<String?> setFanMode(
+    String mode, {
+    String? deviceId,
+    List<String>? deviceIds,
+  }) => _runControl(
+    key: '${deviceId ?? ""}-fan',
+    action: () =>
+        _api.setUposFanMode(mode, deviceId: deviceId, deviceIds: deviceIds),
+  );
 
-  Future<String?> _runControl({required String key, required Future<void> Function() action}) async {
+  Future<String?> _runControl({
+    required String key,
+    required Future<void> Function() action,
+  }) async {
     state = state.copyWith(busyDeviceKeys: {...state.busyDeviceKeys, key});
     try {
       await action();
-      state = state.copyWith(busyDeviceKeys: {...state.busyDeviceKeys}..remove(key));
+      state = state.copyWith(
+        busyDeviceKeys: {...state.busyDeviceKeys}..remove(key),
+      );
       await load();
       return null;
     } catch (e) {
-      state = state.copyWith(busyDeviceKeys: {...state.busyDeviceKeys}..remove(key));
+      state = state.copyWith(
+        busyDeviceKeys: {...state.busyDeviceKeys}..remove(key),
+      );
       return friendlyError(e);
     }
   }
 }
 
-final uposTempsProvider = StateNotifierProvider.autoDispose<UposTempsNotifier, UposTempsState>(
-  (ref) => UposTempsNotifier(),
-);
+final uposTempsProvider =
+    StateNotifierProvider.autoDispose<UposTempsNotifier, UposTempsState>(
+      (ref) => UposTempsNotifier(),
+    );

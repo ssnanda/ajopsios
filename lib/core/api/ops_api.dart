@@ -232,18 +232,38 @@ class OpsApi {
 
   /// deviceId null = bulk (every configured device) — AJCore exposes these as
   /// separate route sets, not one endpoint with an optional deviceId.
-  Future<void> setUposSystemMode(String mode, {String? deviceId}) async {
+  Future<void> setUposSystemMode(
+    String mode, {
+    String? deviceId,
+    List<String>? deviceIds,
+  }) async {
     final path = deviceId == null
         ? ApiEndpoints.uposTempsSystemBulk
         : ApiEndpoints.uposTempsDeviceSystem(deviceId);
-    await ApiClient.instance.dio.post(path, data: {'mode': mode});
+    await ApiClient.instance.dio.post(
+      path,
+      data: {
+        'mode': mode,
+        if (deviceId == null && deviceIds != null) 'device_ids': deviceIds,
+      },
+    );
   }
 
-  Future<void> setUposFanMode(String mode, {String? deviceId}) async {
+  Future<void> setUposFanMode(
+    String mode, {
+    String? deviceId,
+    List<String>? deviceIds,
+  }) async {
     final path = deviceId == null
         ? ApiEndpoints.uposTempsFanBulk
         : ApiEndpoints.uposTempsDeviceFan(deviceId);
-    await ApiClient.instance.dio.post(path, data: {'mode': mode});
+    await ApiClient.instance.dio.post(
+      path,
+      data: {
+        'mode': mode,
+        if (deviceId == null && deviceIds != null) 'device_ids': deviceIds,
+      },
+    );
   }
 
   // ── Leads ────────────────────────────────────────────────────────────────

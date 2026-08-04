@@ -102,6 +102,7 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
                   if (state.locationIds.length > 1) ...[
                     _LocationsCard(
                       locationIds: state.locationIds,
+                      locationNames: state.locationNames,
                       selectedLocationIds: state.selectedLocationIds ?? {},
                       onToggleLocation: notifier.toggleLocationSelected,
                     ),
@@ -111,19 +112,9 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
                     busy:
                         state.busyDeviceKeys.contains('-system') ||
                         state.busyDeviceKeys.contains('-fan'),
+                    deviceIds: visible.map((device) => device.id).toList(),
                     notifier: notifier,
                     runBulk: _runBulk,
-                  ),
-                  const SizedBox(height: 10),
-                  _PickerCard(
-                    devices: state.devices,
-                    selectedIds: state.selectedIds ?? {},
-                    open: _pickerOpen,
-                    onToggleOpen: () =>
-                        setState(() => _pickerOpen = !_pickerOpen),
-                    onToggleDevice: notifier.toggleSelected,
-                    onSelectAll: notifier.selectAll,
-                    onClear: notifier.clearSelection,
                   ),
                   const SizedBox(height: 10),
                   if (state.devices.isEmpty)
@@ -139,7 +130,7 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 12),
                       child: Text(
-                        'No thermostats selected. Use "Select thermostats" above.',
+                        'No thermostats selected. Use "Select thermostats" below.',
                         style: TextStyle(color: Colors.grey.shade600),
                       ),
                     )
@@ -176,6 +167,17 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
                         ),
                       ),
                     ),
+                  const SizedBox(height: 10),
+                  _PickerCard(
+                    devices: state.devices,
+                    selectedIds: state.selectedIds ?? {},
+                    open: _pickerOpen,
+                    onToggleOpen: () =>
+                        setState(() => _pickerOpen = !_pickerOpen),
+                    onToggleDevice: notifier.toggleSelected,
+                    onSelectAll: notifier.selectAll,
+                    onClear: notifier.clearSelection,
+                  ),
                 ],
               ),
             ),
@@ -185,11 +187,13 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
 
 class _BulkControlCard extends StatelessWidget {
   final bool busy;
+  final List<String> deviceIds;
   final UposTempsNotifier notifier;
   final Future<void> Function(Future<String?> Function()) runBulk;
 
   const _BulkControlCard({
     required this.busy,
+    required this.deviceIds,
     required this.notifier,
     required this.runBulk,
   });
@@ -215,7 +219,7 @@ class _BulkControlCard extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.w700),
             ),
             Text(
-              'Send one system or fan mode to every configured thermostat.',
+              'Send one system or fan mode to the ${deviceIds.length} thermostats shown for the selected location.',
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 10),
@@ -230,8 +234,10 @@ class _BulkControlCard extends StatelessWidget {
             const SizedBox(height: 6),
             CompactModeRow(
               modes: _systemModes,
-              disabled: busy,
-              onSelect: (m) => runBulk(() => notifier.setSystemMode(m)),
+              disabled: busy || deviceIds.isEmpty,
+              onSelect: (m) => runBulk(
+                () => notifier.setSystemMode(m, deviceIds: deviceIds),
+              ),
             ),
             const SizedBox(height: 10),
             Text(
@@ -245,8 +251,9 @@ class _BulkControlCard extends StatelessWidget {
             const SizedBox(height: 6),
             CompactModeRow(
               modes: _fanModes,
-              disabled: busy,
-              onSelect: (m) => runBulk(() => notifier.setFanMode(m)),
+              disabled: busy || deviceIds.isEmpty,
+              onSelect: (m) =>
+                  runBulk(() => notifier.setFanMode(m, deviceIds: deviceIds)),
             ),
           ],
         ),
@@ -257,11 +264,13 @@ class _BulkControlCard extends StatelessWidget {
 
 class _LocationsCard extends StatelessWidget {
   final List<String> locationIds;
+  final Map<String, String> locationNames;
   final Set<String> selectedLocationIds;
   final void Function(String) onToggleLocation;
 
   const _LocationsCard({
     required this.locationIds,
+    required this.locationNames,
     required this.selectedLocationIds,
     required this.onToggleLocation,
   });
@@ -284,7 +293,7 @@ class _LocationsCard extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.w700),
             ),
             Text(
-              'Both are selected by default — uncheck to hide a location\'s thermostats below.',
+              'Check the locations whose thermostats you want to show and control.',
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 4),
@@ -295,7 +304,9 @@ class _LocationsCard extends StatelessWidget {
                 controlAffinity: ListTileControlAffinity.leading,
                 value: selectedLocationIds.contains(entry.value),
                 onChanged: (_) => onToggleLocation(entry.value),
-                title: Text('Location ${entry.key + 1}'),
+                title: Text(
+                  locationNames[entry.value] ?? 'Location ${entry.key + 1}',
+                ),
                 subtitle: Text(
                   entry.value,
                   style: const TextStyle(fontSize: 11),
@@ -348,7 +359,7 @@ class _PickerCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Thermostats to show',
+                        'Thermostats to show and control',
                         style: TextStyle(fontWeight: FontWeight.w700),
                       ),
                       Text(
