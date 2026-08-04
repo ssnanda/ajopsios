@@ -7,7 +7,10 @@ enum LeadsView { active, won, lost, all }
 
 extension on LeadsView {
   bool matches(Lead lead) => switch (this) {
-        LeadsView.active => !lead.isWon && !lead.isLost,
+        // A merged/duplicate lead keeps its old pipeline stage (e.g. "engaged") since merging
+        // only sets status='duplicate' + merged_into_lead_id, not lead_status — so it must be
+        // excluded here explicitly, same as AJOps web's "inbox" view does.
+        LeadsView.active => !lead.isWon && !lead.isLost && !lead.isDuplicate,
         LeadsView.won => lead.isWon,
         LeadsView.lost => lead.isLost,
         LeadsView.all => true,

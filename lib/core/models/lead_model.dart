@@ -64,6 +64,7 @@ class Lead {
   String get displayName => name.isNotEmpty ? name : (email.isNotEmpty ? email : 'Lead #$id');
   bool get isWon => leadStatus == 'customer';
   bool get isLost => leadStatus == 'lost';
+  bool get isDuplicate => status == 'duplicate';
 
   /// True while a Future Follow-Up lead's date hasn't arrived yet — once it's due, it's no longer "future".
   bool get isFutureFollowUp {
