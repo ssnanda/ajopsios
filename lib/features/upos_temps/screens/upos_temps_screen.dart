@@ -16,7 +16,6 @@ class UposTempsScreen extends ConsumerStatefulWidget {
 }
 
 class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
-  bool _pickerOpen = false;
   String _searchQuery = '';
   final _searchController = TextEditingController();
 
@@ -38,11 +37,10 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
     final state = ref.watch(uposTempsProvider);
     final notifier = ref.read(uposTempsProvider.notifier);
     final visible = state.visibleDevices;
-    final displayedDevices = _pickerOpen ? state.devices : visible;
     final normalizedQuery = _searchQuery.trim().toLowerCase();
     final filteredDevices = normalizedQuery.isEmpty
-        ? displayedDevices
-        : displayedDevices
+        ? state.devices
+        : state.devices
               .where(
                 (device) =>
                     device.name.toLowerCase().contains(normalizedQuery) ||
@@ -122,14 +120,6 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
                         subtitle: 'Pull to refresh to query Resideo.',
                       ),
                     )
-                  else if (visible.isEmpty && !_pickerOpen)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Text(
-                        'No thermostats selected. Use "Select thermostats" below.',
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                    )
                   else if (filteredDevices.isEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 12),
@@ -144,28 +134,24 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
                         padding: const EdgeInsets.only(bottom: 10),
                         child: _DeviceCard(
                           device: d,
-                          selectionMode: _pickerOpen,
                           selected: state.selectedIds?.contains(d.id) ?? false,
                           busy:
                               state.busyDeviceKeys.contains('${d.id}-system') ||
                               state.busyDeviceKeys.contains('${d.id}-fan'),
-                          onTap: _pickerOpen
-                              ? () => notifier.toggleSelected(d.id)
-                              : () => showThermostatDetailSheet(
-                                  context,
-                                  device: d,
-                                  busy:
-                                      state.busyDeviceKeys.contains(
-                                        '${d.id}-system',
-                                      ) ||
-                                      state.busyDeviceKeys.contains(
-                                        '${d.id}-fan',
-                                      ),
-                                  onSystemChange: (mode) => notifier
-                                      .setSystemMode(mode, deviceId: d.id),
-                                  onFanChange: (mode) =>
-                                      notifier.setFanMode(mode, deviceId: d.id),
-                                ),
+                          onToggleSelected: () => notifier.toggleSelected(d.id),
+                          onTap: () => showThermostatDetailSheet(
+                            context,
+                            device: d,
+                            busy:
+                                state.busyDeviceKeys.contains(
+                                  '${d.id}-system',
+                                ) ||
+                                state.busyDeviceKeys.contains('${d.id}-fan'),
+                            onSystemChange: (mode) =>
+                                notifier.setSystemMode(mode, deviceId: d.id),
+                            onFanChange: (mode) =>
+                                notifier.setFanMode(mode, deviceId: d.id),
+                          ),
                         ),
                       ),
                     ),
@@ -173,9 +159,6 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
                   _PickerCard(
                     devices: state.devices,
                     selectedIds: state.selectedIds ?? {},
-                    open: _pickerOpen,
-                    onToggleOpen: () =>
-                        setState(() => _pickerOpen = !_pickerOpen),
                     onSelectAll: notifier.selectAll,
                     onClear: notifier.clearSelection,
                   ),
@@ -282,16 +265,12 @@ class _BulkControlCard extends StatelessWidget {
 class _PickerCard extends StatelessWidget {
   final List<UposDevice> devices;
   final Set<String> selectedIds;
-  final bool open;
-  final VoidCallback onToggleOpen;
   final VoidCallback onSelectAll;
   final VoidCallback onClear;
 
   const _PickerCard({
     required this.devices,
     required this.selectedIds,
-    required this.open,
-    required this.onToggleOpen,
     required this.onSelectAll,
     required this.onClear,
   });
@@ -329,33 +308,22 @@ class _PickerCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                TextButton(
-                  onPressed: onToggleOpen,
-                  child: Text(open ? 'Done' : 'Select thermostats'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                OutlinedButton(
+                  onPressed: onSelectAll,
+                  child: const Text('Select all'),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton(
+                  onPressed: onClear,
+                  child: const Text('Select none'),
                 ),
               ],
             ),
-            if (open) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  OutlinedButton(
-                    onPressed: onSelectAll,
-                    child: const Text('Select all'),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton(
-                    onPressed: onClear,
-                    child: const Text('Select none'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Use the checkboxes on the thermostat cards above.',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-              ),
-            ],
           ],
         ),
       ),
@@ -365,17 +333,17 @@ class _PickerCard extends StatelessWidget {
 
 class _DeviceCard extends StatelessWidget {
   final UposDevice device;
-  final bool selectionMode;
   final bool selected;
   final bool busy;
   final VoidCallback onTap;
+  final VoidCallback onToggleSelected;
 
   const _DeviceCard({
     required this.device,
-    required this.selectionMode,
     required this.selected,
     required this.busy,
     required this.onTap,
+    required this.onToggleSelected,
   });
 
   @override
@@ -393,10 +361,8 @@ class _DeviceCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              if (selectionMode) ...[
-                Checkbox(value: selected, onChanged: (_) => onTap()),
-                const SizedBox(width: 2),
-              ],
+              Checkbox(value: selected, onChanged: (_) => onToggleSelected()),
+              const SizedBox(width: 2),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,9 +387,7 @@ class _DeviceCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (selectionMode)
-                const SizedBox.shrink()
-              else if (busy)
+              if (busy)
                 const SizedBox(
                   width: 18,
                   height: 18,
