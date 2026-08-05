@@ -82,6 +82,7 @@ class _ThermostatDetailContent extends StatelessWidget {
             _ControlGroup(
               label: 'System',
               modes: device.availableSystemModes,
+              selected: device.mode,
               busy: busy,
               onSelect: (mode) => _run(context, () => onSystemChange(mode)),
             ),
@@ -89,6 +90,7 @@ class _ThermostatDetailContent extends StatelessWidget {
             _ControlGroup(
               label: 'Fan',
               modes: device.availableFanModes,
+              selected: device.fanMode,
               busy: busy,
               onSelect: (mode) => _run(context, () => onFanChange(mode)),
             ),
@@ -102,10 +104,17 @@ class _ThermostatDetailContent extends StatelessWidget {
 class _ControlGroup extends StatelessWidget {
   final String label;
   final List<String> modes;
+  final String? selected;
   final bool busy;
   final void Function(String mode) onSelect;
 
-  const _ControlGroup({required this.label, required this.modes, required this.busy, required this.onSelect});
+  const _ControlGroup({
+    required this.label,
+    required this.modes,
+    this.selected,
+    required this.busy,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -114,7 +123,7 @@ class _ControlGroup extends StatelessWidget {
       children: [
         Text(label.toUpperCase(), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey.shade600)),
         const SizedBox(height: 8),
-        CompactModeRow(modes: modes, disabled: busy, onSelect: onSelect),
+        CompactModeRow(modes: modes, selected: selected, disabled: busy, onSelect: onSelect),
       ],
     );
   }
