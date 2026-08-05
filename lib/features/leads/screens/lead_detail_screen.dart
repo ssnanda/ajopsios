@@ -1,8 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/lead_model.dart';
 import '../../../core/widgets/customer_picker.dart';
 import '../providers/lead_detail_provider.dart';
+import 'lead_edit_screen.dart';
+
+/// https://voice.google.com/u/0/calls?a=nc,+1XXXXXXXXXX — Google Voice's own "new call" deep
+/// link. Opens the Google Voice app via universal link if installed, else Safari.
+Future<void> _launchGoogleVoiceCall(BuildContext context, String phone) async {
+  final digits = phone.replaceAll(RegExp(r'\D'), '');
+  if (digits.isEmpty) return;
+  final e164 = digits.length == 10 ? '1$digits' : digits;
+  final uri = Uri.parse('https://voice.google.com/u/0/calls?a=nc,+$e164');
+  final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  if (!ok && context.mounted) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Could not open Google Voice.')));
+  }
+}
+
+Future<void> _copyPhone(BuildContext context, String phone) async {
+  await Clipboard.setData(ClipboardData(text: phone));
+  if (context.mounted) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Phone number copied.')));
+  }
+}
 
 class LeadDetailScreen extends ConsumerStatefulWidget {
   final Lead lead;
@@ -51,7 +78,18 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
     final lead = state.lead;
 
     return Scaffold(
-      appBar: AppBar(title: Text(lead.displayName)),
+      appBar: AppBar(
+        title: Text(lead.displayName),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Edit Lead',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => LeadEditScreen(lead: lead)),
+            ),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -182,8 +220,7 @@ class _InfoCard extends StatelessWidget {
               _Row(icon: Icons.business_rounded, text: lead.company),
             if (lead.email.isNotEmpty)
               _Row(icon: Icons.email_outlined, text: lead.email),
-            if (lead.phone.isNotEmpty)
-              _Row(icon: Icons.phone_outlined, text: lead.phone),
+            if (lead.phone.isNotEmpty) _PhoneRow(phone: lead.phone),
             if (lead.source.isNotEmpty)
               _Row(icon: Icons.source_outlined, text: lead.source),
             if (lead.formTitle.isNotEmpty)
@@ -194,6 +231,40 @@ class _InfoCard extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PhoneRow extends StatelessWidget {
+  final String phone;
+  const _PhoneRow({required this.phone});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(Icons.phone_outlined, size: 16, color: Colors.grey.shade600),
+          const SizedBox(width: 8),
+          Expanded(child: Text(phone)),
+          IconButton(
+            icon: const Icon(Icons.copy_outlined, size: 18),
+            tooltip: 'Copy phone number',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => _copyPhone(context, phone),
+          ),
+          const SizedBox(width: 12),
+          IconButton(
+            icon: const Icon(Icons.call_outlined, size: 18),
+            tooltip: 'Call via Google Voice',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => _launchGoogleVoiceCall(context, phone),
+          ),
+        ],
       ),
     );
   }

@@ -27,6 +27,28 @@ class LeadDetailNotifier extends StateNotifier<LeadDetailState> {
     state = state.copyWith(lead: refreshed);
   });
 
+  Future<String?> updateLead({
+    String? name,
+    String? email,
+    String? phone,
+    String? company,
+    String? source,
+    String? notes,
+    String? siteUuid,
+  }) => _run(() async {
+    final updated = await _api.updateLead(
+      state.lead.id,
+      name: name,
+      email: email,
+      phone: phone,
+      company: company,
+      source: source,
+      notes: notes,
+      siteUuid: siteUuid,
+    );
+    state = state.copyWith(lead: updated);
+  });
+
   Future<String?> setStage(
     String leadStatus, {
     String? stripeCustomerId,

@@ -16,6 +16,7 @@ class Lead {
   final String createdAt;
   final String stripeCustomerId;
   final String customerName;
+  final String siteUuid;
   final String siteLabel;
   final List<LeadNote> notesList;
 
@@ -34,6 +35,7 @@ class Lead {
     required this.createdAt,
     required this.stripeCustomerId,
     required this.customerName,
+    required this.siteUuid,
     required this.siteLabel,
     required this.notesList,
   });
@@ -54,6 +56,7 @@ class Lead {
       createdAt: json['created_at'] as String? ?? '',
       stripeCustomerId: json['stripe_customer_id'] as String? ?? '',
       customerName: json['customer_name'] as String? ?? '',
+      siteUuid: json['site_uuid'] as String? ?? '',
       siteLabel: json['site_label'] as String? ?? '',
       notesList: (json['notes_list'] as List<dynamic>? ?? [])
           .map((e) => LeadNote.fromJson(e as Map<String, dynamic>))

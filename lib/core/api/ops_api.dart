@@ -10,6 +10,7 @@ import '../models/chat_session_model.dart';
 import '../models/chat_message_model.dart';
 import '../models/upos_device_model.dart';
 import '../models/lead_model.dart';
+import '../models/connected_site_model.dart';
 import '../models/customer_model.dart';
 import '../models/mail_item_model.dart';
 import '../models/customer_file_model.dart';
@@ -293,6 +294,45 @@ class OpsApi {
       ApiEndpoints.leadNotes(id),
       data: {'note': note},
     );
+  }
+
+  /// Same field set AJOps web's Edit Lead form saves (name/email/phone/company/
+  /// source/notes/site) — PATCH /ops/leads/{id}. Only non-null fields are sent.
+  Future<Lead> updateLead(
+    int id, {
+    String? name,
+    String? email,
+    String? phone,
+    String? company,
+    String? source,
+    String? notes,
+    String? siteUuid,
+  }) async {
+    final resp = await ApiClient.instance.dio.patch(
+      ApiEndpoints.lead(id),
+      data: {
+        if (name != null) 'name': name,
+        if (email != null) 'email': email,
+        if (phone != null) 'phone': phone,
+        if (company != null) 'company': company,
+        if (source != null) 'source': source,
+        if (notes != null) 'notes': notes,
+        if (siteUuid != null) 'site_uuid': siteUuid,
+      },
+    );
+    final data = resp.data as Map<String, dynamic>;
+    return Lead.fromJson(data['lead'] as Map<String, dynamic>);
+  }
+
+  /// Site drives which pipeline a lead walks (see leadPipelineStages on
+  /// lead_model.dart) — same GET /ops/sites AJOps web's site picker reads.
+  Future<List<ConnectedSite>> getConnectedSites() async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.sites);
+    final list =
+        (resp.data as Map<String, dynamic>)['sites'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => ConnectedSite.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   /// Advances (or reverts) the pipeline stage — the same endpoint AJOps' web

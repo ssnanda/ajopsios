@@ -56,6 +56,9 @@ class ApiEndpoints {
   static String leadNotes(int id) => '/ops/leads/$id/notes';
   static String leadPipelineStatus(int id) => '/ops/leads/$id/pipeline-status';
 
+  // ── Connected sites (site picker on the lead edit form) ────────────────────
+  static const String sites = '/ops/sites';
+
   // ── Customers ────────────────────────────────────────────────────────────
   static const String customers = '/ops/customers';
   static String customer(String stripeCustomerId) =>
