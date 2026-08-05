@@ -38,10 +38,11 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
     final state = ref.watch(uposTempsProvider);
     final notifier = ref.read(uposTempsProvider.notifier);
     final visible = state.visibleDevices;
+    final displayedDevices = _pickerOpen ? state.devices : visible;
     final normalizedQuery = _searchQuery.trim().toLowerCase();
     final filteredDevices = normalizedQuery.isEmpty
-        ? visible
-        : visible
+        ? displayedDevices
+        : displayedDevices
               .where(
                 (device) =>
                     device.name.toLowerCase().contains(normalizedQuery) ||
@@ -121,7 +122,7 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
                         subtitle: 'Pull to refresh to query Resideo.',
                       ),
                     )
-                  else if (visible.isEmpty)
+                  else if (visible.isEmpty && !_pickerOpen)
                     Padding(
                       padding: const EdgeInsets.only(top: 12),
                       child: Text(
@@ -143,22 +144,28 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
                         padding: const EdgeInsets.only(bottom: 10),
                         child: _DeviceCard(
                           device: d,
+                          selectionMode: _pickerOpen,
+                          selected: state.selectedIds?.contains(d.id) ?? false,
                           busy:
                               state.busyDeviceKeys.contains('${d.id}-system') ||
                               state.busyDeviceKeys.contains('${d.id}-fan'),
-                          onTap: () => showThermostatDetailSheet(
-                            context,
-                            device: d,
-                            busy:
-                                state.busyDeviceKeys.contains(
-                                  '${d.id}-system',
-                                ) ||
-                                state.busyDeviceKeys.contains('${d.id}-fan'),
-                            onSystemChange: (mode) =>
-                                notifier.setSystemMode(mode, deviceId: d.id),
-                            onFanChange: (mode) =>
-                                notifier.setFanMode(mode, deviceId: d.id),
-                          ),
+                          onTap: _pickerOpen
+                              ? () => notifier.toggleSelected(d.id)
+                              : () => showThermostatDetailSheet(
+                                  context,
+                                  device: d,
+                                  busy:
+                                      state.busyDeviceKeys.contains(
+                                        '${d.id}-system',
+                                      ) ||
+                                      state.busyDeviceKeys.contains(
+                                        '${d.id}-fan',
+                                      ),
+                                  onSystemChange: (mode) => notifier
+                                      .setSystemMode(mode, deviceId: d.id),
+                                  onFanChange: (mode) =>
+                                      notifier.setFanMode(mode, deviceId: d.id),
+                                ),
                         ),
                       ),
                     ),
@@ -169,7 +176,6 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
                     open: _pickerOpen,
                     onToggleOpen: () =>
                         setState(() => _pickerOpen = !_pickerOpen),
-                    onToggleDevice: notifier.toggleSelected,
                     onSelectAll: notifier.selectAll,
                     onClear: notifier.clearSelection,
                   ),
@@ -278,7 +284,6 @@ class _PickerCard extends StatelessWidget {
   final Set<String> selectedIds;
   final bool open;
   final VoidCallback onToggleOpen;
-  final void Function(String) onToggleDevice;
   final VoidCallback onSelectAll;
   final VoidCallback onClear;
 
@@ -287,7 +292,6 @@ class _PickerCard extends StatelessWidget {
     required this.selectedIds,
     required this.open,
     required this.onToggleOpen,
-    required this.onToggleDevice,
     required this.onSelectAll,
     required this.onClear,
   });
@@ -342,20 +346,14 @@ class _PickerCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   OutlinedButton(
                     onPressed: onClear,
-                    child: const Text('Clear'),
+                    child: const Text('Select none'),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              ...devices.map(
-                (d) => CheckboxListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  value: selectedIds.contains(d.id),
-                  onChanged: (_) => onToggleDevice(d.id),
-                  title: Text(d.name),
-                ),
+              const SizedBox(height: 4),
+              Text(
+                'Use the checkboxes on the thermostat cards above.',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ],
           ],
@@ -367,11 +365,15 @@ class _PickerCard extends StatelessWidget {
 
 class _DeviceCard extends StatelessWidget {
   final UposDevice device;
+  final bool selectionMode;
+  final bool selected;
   final bool busy;
   final VoidCallback onTap;
 
   const _DeviceCard({
     required this.device,
+    required this.selectionMode,
+    required this.selected,
     required this.busy,
     required this.onTap,
   });
@@ -391,6 +393,10 @@ class _DeviceCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
+              if (selectionMode) ...[
+                Checkbox(value: selected, onChanged: (_) => onTap()),
+                const SizedBox(width: 2),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -415,7 +421,9 @@ class _DeviceCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (busy)
+              if (selectionMode)
+                const SizedBox.shrink()
+              else if (busy)
                 const SizedBox(
                   width: 18,
                   height: 18,
