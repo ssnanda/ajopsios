@@ -61,14 +61,15 @@ class UposTempsState {
           : device.locationId,
   };
 
-  List<UposDevice> get visibleDevices {
-    if (selectedIds == null || selectedLocationIds == null) return const [];
+  List<UposDevice> get selectedDevices {
+    if (selectedIds == null) return const [];
+    return devices.where((d) => selectedIds!.contains(d.id)).toList();
+  }
+
+  List<UposDevice> get locationFilteredDevices {
+    if (selectedLocationIds == null) return const [];
     return devices
-        .where(
-          (d) =>
-              selectedIds!.contains(d.id) &&
-              selectedLocationIds!.contains(d.locationId),
-        )
+        .where((d) => selectedLocationIds!.contains(d.locationId))
         .toList();
   }
 }

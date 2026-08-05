@@ -36,11 +36,12 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(uposTempsProvider);
     final notifier = ref.read(uposTempsProvider.notifier);
-    final visible = state.visibleDevices;
+    final selected = state.selectedDevices;
+    final locationFiltered = state.locationFilteredDevices;
     final normalizedQuery = _searchQuery.trim().toLowerCase();
     final filteredDevices = normalizedQuery.isEmpty
-        ? state.devices
-        : state.devices
+        ? locationFiltered
+        : locationFiltered
               .where(
                 (device) =>
                     device.name.toLowerCase().contains(normalizedQuery) ||
@@ -102,11 +103,14 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
                     busy:
                         state.busyDeviceKeys.contains('-system') ||
                         state.busyDeviceKeys.contains('-fan'),
-                    deviceIds: visible.map((device) => device.id).toList(),
+                    deviceIds: selected.map((device) => device.id).toList(),
+                    selectedCount: selected.length,
                     locationIds: state.locationIds,
                     locationNames: state.locationNames,
                     selectedLocationIds: state.selectedLocationIds ?? {},
                     onToggleLocation: notifier.toggleLocationSelected,
+                    onSelectAll: notifier.selectAll,
+                    onSelectNone: notifier.clearSelection,
                     notifier: notifier,
                     runBulk: _runBulk,
                   ),
@@ -155,13 +159,6 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 10),
-                  _PickerCard(
-                    devices: state.devices,
-                    selectedIds: state.selectedIds ?? {},
-                    onSelectAll: notifier.selectAll,
-                    onClear: notifier.clearSelection,
-                  ),
                 ],
               ),
             ),
@@ -172,20 +169,26 @@ class _UposTempsScreenState extends ConsumerState<UposTempsScreen> {
 class _BulkControlCard extends StatelessWidget {
   final bool busy;
   final List<String> deviceIds;
+  final int selectedCount;
   final List<String> locationIds;
   final Map<String, String> locationNames;
   final Set<String> selectedLocationIds;
   final void Function(String) onToggleLocation;
+  final VoidCallback onSelectAll;
+  final VoidCallback onSelectNone;
   final UposTempsNotifier notifier;
   final Future<void> Function(Future<String?> Function()) runBulk;
 
   const _BulkControlCard({
     required this.busy,
     required this.deviceIds,
+    required this.selectedCount,
     required this.locationIds,
     required this.locationNames,
     required this.selectedLocationIds,
     required this.onToggleLocation,
+    required this.onSelectAll,
+    required this.onSelectNone,
     required this.notifier,
     required this.runBulk,
   });
@@ -223,6 +226,28 @@ class _BulkControlCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
             ],
+            Row(
+              children: [
+                Text(
+                  '$selectedCount selected',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: onSelectAll,
+                  child: const Text('Select all'),
+                ),
+                TextButton(
+                  onPressed: onSelectNone,
+                  child: const Text('Select none'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
             Text(
               'SYSTEM',
               style: TextStyle(
@@ -254,75 +279,6 @@ class _BulkControlCard extends StatelessWidget {
               disabled: busy || deviceIds.isEmpty,
               onSelect: (m) =>
                   runBulk(() => notifier.setFanMode(m, deviceIds: deviceIds)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PickerCard extends StatelessWidget {
-  final List<UposDevice> devices;
-  final Set<String> selectedIds;
-  final VoidCallback onSelectAll;
-  final VoidCallback onClear;
-
-  const _PickerCard({
-    required this.devices,
-    required this.selectedIds,
-    required this.onSelectAll,
-    required this.onClear,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Thermostats to show and control',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      Text(
-                        '${selectedIds.length} of ${devices.length} shown below.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                OutlinedButton(
-                  onPressed: onSelectAll,
-                  child: const Text('Select all'),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton(
-                  onPressed: onClear,
-                  child: const Text('Select none'),
-                ),
-              ],
             ),
           ],
         ),
