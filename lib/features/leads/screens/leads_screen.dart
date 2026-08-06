@@ -5,6 +5,7 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../providers/leads_provider.dart';
+import 'lead_add_screen.dart';
 import 'lead_detail_screen.dart';
 
 class LeadsScreen extends ConsumerStatefulWidget {
@@ -31,6 +32,13 @@ class _LeadsScreenState extends ConsumerState<LeadsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Leads')),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'New Lead',
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const LeadAddScreen()),
+        ),
+        child: const Icon(Icons.add_rounded),
+      ),
       body: Column(
         children: [
           Padding(
@@ -182,16 +190,17 @@ class _LeadCard extends StatelessWidget {
                     Text(lead.displayName, style: const TextStyle(fontWeight: FontWeight.w700)),
                     if (lead.company.isNotEmpty)
                       Text(lead.company, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                    if (lead.phone.isNotEmpty)
+                      Text(lead.phone, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                    if (lead.email.isNotEmpty)
+                      Text(
+                        lead.email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
                     const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        _StageBadge(status: lead.leadStatus),
-                        if (lead.source.isNotEmpty) ...[
-                          const SizedBox(width: 6),
-                          Text(lead.source, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-                        ],
-                      ],
-                    ),
+                    _StageBadge(status: lead.leadStatus),
                     if (latestNote != null) ...[
                       const SizedBox(height: 6),
                       Text(

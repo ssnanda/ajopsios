@@ -5,21 +5,42 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/lead_model.dart';
 import '../../../core/widgets/customer_picker.dart';
 import '../providers/lead_detail_provider.dart';
+import '../widgets/lead_status_stepper.dart';
 import 'lead_edit_screen.dart';
 
-/// https://voice.google.com/u/0/calls?a=nc,+1XXXXXXXXXX — Google Voice's own "new call" deep
-/// link. Opens the Google Voice app via universal link if installed, else Safari.
-Future<void> _launchGoogleVoiceCall(BuildContext context, String phone) async {
+/// Default outreach message — same wording as AJOps web's "Numbered Menu (Recommended)"
+/// template (LeadsClient.tsx OUTREACH_TEMPLATES), so leads get identically-branded copy
+/// regardless of which app staff text from.
+String _defaultOutreachMessage(String firstName) {
+  final name = firstName.trim().isEmpty ? 'there' : firstName.trim();
+  return 'Hi $name! 👋 Thanks for reaching out to NC LLC Agents via https://ncllcagents.com/. '
+      "Reply with a number and we'll point you the right way:\n\n"
+      '1 - Registered Agent Services\n'
+      '2 - Start a New LLC\n'
+      '3 - Compliance, Filings, or an Existing LLC\n'
+      '4 - Something Else / Talk to a Person';
+}
+
+/// https://voice.google.com/u/0/messages?a=nc,+1XXXXXXXXXX opens Google Voice's own "new
+/// message" compose pre-addressed to the number (app via universal link if installed, else
+/// Safari) — mirrors the "calls" variant of this same deep link. Google doesn't expose a URL
+/// parameter to prefill the message body itself (checked — none of the documented/observed
+/// voice.google.com query params do this), so the practical equivalent of "prepopulated text"
+/// is copying a default message to the clipboard first: the compose box opens empty, but
+/// pasting it is one tap instead of typing it out.
+Future<void> _launchGoogleVoiceText(BuildContext context, String phone, String firstName) async {
   final digits = phone.replaceAll(RegExp(r'\D'), '');
   if (digits.isEmpty) return;
   final e164 = digits.length == 10 ? '1$digits' : digits;
-  final uri = Uri.parse('https://voice.google.com/u/0/calls?a=nc,+$e164');
+  await Clipboard.setData(ClipboardData(text: _defaultOutreachMessage(firstName)));
+  final uri = Uri.parse('https://voice.google.com/u/0/messages?a=nc,+$e164');
   final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-  if (!ok && context.mounted) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Could not open Google Voice.')));
-  }
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(ok ? 'Message copied — paste it into Google Voice.' : 'Could not open Google Voice.'),
+    ),
+  );
 }
 
 Future<void> _copyPhone(BuildContext context, String phone) async {
@@ -56,19 +77,37 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
   }
 
   Future<void> _setStage(LeadDetailNotifier notifier, String stage) async {
-    if (stage != 'customer') {
-      await _run(() => notifier.setStage(stage));
+    if (stage == 'customer') {
+      final customer = await pickCustomer(context);
+      if (customer == null || !mounted) return;
+      await _run(
+        () => notifier.setStage(
+          'customer',
+          stripeCustomerId: customer.stripeCustomerId,
+        ),
+      );
       return;
     }
 
-    final customer = await pickCustomer(context);
-    if (customer == null || !mounted) return;
-    await _run(
-      () => notifier.setStage(
-        'customer',
-        stripeCustomerId: customer.stripeCustomerId,
-      ),
-    );
+    if (stage == 'future_follow_up') {
+      final date = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime.now(),
+        lastDate: DateTime.now().add(const Duration(days: 365)),
+        helpText: 'When to follow up?',
+      );
+      if (date == null || !mounted) return;
+      await _run(
+        () => notifier.setStage(
+          'future_follow_up',
+          followUpAt: date.toIso8601String().split('T').first,
+        ),
+      );
+      return;
+    }
+
+    await _run(() => notifier.setStage(stage));
   }
 
   @override
@@ -96,7 +135,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
           _InfoCard(lead: lead),
           const SizedBox(height: 16),
           Text(
-            'PIPELINE STAGE',
+            'LEAD STATUS',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -104,28 +143,10 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              ...leadPipelineStages.map(
-                (stage) => ChoiceChip(
-                  label: Text(leadPipelineLabels[stage] ?? stage),
-                  selected: lead.leadStatus == stage,
-                  onSelected: state.busy
-                      ? null
-                      : (_) => _setStage(notifier, stage),
-                ),
-              ),
-              ChoiceChip(
-                label: const Text('Lost'),
-                selected: lead.leadStatus == 'lost',
-                selectedColor: Colors.red.shade100,
-                onSelected: state.busy
-                    ? null
-                    : (_) => _run(() => notifier.setStage('lost')),
-              ),
-            ],
+          LeadStatusStepper(
+            lead: lead,
+            busy: state.busy,
+            onChange: (stage) => _setStage(notifier, stage),
           ),
           const SizedBox(height: 20),
           Text(
@@ -220,7 +241,8 @@ class _InfoCard extends StatelessWidget {
               _Row(icon: Icons.business_rounded, text: lead.company),
             if (lead.email.isNotEmpty)
               _Row(icon: Icons.email_outlined, text: lead.email),
-            if (lead.phone.isNotEmpty) _PhoneRow(phone: lead.phone),
+            if (lead.phone.isNotEmpty)
+              _PhoneRow(phone: lead.phone, firstName: lead.name.trim().split(RegExp(r'\s+')).first),
             if (lead.source.isNotEmpty)
               _Row(icon: Icons.source_outlined, text: lead.source),
             if (lead.formTitle.isNotEmpty)
@@ -238,7 +260,8 @@ class _InfoCard extends StatelessWidget {
 
 class _PhoneRow extends StatelessWidget {
   final String phone;
-  const _PhoneRow({required this.phone});
+  final String firstName;
+  const _PhoneRow({required this.phone, required this.firstName});
 
   @override
   Widget build(BuildContext context) {
@@ -258,11 +281,11 @@ class _PhoneRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           IconButton(
-            icon: const Icon(Icons.call_outlined, size: 18),
-            tooltip: 'Call via Google Voice',
+            icon: const Icon(Icons.sms_outlined, size: 18),
+            tooltip: 'Text via Google Voice',
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
-            onPressed: () => _launchGoogleVoiceCall(context, phone),
+            onPressed: () => _launchGoogleVoiceText(context, phone, firstName),
           ),
         ],
       ),

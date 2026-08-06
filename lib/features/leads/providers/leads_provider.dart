@@ -88,6 +88,22 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
     state = state.copyWith(search: value);
     load();
   }
+
+  /// Replaces one row in the cached list in place — called after an edit/note/stage change on
+  /// the detail screen so the list reflects it immediately, without waiting for a manual
+  /// pull-to-refresh (this list and the per-lead detail provider are separate pieces of state
+  /// that don't otherwise know about each other).
+  void patchLead(Lead updated) {
+    state = state.copyWith(
+      leads: [for (final l in state.leads) l.id == updated.id ? updated : l],
+    );
+  }
+
+  /// Called after creating a new lead — prepends it so it's visible immediately, matching
+  /// AJOps web's AddLeadModal (onCreated prepends rather than re-fetching the whole list).
+  void addLead(Lead lead) {
+    state = state.copyWith(leads: [lead, ...state.leads]);
+  }
 }
 
 final leadsProvider = StateNotifierProvider.autoDispose<LeadsNotifier, LeadsState>((ref) => LeadsNotifier());

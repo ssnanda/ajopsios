@@ -284,9 +284,36 @@ class OpsApi {
     return list.map((e) => Lead.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  /// Same field set as AJOps web's New Lead form — POST /ops/leads.
+  Future<Lead> createLead({
+    required String name,
+    String? email,
+    String? phone,
+    String? company,
+    String? source,
+    String? notes,
+    String? siteUuid,
+  }) async {
+    final resp = await ApiClient.instance.dio.post(
+      ApiEndpoints.leads,
+      data: {
+        'name': name,
+        if (email != null && email.isNotEmpty) 'email': email,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+        if (company != null && company.isNotEmpty) 'company': company,
+        if (source != null && source.isNotEmpty) 'source': source,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+        if (siteUuid != null && siteUuid.isNotEmpty) 'site_uuid': siteUuid,
+      },
+    );
+    final data = resp.data as Map<String, dynamic>;
+    return Lead.fromJson(data['lead'] as Map<String, dynamic>);
+  }
+
   Future<Lead> getLead(int id) async {
     final resp = await ApiClient.instance.dio.get(ApiEndpoints.lead(id));
-    return Lead.fromJson(resp.data as Map<String, dynamic>);
+    final data = resp.data as Map<String, dynamic>;
+    return Lead.fromJson(data['lead'] as Map<String, dynamic>);
   }
 
   Future<void> addLeadNote(int id, String note) async {

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/ops_api.dart';
 import '../../../core/models/lead_model.dart';
 import '../../../core/utils/error_utils.dart';
+import 'leads_provider.dart';
 
 class LeadDetailState {
   final Lead lead;
@@ -17,8 +18,10 @@ class LeadDetailState {
 /// than re-fetching — GET /ops/leads/{id} returns the same shape plus
 /// all_fields, only worth the extra round trip if that's actually shown.
 class LeadDetailNotifier extends StateNotifier<LeadDetailState> {
-  LeadDetailNotifier(Lead initial) : super(LeadDetailState(lead: initial));
+  LeadDetailNotifier(this._ref, Lead initial)
+    : super(LeadDetailState(lead: initial));
 
+  final Ref _ref;
   final _api = OpsApi.instance;
 
   Future<String?> addNote(String note) => _run(() async {
@@ -74,6 +77,9 @@ class LeadDetailNotifier extends StateNotifier<LeadDetailState> {
     try {
       await action();
       state = state.copyWith(busy: false);
+      // Keep the Leads list screen's cached copy in sync — it's a separate provider that
+      // otherwise wouldn't hear about this change until the next manual pull-to-refresh.
+      _ref.read(leadsProvider.notifier).patchLead(state.lead);
       return null;
     } catch (e) {
       state = state.copyWith(busy: false);
@@ -84,5 +90,5 @@ class LeadDetailNotifier extends StateNotifier<LeadDetailState> {
 
 final leadDetailProvider = StateNotifierProvider.autoDispose
     .family<LeadDetailNotifier, LeadDetailState, Lead>(
-      (ref, lead) => LeadDetailNotifier(lead),
+      (ref, lead) => LeadDetailNotifier(ref, lead),
     );

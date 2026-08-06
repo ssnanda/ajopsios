@@ -19,6 +19,11 @@ class Lead {
   final String siteUuid;
   final String siteLabel;
   final List<LeadNote> notesList;
+  /// The linear (non-terminal) LEAD STATUS stages for this lead's SITE, in order — e.g.
+  /// University Office Suites includes "tour", other sites don't. Resolved by AJCore per-row
+  /// (see get_lead_pipeline_linear_stages() in class-ajforms-admin.php) — mirrors AJOps web's
+  /// Lead.leadPipelineStages. Falls back to the generic default when AJCore omits it.
+  final List<String> leadPipelineStages;
 
   const Lead({
     required this.id,
@@ -38,9 +43,14 @@ class Lead {
     required this.siteUuid,
     required this.siteLabel,
     required this.notesList,
+    required this.leadPipelineStages,
   });
 
   factory Lead.fromJson(Map<String, dynamic> json) {
+    final stages = (json['lead_pipeline_stages'] as List<dynamic>?)
+        ?.map((e) => e.toString())
+        .where((s) => leadPipelineLabels.containsKey(s))
+        .toList();
     return Lead(
       id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
       formTitle: json['form_title'] as String? ?? '',
@@ -61,6 +71,9 @@ class Lead {
       notesList: (json['notes_list'] as List<dynamic>? ?? [])
           .map((e) => LeadNote.fromJson(e as Map<String, dynamic>))
           .toList(),
+      leadPipelineStages: (stages != null && stages.isNotEmpty)
+          ? stages
+          : defaultLeadPipelineStages,
     );
   }
 
@@ -82,6 +95,12 @@ class Lead {
     final human = notesList.where((n) => !n.note.startsWith('Follow-up email sent')).toList();
     return human.isEmpty ? null : human.last;
   }
+
+  /// "customer" is a branch endpoint reachable from Engaged onward, not a forward step in the
+  /// walkable sequence — same convention as AJOps web's LeadStatusStepper (it's set only via the
+  /// dedicated Customer action, which collects a linked customer, never by tapping a plain step).
+  List<String> get linearPipelineStages =>
+      leadPipelineStages.where((s) => s != 'customer').toList();
 
   // Keyed by id for Riverpod .family caching.
   @override
@@ -107,10 +126,10 @@ class LeadNote {
       );
 }
 
-/// The pipeline order shown as a stage picker on the detail screen. "lost" is
-/// a separate off-ramp, not a forward step — same convention as service
-/// requests' "cancelled".
-const leadPipelineStages = ['new', 'auto_reached', 'engaged', 'tour', 'future_follow_up', 'customer'];
+/// Fallback linear stage order used only when AJCore's row is missing
+/// `lead_pipeline_stages` (older cached data) — normally each Lead carries its
+/// own site-resolved list instead (see Lead.leadPipelineStages above).
+const defaultLeadPipelineStages = ['new', 'auto_reached', 'engaged', 'customer'];
 
 const leadPipelineLabels = {
   'new': 'New',
