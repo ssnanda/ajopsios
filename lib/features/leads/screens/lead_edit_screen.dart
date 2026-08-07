@@ -7,7 +7,10 @@ import '../providers/lead_detail_provider.dart';
 
 /// Parity with AJOps web's Edit Lead form (LeadEditForm in LeadsClient.tsx) —
 /// same field set, including the Site picker (site drives which pipeline a
-/// lead walks, see leadPipelineStages on lead_model.dart).
+/// lead walks, see leadPipelineStages on lead_model.dart). Also carries the
+/// Notes thread (list + add box) alongside the form, same as web keeps
+/// NotesList mounted regardless of edit/view state — so staff don't have to
+/// leave the edit screen just to log a note.
 class LeadEditScreen extends ConsumerStatefulWidget {
   final Lead lead;
   const LeadEditScreen({super.key, required this.lead});
@@ -33,6 +36,8 @@ class _LeadEditScreenState extends ConsumerState<LeadEditScreen> {
   late final _notesCtrl = TextEditingController(text: widget.lead.notes);
   late String _source = widget.lead.source;
   late String _siteUuid = widget.lead.siteUuid;
+
+  final _newNoteCtrl = TextEditingController();
 
   List<ConnectedSite>? _sites;
   String? _sitesError;
@@ -61,7 +66,20 @@ class _LeadEditScreenState extends ConsumerState<LeadEditScreen> {
     _phoneCtrl.dispose();
     _companyCtrl.dispose();
     _notesCtrl.dispose();
+    _newNoteCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _addNote() async {
+    final text = _newNoteCtrl.text.trim();
+    if (text.isEmpty) return;
+    final notifier = ref.read(leadDetailProvider(widget.lead).notifier);
+    _newNoteCtrl.clear();
+    final err = await notifier.addNote(text);
+    if (!mounted) return;
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+    }
   }
 
   Future<void> _save() async {
@@ -85,7 +103,8 @@ class _LeadEditScreenState extends ConsumerState<LeadEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final busy = ref.watch(leadDetailProvider(widget.lead)).busy;
+    final state = ref.watch(leadDetailProvider(widget.lead));
+    final busy = state.busy;
     // Site options come from the live connected-sites registry, but always keep the lead's
     // current site selectable even if it's since dropped out of that list.
     final siteOptions = <String, String>{
@@ -154,7 +173,10 @@ class _LeadEditScreenState extends ConsumerState<LeadEditScreen> {
             minLines: 3,
             maxLines: 6,
             decoration: const InputDecoration(
-              labelText: 'Notes',
+              // "Message" — what the lead is looking for, distinct from the
+              // staff Notes thread below (was mislabeled "Notes" too, which
+              // read as a duplicate of that section).
+              labelText: 'Message',
               alignLabelWithHint: true,
             ),
           ),
@@ -162,6 +184,68 @@ class _LeadEditScreenState extends ConsumerState<LeadEditScreen> {
           FilledButton(
             onPressed: busy ? null : _save,
             child: Text(busy ? 'Saving…' : 'Save Changes'),
+          ),
+          const SizedBox(height: 28),
+          const Divider(),
+          const SizedBox(height: 12),
+          Text(
+            'NOTES',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (state.lead.notesList.isEmpty)
+            Text('No notes yet.', style: TextStyle(color: Colors.grey.shade600))
+          else
+            ...state.lead.notesList.map(
+              (n) => Card(
+                elevation: 0,
+                color: Colors.grey.shade50,
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(n.note),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${n.authorName.isNotEmpty ? n.authorName : "Staff"} · ${n.createdAt}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _newNoteCtrl,
+                  decoration: const InputDecoration(
+                    hintText: 'Add a note...',
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                  ),
+                  minLines: 1,
+                  maxLines: 3,
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: busy ? null : _addNote,
+                child: const Text('Add'),
+              ),
+            ],
           ),
         ],
       ),
