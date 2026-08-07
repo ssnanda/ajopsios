@@ -34,7 +34,7 @@ class LeadStatusStepper extends StatelessWidget {
     final current = lead.leadStatus.isEmpty ? 'new' : lead.leadStatus;
 
     if (current == 'customer' || current == 'lost' || current == 'future_follow_up') {
-      return _TerminalBadge(lead: lead, current: current, busy: busy, onReopen: () => onChange('new'));
+      return _TerminalBadge(lead: lead, current: current, busy: busy, onChange: onChange);
     }
 
     final steps = lead.linearPipelineStages;
@@ -147,9 +147,14 @@ class _TerminalBadge extends StatelessWidget {
   final Lead lead;
   final String current;
   final bool busy;
-  final VoidCallback onReopen;
 
-  const _TerminalBadge({required this.lead, required this.current, required this.busy, required this.onReopen});
+  /// Same callback the stepper's steps use — LeadDetailScreen._setStage already handles
+  /// 'future_follow_up' generically (shows the date picker, saves whatever status is passed
+  /// with the picked date) regardless of the lead's current status, so re-passing
+  /// 'future_follow_up' here to change the date doesn't need a separate code path.
+  final void Function(String stage) onChange;
+
+  const _TerminalBadge({required this.lead, required this.current, required this.busy, required this.onChange});
 
   @override
   Widget build(BuildContext context) {
@@ -171,30 +176,43 @@ class _TerminalBadge extends StatelessWidget {
         fg = followUpDue ? Colors.red.shade900 : Colors.amber.shade900;
     }
 
+    final isFollowUp = current == 'future_follow_up';
+
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
       spacing: 10,
       children: [
         GestureDetector(
-          onTap: busy ? null : onReopen,
+          // Used to always reopen (reset to New) on tap, even for Future Follow-Up — which meant
+          // "I just want to update the date" silently reset the whole lead's status. Tapping the
+          // chip now edits the date instead; reopening moved to its own explicit "Reopen" tap target.
+          onTap: busy ? null : () => onChange(isFollowUp ? 'future_follow_up' : 'new'),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
             child: Text(
-              '${leadPipelineLabels[current] ?? current} — tap to reopen',
+              '${leadPipelineLabels[current] ?? current} — tap to ${isFollowUp ? 'change date' : 'reopen'}',
               style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 13),
             ),
           ),
         ),
         if (current == 'customer' && lead.customerName.isNotEmpty)
           Text('→ ${lead.customerName}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-        if (current == 'future_follow_up' && lead.leadFollowUpAt.isNotEmpty)
+        if (isFollowUp && lead.leadFollowUpAt.isNotEmpty)
           Text(
             (followUpDue ? 'Due ' : '') + _fmtDate(lead.leadFollowUpAt),
             style: TextStyle(
               color: followUpDue ? Colors.red.shade700 : Colors.grey.shade600,
               fontWeight: FontWeight.w600,
               fontSize: 12,
+            ),
+          ),
+        if (isFollowUp)
+          GestureDetector(
+            onTap: busy ? null : () => onChange('new'),
+            child: Text(
+              'Reopen',
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 12, decoration: TextDecoration.underline),
             ),
           ),
       ],

@@ -76,7 +76,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
     }
   }
 
-  Future<void> _setStage(LeadDetailNotifier notifier, String stage) async {
+  Future<void> _setStage(LeadDetailNotifier notifier, Lead lead, String stage) async {
     if (stage == 'customer') {
       final result = await pickCustomer(context, allowManualEntry: true);
       if (result == null || !mounted) return;
@@ -91,11 +91,17 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
     }
 
     if (stage == 'future_follow_up') {
+      final now = DateTime.now();
+      // Prefill with the lead's existing follow-up date when editing one already set — showDatePicker
+      // requires initialDate >= firstDate or it throws, so an overdue (past) existing date falls back
+      // to today rather than crashing.
+      final existing = DateTime.tryParse(lead.leadFollowUpAt);
+      final initialDate = existing != null && !existing.isBefore(now) ? existing : now;
       final date = await showDatePicker(
         context: context,
-        initialDate: DateTime.now(),
-        firstDate: DateTime.now(),
-        lastDate: DateTime.now().add(const Duration(days: 365)),
+        initialDate: initialDate,
+        firstDate: now,
+        lastDate: now.add(const Duration(days: 365)),
         helpText: 'When to follow up?',
       );
       if (date == null || !mounted) return;
@@ -147,7 +153,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
           LeadStatusStepper(
             lead: lead,
             busy: state.busy,
-            onChange: (stage) => _setStage(notifier, stage),
+            onChange: (stage) => _setStage(notifier, lead, stage),
           ),
           const SizedBox(height: 20),
           Text(
