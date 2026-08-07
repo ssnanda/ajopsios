@@ -78,12 +78,13 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
 
   Future<void> _setStage(LeadDetailNotifier notifier, String stage) async {
     if (stage == 'customer') {
-      final customer = await pickCustomer(context);
-      if (customer == null || !mounted) return;
+      final result = await pickCustomer(context, allowManualEntry: true);
+      if (result == null || !mounted) return;
       await _run(
         () => notifier.setStage(
           'customer',
-          stripeCustomerId: customer.stripeCustomerId,
+          stripeCustomerId: result.customer?.stripeCustomerId,
+          nonStripeCustomerName: result.manualName,
         ),
       );
       return;

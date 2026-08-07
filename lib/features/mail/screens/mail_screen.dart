@@ -251,7 +251,7 @@ class _AddMailSheetState extends State<_AddMailSheet> {
             InkWell(
               onTap: () async {
                 final picked = await pickCustomer(context);
-                if (picked != null) setState(() => _customer = picked);
+                if (picked?.customer != null) setState(() => _customer = picked!.customer);
               },
               child: InputDecorator(
                 decoration: InputDecoration(
