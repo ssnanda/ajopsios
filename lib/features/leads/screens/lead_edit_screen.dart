@@ -242,6 +242,11 @@ class _LeadEditScreenState extends ConsumerState<LeadEditScreen> {
               ),
               const SizedBox(width: 8),
               FilledButton(
+                // See matching comment in lead_detail_screen.dart — AjTheme's FilledButtonThemeData
+                // minimumSize is Size.fromHeight(52), which is Size(double.infinity, 52); without
+                // this override the button demands infinite width inside this finite Row and the
+                // whole row fails to render.
+                style: FilledButton.styleFrom(minimumSize: const Size(64, 44)),
                 onPressed: busy ? null : _addNote,
                 child: const Text('Add Note'),
               ),

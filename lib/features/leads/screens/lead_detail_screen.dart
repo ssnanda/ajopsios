@@ -203,6 +203,13 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
               ),
               const SizedBox(width: 8),
               FilledButton(
+                // AjTheme's FilledButtonThemeData sets minimumSize: Size.fromHeight(52), and
+                // Size.fromHeight sets WIDTH to infinity, not just height (intentional for
+                // full-width CTA buttons elsewhere). Left un-overridden here, that infinite-width
+                // minimum fights this Row's finite space and the button (plus its Expanded
+                // sibling) fails to lay out at all — the whole row silently disappears instead of
+                // rendering, which is why this button was reported as not showing up on device.
+                style: FilledButton.styleFrom(minimumSize: const Size(64, 44)),
                 onPressed: state.busy
                     ? null
                     : () async {
