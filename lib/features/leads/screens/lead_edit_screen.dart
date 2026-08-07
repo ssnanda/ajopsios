@@ -243,7 +243,7 @@ class _LeadEditScreenState extends ConsumerState<LeadEditScreen> {
               const SizedBox(width: 8),
               FilledButton(
                 onPressed: busy ? null : _addNote,
-                child: const Text('Add'),
+                child: const Text('Add Note'),
               ),
             ],
           ),

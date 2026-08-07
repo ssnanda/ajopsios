@@ -211,7 +211,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
                         _noteCtrl.clear();
                         await _run(() => notifier.addNote(text));
                       },
-                child: const Text('Add'),
+                child: const Text('Add Note'),
               ),
             ],
           ),
