@@ -15,6 +15,7 @@ import '../models/customer_model.dart';
 import '../models/mail_item_model.dart';
 import '../models/customer_file_model.dart';
 import '../models/gmail_intake_item_model.dart';
+import '../models/visitor_model.dart';
 
 /// Thin wrapper around the shared Dio client for the `/ops/*` endpoints.
 /// Mirrors AJOps' own AJCoreClient (ajops/src/lib/ajcore/client.ts) so both
@@ -167,6 +168,40 @@ class OpsApi {
     return list
         .map((e) => ChatSession.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  /// [online] true = "Live Monitor" (currently connected — ended_at IS NULL on their latest AJCore
+  /// visit row); omitted/false = full Visitor History. Same /ops/visitors endpoint either way — see
+  /// get_ops_visitor_history() in class-ajcore-rest-api.php.
+  Future<List<Visitor>> getVisitors({bool? online, String? search}) async {
+    final resp = await ApiClient.instance.dio.get(
+      ApiEndpoints.visitors,
+      queryParameters: {
+        if (online == true) 'online': '1',
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
+    final list =
+        (resp.data as Map<String, dynamic>)['visitors'] as List<dynamic>? ?? [];
+    return list.map((e) => Visitor.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<void> linkVisitor(
+    String visitorUuid, {
+    String? stripeCustomerId,
+    int? leadId,
+  }) async {
+    await ApiClient.instance.dio.post(
+      ApiEndpoints.visitorLink(visitorUuid),
+      data: {
+        if (stripeCustomerId != null) 'stripe_customer_id': stripeCustomerId,
+        if (leadId != null) 'lead_id': leadId,
+      },
+    );
+  }
+
+  Future<void> unlinkVisitor(String visitorUuid) async {
+    await ApiClient.instance.dio.post(ApiEndpoints.visitorUnlink(visitorUuid));
   }
 
   Future<List<ChatMessage>> getChatSessionMessages(int id) async {

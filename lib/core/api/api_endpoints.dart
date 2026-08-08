@@ -39,6 +39,13 @@ class ApiEndpoints {
   static String chatSessionUnclaim(int id) => '/ops/chat/sessions/$id/unclaim';
   static String chatSessionClose(int id) => '/ops/chat/sessions/$id/close';
 
+  // ── Visitor History / Live Monitor ──────────────────────────────────────
+  static const String visitors = '/ops/visitors';
+  static String visitorLink(String visitorUuid) =>
+      '/ops/visitors/${Uri.encodeComponent(visitorUuid)}/link';
+  static String visitorUnlink(String visitorUuid) =>
+      '/ops/visitors/${Uri.encodeComponent(visitorUuid)}/unlink';
+
   // ── UPOS Temps (Resideo thermostats) ────────────────────────────────────
   // Bulk (all configured devices) and per-device are separate route sets on
   // AJCore, not one endpoint with an optional deviceId.
