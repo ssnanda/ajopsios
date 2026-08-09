@@ -17,6 +17,10 @@ class Visitor {
   final String firstSeen;
   final String lastSeen;
   final bool isOnline;
+  // Cumulative across every visit (including how long a still-online visit has run so far) — the
+  // "visit timer" keeps climbing on a repeat visit rather than resetting to 0 each time. AJOps web
+  // reads it the same way (see get_ops_visitor_history() in class-ajcore-rest-api.php).
+  final int totalSeconds;
   final String linkedStripeCustomerId;
   final String linkedCustomerName;
   final int linkedLeadId;
@@ -37,6 +41,7 @@ class Visitor {
     required this.firstSeen,
     required this.lastSeen,
     required this.isOnline,
+    required this.totalSeconds,
     required this.linkedStripeCustomerId,
     required this.linkedCustomerName,
     required this.linkedLeadId,
@@ -46,8 +51,13 @@ class Visitor {
   bool get isLinked => linkedCustomerName.isNotEmpty || linkedLeadName.isNotEmpty;
 
   // Same "possibly the same person" heuristic AJOps web clusters by — display-only, never treated
-  // as identity (shared WiFi/VPN/carrier NAT all cause false matches).
-  String get clusterKey => '$ipAddress|$browser|$os';
+  // as identity (shared WiFi/VPN/carrier NAT all cause false matches). browser/os are "name +
+  // version" (e.g. "Mobile Safari 17.4.1") — strip the trailing version token so an iOS/browser
+  // point update between visits doesn't fragment the same phone into separate clusters.
+  String get clusterKey =>
+      '$ipAddress|${_stripVersion(browser)}|${_stripVersion(os)}';
+
+  static String _stripVersion(String s) => s.replaceAll(RegExp(r'\s+\d[\d.]*$'), '');
 
   String get location => [city, region, country].where((s) => s.isNotEmpty).join(', ');
 
@@ -67,10 +77,22 @@ class Visitor {
       firstSeen: json['first_seen'] as String? ?? '',
       lastSeen: json['last_seen'] as String? ?? '',
       isOnline: json['is_online'] == true,
+      totalSeconds: (json['total_seconds'] as num?)?.toInt() ?? 0,
       linkedStripeCustomerId: json['linked_stripe_customer_id'] as String? ?? '',
       linkedCustomerName: json['linked_customer_name'] as String? ?? '',
       linkedLeadId: (json['linked_lead_id'] as num?)?.toInt() ?? 0,
       linkedLeadName: json['linked_lead_name'] as String? ?? '',
     );
   }
+}
+
+/// "2h 14m" / "9m" / "42s" — used for Visitor.totalSeconds on both Visitor History (static, as of
+/// last load) and Live Monitor (ticks locally between polls for a currently-online visitor; see
+/// LiveMonitorScreen).
+String formatVisitDuration(int totalSeconds) {
+  if (totalSeconds < 60) return '${totalSeconds}s';
+  final hours = totalSeconds ~/ 3600;
+  final minutes = (totalSeconds % 3600) ~/ 60;
+  if (hours > 0) return '${hours}h ${minutes}m';
+  return '${minutes}m';
 }

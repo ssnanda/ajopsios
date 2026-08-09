@@ -124,7 +124,8 @@ class _VisitorCardState extends ConsumerState<_VisitorCard> {
             ],
             const SizedBox(height: 6),
             Text(
-              '${v.visits} visit${v.visits == 1 ? '' : 's'} · last seen ${_fmt(v.lastSeen)}',
+              '${v.visits} visit${v.visits == 1 ? '' : 's'} · '
+              '${formatVisitDuration(v.totalSeconds)} total · last seen ${_fmt(v.lastSeen)}',
               style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
             ),
             const SizedBox(height: 10),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/ops_api.dart';
@@ -65,6 +66,39 @@ class _OnlineVisitorCard extends StatefulWidget {
 
 class _OnlineVisitorCardState extends State<_OnlineVisitorCard> {
   bool _busy = false;
+
+  // The visit timer "keeps going up" between the 10s polls rather than jumping in steps — ticks
+  // locally off totalSeconds as of the last poll (_baseSeconds/_baseAt), resynced in
+  // didUpdateWidget() whenever a fresh poll actually changes it, so any drift self-corrects rather
+  // than compounding.
+  late int _baseSeconds = widget.visitor.totalSeconds;
+  late DateTime _baseAt = DateTime.now();
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _OnlineVisitorCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.visitor.totalSeconds != oldWidget.visitor.totalSeconds) {
+      _baseSeconds = widget.visitor.totalSeconds;
+      _baseAt = DateTime.now();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  int get _displaySeconds => _baseSeconds + DateTime.now().difference(_baseAt).inSeconds;
 
   Future<void> _link() async {
     final result = await pickVisitorLinkTarget(context);
@@ -145,11 +179,22 @@ class _OnlineVisitorCardState extends State<_OnlineVisitorCard> {
                 ],
               ),
             ),
-            if (!v.isLinked)
-              TextButton(
-                onPressed: _busy ? null : _link,
-                child: Text(_busy ? '…' : 'Link'),
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Deliberately understated — a live "keeps going up" number for anyone who happens to
+                // look, not a headline stat competing with the rest of the card.
+                Text(
+                  '$_displaySeconds',
+                  style: TextStyle(fontFamily: 'monospace', fontSize: 10, color: Colors.grey.shade400),
+                ),
+                if (!v.isLinked)
+                  TextButton(
+                    onPressed: _busy ? null : _link,
+                    child: Text(_busy ? '…' : 'Link'),
+                  ),
+              ],
+            ),
           ],
         ),
       ),
