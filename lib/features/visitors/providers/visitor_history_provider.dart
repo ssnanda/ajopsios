@@ -41,7 +41,11 @@ class VisitorHistoryNotifier extends StateNotifier<VisitorHistoryState> {
     state = state.copyWith(loading: true, clearError: true);
     try {
       final visitors = await _api.getVisitors();
-      state = state.copyWith(visitors: visitors, loading: false, clearError: true);
+      // API already orders by latest visit start, but sort explicitly by lastSeen (mirrors AJOps
+      // web's VisitorHistoryClient) so a visit that started earlier but ended later still lands
+      // on top, and so this stays correct if the API's own ordering ever changes.
+      final sorted = [...visitors]..sort((a, b) => b.lastSeen.compareTo(a.lastSeen));
+      state = state.copyWith(visitors: sorted, loading: false, clearError: true);
     } catch (e) {
       state = state.copyWith(loading: false, error: friendlyError(e));
     }

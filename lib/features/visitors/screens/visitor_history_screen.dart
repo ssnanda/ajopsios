@@ -189,7 +189,10 @@ String _fmt(String mysqlDateTime) {
   final normalized = mysqlDateTime.contains('T') ? mysqlDateTime : mysqlDateTime.replaceFirst(' ', 'T');
   final dt = DateTime.tryParse(normalized);
   if (dt == null) return mysqlDateTime;
-  return '${dt.month}/${dt.day}/${dt.year}';
+  final hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+  final minute = dt.minute.toString().padLeft(2, '0');
+  final ampm = dt.hour < 12 ? 'AM' : 'PM';
+  return '${dt.month}/${dt.day}/${dt.year}, $hour12:$minute $ampm';
 }
 
 class LinkTargetResult {
