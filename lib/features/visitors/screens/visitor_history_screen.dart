@@ -185,11 +185,17 @@ class _VisitorCardState extends ConsumerState<_VisitorCard> {
   }
 }
 
+// AJCore's first_seen/last_seen come from AJOps' server.js (toMysqlDatetime(), backed by
+// Date#toISOString — always UTC), not from a WordPress current_time('mysql') call — parsed as UTC
+// here and converted with .toLocal() so it always reads as the viewer's own local time (was
+// previously parsed as if the string were already local, which showed times several hours off
+// whenever the device's timezone wasn't the same as AJCore's server clock).
 String _fmt(String mysqlDateTime) {
   if (mysqlDateTime.isEmpty) return '—';
   final normalized = mysqlDateTime.contains('T') ? mysqlDateTime : mysqlDateTime.replaceFirst(' ', 'T');
-  final dt = DateTime.tryParse(normalized);
-  if (dt == null) return mysqlDateTime;
+  final utc = DateTime.tryParse(normalized.endsWith('Z') ? normalized : '${normalized}Z');
+  if (utc == null) return mysqlDateTime;
+  final dt = utc.toLocal();
   final hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
   final minute = dt.minute.toString().padLeft(2, '0');
   final ampm = dt.hour < 12 ? 'AM' : 'PM';
