@@ -4,6 +4,8 @@ import '../../../core/api/ops_api.dart';
 import '../../../core/models/customer_model.dart';
 import '../../../core/models/lead_model.dart';
 import '../../../core/models/visitor_model.dart';
+import '../../../core/providers/site_status_provider.dart';
+import '../../../core/utils/timezone_utils.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
@@ -72,6 +74,11 @@ class _VisitorCardState extends ConsumerState<_VisitorCard> {
   Widget build(BuildContext context) {
     final v = widget.visitor;
     final notifier = ref.read(visitorHistoryProvider.notifier);
+    // Falls back to offset 0 / no abbreviation (i.e. shows as UTC) only while /status hasn't
+    // resolved yet or AJCore is briefly unreachable — never a hardcoded business-zone guess.
+    final siteStatus = ref.watch(siteStatusProvider).valueOrNull;
+    final tzOffset = siteStatus?.utcOffsetSeconds ?? 0;
+    final tzAbbr = siteStatus?.timezoneAbbr ?? '';
 
     return Card(
       elevation: 0,
@@ -125,7 +132,8 @@ class _VisitorCardState extends ConsumerState<_VisitorCard> {
             const SizedBox(height: 6),
             Text(
               '${v.visits} visit${v.visits == 1 ? '' : 's'} · '
-              '${formatVisitDuration(v.totalSeconds)} total · last seen ${_fmt(v.lastSeen)}',
+              '${formatVisitDuration(v.totalSeconds)} total · last seen '
+              '${formatUtcWithOffset(v.lastSeen, tzOffset, tzAbbr)}',
               style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
             ),
             const SizedBox(height: 10),
@@ -183,23 +191,6 @@ class _VisitorCardState extends ConsumerState<_VisitorCard> {
       ),
     );
   }
-}
-
-// AJCore's first_seen/last_seen come from AJOps' server.js (toMysqlDatetime(), backed by
-// Date#toISOString — always UTC), not from a WordPress current_time('mysql') call — parsed as UTC
-// here and converted with .toLocal() so it always reads as the viewer's own local time (was
-// previously parsed as if the string were already local, which showed times several hours off
-// whenever the device's timezone wasn't the same as AJCore's server clock).
-String _fmt(String mysqlDateTime) {
-  if (mysqlDateTime.isEmpty) return '—';
-  final normalized = mysqlDateTime.contains('T') ? mysqlDateTime : mysqlDateTime.replaceFirst(' ', 'T');
-  final utc = DateTime.tryParse(normalized.endsWith('Z') ? normalized : '${normalized}Z');
-  if (utc == null) return mysqlDateTime;
-  final dt = utc.toLocal();
-  final hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-  final minute = dt.minute.toString().padLeft(2, '0');
-  final ampm = dt.hour < 12 ? 'AM' : 'PM';
-  return '${dt.month}/${dt.day}/${dt.year}, $hour12:$minute $ampm';
 }
 
 class LinkTargetResult {

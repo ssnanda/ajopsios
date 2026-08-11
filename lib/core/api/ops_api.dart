@@ -16,6 +16,7 @@ import '../models/mail_item_model.dart';
 import '../models/customer_file_model.dart';
 import '../models/gmail_intake_item_model.dart';
 import '../models/visitor_model.dart';
+import '../models/api_status_model.dart';
 
 /// Thin wrapper around the shared Dio client for the `/ops/*` endpoints.
 /// Mirrors AJOps' own AJCoreClient (ajops/src/lib/ajcore/client.ts) so both
@@ -27,6 +28,14 @@ class OpsApi {
   Future<OpsSummaryModel> getSummary() async {
     final resp = await ApiClient.instance.dio.get(ApiEndpoints.summary);
     return OpsSummaryModel.fromJson(resp.data as Map<String, dynamic>);
+  }
+
+  /// AJCore's configured business timezone, among other status fields — see
+  /// siteStatusProvider for the cached/shared way screens should read this
+  /// rather than every widget calling this directly.
+  Future<ApiStatusModel> getStatus() async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.status);
+    return ApiStatusModel.fromJson(resp.data as Map<String, dynamic>);
   }
 
   Future<List<StaffModel>> getStaff() async {
