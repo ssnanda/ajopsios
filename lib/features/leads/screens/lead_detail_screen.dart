@@ -21,20 +21,49 @@ String _defaultOutreachMessage(String firstName) {
       '4 - Something Else / Talk to a Person';
 }
 
-/// https://voice.google.com/u/0/messages?a=nc,+1XXXXXXXXXX opens Google Voice's own "new
-/// message" compose pre-addressed to the number (app via universal link if installed, else
-/// Safari) — mirrors the "calls" variant of this same deep link. Google doesn't expose a URL
-/// parameter to prefill the message body itself (checked — none of the documented/observed
-/// voice.google.com query params do this), so the practical equivalent of "prepopulated text"
-/// is copying a default message to the clipboard first: the compose box opens empty, but
-/// pasting it is one tap instead of typing it out.
+/// Google Voice has no documented custom URL scheme (checked — unlike e.g. Slack's slack://,
+/// there's no googlevoice://); voice.google.com/u/0/{calls|messages}?a=nc,+1XXXXXXXXXX is a
+/// universal link the app registers for both calling and texting pre-addressed to a number. The
+/// bug this works around: launching it with LaunchMode.externalApplication lets iOS fall back to
+/// Safari when it feels like it (often once a domain has been opened in Safari before, iOS just
+/// keeps doing that instead of offering the app), and voice.google.com loaded in plain Safari
+/// without an active Google Voice web session redirects to workspace.google.com instead of the
+/// compose view — which is the exact "loads in browser, bounces to workspace.google.com" bug
+/// report this fixes. LaunchMode.externalNonBrowserApplication asks iOS to hand off to a
+/// non-browser app ONLY, refusing (returning false) rather than ever falling back to Safari — so
+/// this tries that first, and only falls back to the plain external mode (which may hit Safari)
+/// if it fails, meaning Google Voice genuinely isn't installed.
+Future<bool> _launchGoogleVoiceUniversalLink(String path, String e164) async {
+  final uri = Uri.parse('https://voice.google.com/u/0/$path?a=nc,+$e164');
+  if (await launchUrl(uri, mode: LaunchMode.externalNonBrowserApplication)) {
+    return true;
+  }
+  return launchUrl(uri, mode: LaunchMode.externalApplication);
+}
+
+Future<void> _launchGoogleVoiceCall(BuildContext context, String phone) async {
+  final digits = phone.replaceAll(RegExp(r'\D'), '');
+  if (digits.isEmpty) return;
+  final e164 = digits.length == 10 ? '1$digits' : digits;
+  final ok = await _launchGoogleVoiceUniversalLink('calls', e164);
+  if (!context.mounted) return;
+  if (!ok) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Could not open Google Voice — is it installed?')),
+    );
+  }
+}
+
+/// Google doesn't expose a URL parameter to prefill the message body itself (checked — none of
+/// the documented/observed voice.google.com query params do this), so the practical equivalent of
+/// "prepopulated text" is copying a default message to the clipboard first: the compose box opens
+/// empty, but pasting it is one tap instead of typing it out.
 Future<void> _launchGoogleVoiceText(BuildContext context, String phone, String firstName) async {
   final digits = phone.replaceAll(RegExp(r'\D'), '');
   if (digits.isEmpty) return;
   final e164 = digits.length == 10 ? '1$digits' : digits;
   await Clipboard.setData(ClipboardData(text: _defaultOutreachMessage(firstName)));
-  final uri = Uri.parse('https://voice.google.com/u/0/messages?a=nc,+$e164');
-  final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  final ok = await _launchGoogleVoiceUniversalLink('messages', e164);
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
@@ -292,6 +321,14 @@ class _PhoneRow extends StatelessWidget {
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             onPressed: () => _copyPhone(context, phone),
+          ),
+          const SizedBox(width: 12),
+          IconButton(
+            icon: const Icon(Icons.call_outlined, size: 18),
+            tooltip: 'Call via Google Voice',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => _launchGoogleVoiceCall(context, phone),
           ),
           const SizedBox(width: 12),
           IconButton(
