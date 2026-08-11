@@ -21,53 +21,51 @@ String _defaultOutreachMessage(String firstName) {
       '4 - Something Else / Talk to a Person';
 }
 
-/// Google Voice has no documented custom URL scheme (checked — unlike e.g. Slack's slack://,
-/// there's no googlevoice://); voice.google.com/u/0/{calls|messages}?a=nc,+1XXXXXXXXXX is a
-/// universal link the app registers for both calling and texting pre-addressed to a number. The
-/// bug this works around: launching it with LaunchMode.externalApplication lets iOS fall back to
-/// Safari when it feels like it (often once a domain has been opened in Safari before, iOS just
-/// keeps doing that instead of offering the app), and voice.google.com loaded in plain Safari
-/// without an active Google Voice web session redirects to workspace.google.com instead of the
-/// compose view — which is the exact "loads in browser, bounces to workspace.google.com" bug
-/// report this fixes. LaunchMode.externalNonBrowserApplication asks iOS to hand off to a
-/// non-browser app ONLY, refusing (returning false) rather than ever falling back to Safari — so
-/// this tries that first, and only falls back to the plain external mode (which may hit Safari)
-/// if it fails, meaning Google Voice genuinely isn't installed.
-Future<bool> _launchGoogleVoiceUniversalLink(String path, String e164) async {
-  final uri = Uri.parse('https://voice.google.com/u/0/$path?a=nc,+$e164');
-  if (await launchUrl(uri, mode: LaunchMode.externalNonBrowserApplication)) {
-    return true;
-  }
-  return launchUrl(uri, mode: LaunchMode.externalApplication);
+/// Google's "/u/N/" path segment (N = 0-based) selects which signed-in Google account a
+/// multi-account link opens against — same convention Gmail/Drive/Calendar all use. Google Voice
+/// was opening the primary account (index 0) instead of the business one; confirmed by hand
+/// (testing https://voice.google.com/u/N/messages for N = 0..3 directly) that this device's
+/// Google Voice account is index 1. If the signed-in account order on this device/app ever
+/// changes, update this — there's no way to detect it from the URL side.
+const int _googleVoiceAccountIndex = 1;
+
+/// Text-only by design — no calling (see _launchGoogleVoiceText below). Google Voice has no
+/// documented custom URL scheme (checked — unlike e.g. Slack's slack://, there's no
+/// googlevoice://); voice.google.com/u/N/... is a universal link the app registers. Deliberately
+/// app-only, no Safari fallback: LaunchMode.externalApplication lets iOS fall back to Safari
+/// whenever it feels like it (often once a domain's been opened in Safari before, iOS just keeps
+/// doing that instead of offering the app), and voice.google.com loaded in plain Safari without an
+/// active session redirects to workspace.google.com instead of the real view — the exact "loads in
+/// browser, bounces to workspace.google.com" bug report this works around. Falling back to that
+/// broken path on failure would be worse than just saying so — better to tell the staff member
+/// Google Voice didn't open than to silently dump them into that redirect.
+/// LaunchMode.externalNonBrowserApplication is what actually enforces "non-browser app only,
+/// refuse rather than fall back to Safari."
+Future<bool> _launchGoogleVoiceUniversalLink(Uri uri) {
+  return launchUrl(uri, mode: LaunchMode.externalNonBrowserApplication);
 }
 
-Future<void> _launchGoogleVoiceCall(BuildContext context, String phone) async {
-  final digits = phone.replaceAll(RegExp(r'\D'), '');
-  if (digits.isEmpty) return;
-  final e164 = digits.length == 10 ? '1$digits' : digits;
-  final ok = await _launchGoogleVoiceUniversalLink('calls', e164);
-  if (!context.mounted) return;
-  if (!ok) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Could not open Google Voice — is it installed?')),
-    );
-  }
-}
-
-/// Google doesn't expose a URL parameter to prefill the message body itself (checked — none of
-/// the documented/observed voice.google.com query params do this), so the practical equivalent of
-/// "prepopulated text" is copying a default message to the clipboard first: the compose box opens
-/// empty, but pasting it is one tap instead of typing it out.
+/// Google doesn't publish a documented "click to text" business widget (unlike calls, which have
+/// an official .../calls?a=nc,+E164 format) — the .../messages?a=nc,+E164 compose-prefill variant
+/// isn't a real registered universal link, which is why it always fell straight to Safari instead
+/// of the app. Opening the bare Messages tab (no query string) is the one Google Voice link that
+/// IS known to work — it lands staff in the right tab instead of the browser, at the cost of not
+/// pre-addressing the recipient. The default outreach message is still copied to the clipboard so
+/// it's one paste away once the compose box is open; the phone number itself is shown in the
+/// confirmation snackbar below to search for since only one thing can live on the clipboard at a
+/// time.
 Future<void> _launchGoogleVoiceText(BuildContext context, String phone, String firstName) async {
-  final digits = phone.replaceAll(RegExp(r'\D'), '');
-  if (digits.isEmpty) return;
-  final e164 = digits.length == 10 ? '1$digits' : digits;
   await Clipboard.setData(ClipboardData(text: _defaultOutreachMessage(firstName)));
-  final ok = await _launchGoogleVoiceUniversalLink('messages', e164);
+  final uri = Uri.parse('https://voice.google.com/u/$_googleVoiceAccountIndex/messages');
+  final ok = await _launchGoogleVoiceUniversalLink(uri);
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
-      content: Text(ok ? 'Message copied — paste it into Google Voice.' : 'Could not open Google Voice.'),
+      content: Text(
+        ok
+            ? 'Message copied — paste it, then search $phone to start the text.'
+            : 'Could not open Google Voice.',
+      ),
     ),
   );
 }
@@ -321,14 +319,6 @@ class _PhoneRow extends StatelessWidget {
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             onPressed: () => _copyPhone(context, phone),
-          ),
-          const SizedBox(width: 12),
-          IconButton(
-            icon: const Icon(Icons.call_outlined, size: 18),
-            tooltip: 'Call via Google Voice',
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: () => _launchGoogleVoiceCall(context, phone),
           ),
           const SizedBox(width: 12),
           IconButton(
