@@ -88,9 +88,12 @@ class Visitor {
 
 /// "2h 14m" / "9m" / "42s" — used for Visitor.totalSeconds on both Visitor History (static, as of
 /// last load) and Live Monitor (ticks locally between polls for a currently-online visitor; see
-/// LiveMonitorScreen).
+/// LiveMonitorScreen). A near-instant visit (page loaded and closed within the same second) makes
+/// AJCore's TIMESTAMPDIFF(SECOND, started_at, ended_at) come back as a genuine 0 — mathematically
+/// correct, but "0s" reads as broken/no-data to someone looking at a visitor who very clearly did
+/// show up, so this floors display at 1s rather than showing that literal 0.
 String formatVisitDuration(int totalSeconds) {
-  if (totalSeconds < 60) return '${totalSeconds}s';
+  if (totalSeconds < 60) return '${totalSeconds <= 0 ? 1 : totalSeconds}s';
   final hours = totalSeconds ~/ 3600;
   final minutes = (totalSeconds % 3600) ~/ 60;
   if (hours > 0) return '${hours}h ${minutes}m';
