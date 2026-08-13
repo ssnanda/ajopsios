@@ -13,6 +13,7 @@ class Lead {
   final String company;
   final String source;
   final String notes;
+  final String ipAddress;
   final String createdAt;
   final String stripeCustomerId;
   final String customerName;
@@ -37,6 +38,7 @@ class Lead {
     required this.company,
     required this.source,
     required this.notes,
+    required this.ipAddress,
     required this.createdAt,
     required this.stripeCustomerId,
     required this.customerName,
@@ -63,6 +65,7 @@ class Lead {
       company: json['company'] as String? ?? '',
       source: json['source'] as String? ?? '',
       notes: json['notes'] as String? ?? '',
+      ipAddress: json['ip_address'] as String? ?? '',
       createdAt: json['created_at'] as String? ?? '',
       stripeCustomerId: json['stripe_customer_id'] as String? ?? '',
       customerName: json['customer_name'] as String? ?? '',

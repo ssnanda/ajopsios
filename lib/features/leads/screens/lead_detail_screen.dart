@@ -320,6 +320,8 @@ class _InfoCard extends StatelessWidget {
               _Row(icon: Icons.source_outlined, text: lead.source),
             if (lead.formTitle.isNotEmpty)
               _Row(icon: Icons.description_outlined, text: lead.formTitle),
+            if (lead.ipAddress.isNotEmpty)
+              _Row(icon: Icons.language_rounded, text: 'IP ${lead.ipAddress}'),
             if (lead.createdAt.isNotEmpty)
               _Row(icon: Icons.schedule_outlined, text: 'Submitted ${formatSiteLocalDatetime(lead.createdAt)}'),
             if (lead.notes.isNotEmpty) ...[
