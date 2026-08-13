@@ -367,6 +367,10 @@ class OpsApi {
     );
   }
 
+  Future<void> deleteLead(int id) async {
+    await ApiClient.instance.dio.delete(ApiEndpoints.lead(id));
+  }
+
   /// Same field set AJOps web's Edit Lead form saves (name/email/phone/company/
   /// source/notes/site) — PATCH /ops/leads/{id}. Only non-null fields are sent.
   Future<Lead> updateLead(

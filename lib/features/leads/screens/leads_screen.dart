@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/lead_model.dart';
+import '../../../core/utils/timezone_utils.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
@@ -183,6 +184,10 @@ class _LeadCard extends StatelessWidget {
                             style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                             overflow: TextOverflow.ellipsis,
                           ),
+                        ),
+                        Text(
+                          formatSiteLocalDatetime(lead.createdAt),
+                          style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
                         ),
                       ],
                     ),

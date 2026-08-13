@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/lead_model.dart';
+import '../../../core/utils/timezone_utils.dart';
 import '../../../core/widgets/customer_picker.dart';
 import '../providers/lead_detail_provider.dart';
 import '../widgets/lead_status_stepper.dart';
@@ -144,6 +145,32 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
     await _run(() => notifier.setStage(stage));
   }
 
+  Future<void> _deleteLead(LeadDetailNotifier notifier, Lead lead) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete this lead?'),
+        content: Text('${lead.displayName} will be permanently deleted. This can\'t be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final err = await notifier.deleteLead();
+    if (!mounted) return;
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+      return;
+    }
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(leadDetailProvider(widget.lead));
@@ -160,6 +187,11 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => LeadEditScreen(lead: lead)),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline_rounded),
+            tooltip: 'Delete Lead',
+            onPressed: state.busy ? null : () => _deleteLead(notifier, lead),
           ),
         ],
       ),
@@ -208,7 +240,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
                       Text(n.note),
                       const SizedBox(height: 4),
                       Text(
-                        '${n.authorName.isNotEmpty ? n.authorName : "Staff"} · ${n.createdAt}',
+                        '${n.authorName.isNotEmpty ? n.authorName : "Staff"} · ${formatSiteLocalDatetime(n.createdAt)}',
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey.shade500,
@@ -288,6 +320,8 @@ class _InfoCard extends StatelessWidget {
               _Row(icon: Icons.source_outlined, text: lead.source),
             if (lead.formTitle.isNotEmpty)
               _Row(icon: Icons.description_outlined, text: lead.formTitle),
+            if (lead.createdAt.isNotEmpty)
+              _Row(icon: Icons.schedule_outlined, text: 'Submitted ${formatSiteLocalDatetime(lead.createdAt)}'),
             if (lead.notes.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(lead.notes, style: TextStyle(color: Colors.grey.shade700)),

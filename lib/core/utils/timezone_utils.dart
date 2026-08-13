@@ -23,3 +23,23 @@ String formatUtcWithOffset(String mysqlDateTime, int offsetSeconds, String abbr)
   final abbrSuffix = abbr.isNotEmpty ? ' $abbr' : '';
   return '${shifted.month}/${shifted.day}/${shifted.year}, $hour12:$minute $ampm$abbrSuffix';
 }
+
+/// Formats an AJCore "Y-m-d H:i:s" string that's already in the site's business timezone (written
+/// via PHP's current_time('mysql') — leads, notes, etc.; NOT the UTC contract Visitor History
+/// uses, see formatUtcWithOffset() above for that one). No shifting needed at all here — the wall-
+/// clock numbers in the string are already correct, so this just reformats them directly rather
+/// than parsing through DateTime (which would apply the device's own zone via .toLocal(), or
+/// misread the string as UTC if 'Z' got appended — both wrong for a value that's neither).
+String formatSiteLocalDatetime(String mysqlDateTime) {
+  if (mysqlDateTime.isEmpty) return '—';
+  final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})').firstMatch(mysqlDateTime);
+  if (match == null) return mysqlDateTime;
+  final month = int.parse(match.group(2)!);
+  final day = int.parse(match.group(3)!);
+  final year = match.group(1)!;
+  final hour = int.parse(match.group(4)!);
+  final minute = match.group(5)!;
+  final hour12 = hour % 12 == 0 ? 12 : hour % 12;
+  final ampm = hour < 12 ? 'AM' : 'PM';
+  return '$month/$day/$year, $hour12:$minute $ampm';
+}

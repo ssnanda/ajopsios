@@ -74,6 +74,21 @@ class LeadDetailNotifier extends StateNotifier<LeadDetailState> {
     state = state.copyWith(lead: refreshed);
   });
 
+  /// Unlike _run()'s other actions, there's no updated lead to patch the list cache with — the
+  /// row is gone — so this calls leadsProvider's removeLead() directly and lets the caller (the
+  /// detail screen) decide what to do on success, typically popping back to the list.
+  Future<String?> deleteLead() async {
+    state = state.copyWith(busy: true);
+    try {
+      await _api.deleteLead(state.lead.id);
+      _ref.read(leadsProvider.notifier).removeLead(state.lead.id);
+      return null;
+    } catch (e) {
+      state = state.copyWith(busy: false);
+      return friendlyError(e);
+    }
+  }
+
   Future<String?> _run(Future<void> Function() action) async {
     state = state.copyWith(busy: true);
     try {

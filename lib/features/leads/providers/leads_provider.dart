@@ -104,6 +104,12 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
   void addLead(Lead lead) {
     state = state.copyWith(leads: [lead, ...state.leads]);
   }
+
+  /// Called after a successful delete on the detail screen — same "patch the cache in place"
+  /// reasoning as patchLead() above, just removing instead of replacing.
+  void removeLead(int id) {
+    state = state.copyWith(leads: [for (final l in state.leads) if (l.id != id) l]);
+  }
 }
 
 final leadsProvider = StateNotifierProvider.autoDispose<LeadsNotifier, LeadsState>((ref) => LeadsNotifier());
