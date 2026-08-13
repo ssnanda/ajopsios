@@ -204,6 +204,17 @@ class _LeadCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                       ),
+                    if (lead.ipAddress.isNotEmpty)
+                      Row(
+                        children: [
+                          Icon(Icons.language_rounded, size: 13, color: Colors.grey.shade500),
+                          const SizedBox(width: 4),
+                          Text(
+                            'IP ${lead.ipAddress}',
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
                     const SizedBox(height: 6),
                     _StageBadge(status: lead.leadStatus),
                     if (latestNote != null) ...[
