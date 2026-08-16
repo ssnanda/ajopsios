@@ -4,7 +4,7 @@
 class Lead {
   final int id;
   final String formTitle;
-  final String status; // new | read | won | lost | duplicate
+  final String status; // new | read | won | lost | duplicate | spam
   final String leadStatus; // pipeline: new|auto_reached|engaged|tour|customer|future_follow_up|lost
   final String leadFollowUpAt;
   final String name;
@@ -84,6 +84,7 @@ class Lead {
   bool get isWon => leadStatus == 'customer';
   bool get isLost => leadStatus == 'lost';
   bool get isDuplicate => status == 'duplicate';
+  bool get isSpam => status == 'spam';
 
   /// True while a Future Follow-Up lead's date hasn't arrived yet — once it's due, it's no longer "future".
   bool get isFutureFollowUp {
@@ -127,6 +128,49 @@ class LeadNote {
         authorName: json['author_name'] as String? ?? '',
         createdAt: json['created_at'] as String? ?? '',
       );
+}
+
+/// POST /ops/leads/bulk (action=mark_spam) response shape — best-effort Cloudflare IP-block
+/// outcome, reported back so the caller can tell staff exactly what happened (see
+/// bulk_ops_leads() in class-ajcore-rest-api.php; matches AJOps web's bulkMarkSpam() parsing).
+class MarkSpamResult {
+  final List<String> blockedIps;
+  final List<String> alreadyBlockedIps;
+  final List<String> blockErrorIps;
+
+  const MarkSpamResult({
+    required this.blockedIps,
+    required this.alreadyBlockedIps,
+    required this.blockErrorIps,
+  });
+
+  factory MarkSpamResult.fromJson(Map<String, dynamic> json) => MarkSpamResult(
+        blockedIps: (json['blocked_ips'] as List<dynamic>? ?? []).map((e) => e.toString()).toList(),
+        alreadyBlockedIps: (json['already_blocked_ips'] as List<dynamic>? ?? []).map((e) => e.toString()).toList(),
+        blockErrorIps: (json['block_errors'] as List<dynamic>? ?? [])
+            .map((e) => (e as Map<String, dynamic>)['ip']?.toString() ?? '')
+            .where((ip) => ip.isNotEmpty)
+            .toList(),
+      );
+
+  /// Same summary sentence(s) AJOps web's bulkMarkSpam() alert shows — empty when there was
+  /// nothing worth reporting (e.g. the lead had no IP address on record).
+  String? get summary {
+    final parts = <String>[];
+    if (blockedIps.isNotEmpty) {
+      parts.add('Blocked ${blockedIps.length} IP${blockedIps.length == 1 ? '' : 's'} on Cloudflare.');
+    }
+    if (alreadyBlockedIps.isNotEmpty) {
+      parts.add('${alreadyBlockedIps.length} IP${alreadyBlockedIps.length == 1 ? '' : 's'} already blocked.');
+    }
+    if (blockErrorIps.isNotEmpty) {
+      parts.add(
+        '${blockErrorIps.length} IP${blockErrorIps.length == 1 ? '' : 's'} could not be blocked '
+        '(${blockErrorIps.join(", ")}) — check the Cloudflare API Token/Zone ID in AJ Core.',
+      );
+    }
+    return parts.isEmpty ? null : parts.join(' ');
+  }
 }
 
 /// Fallback linear stage order used only when AJCore's row is missing

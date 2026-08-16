@@ -89,6 +89,19 @@ class LeadDetailNotifier extends StateNotifier<LeadDetailState> {
     }
   }
 
+  /// Result carries the IP-block summary (for the caller's snackbar) alongside the friendly error
+  /// string _run() normally returns alone — reuses _run() for the busy/patch-cache/error plumbing
+  /// by stashing the result in a local var the inner closure captures.
+  Future<(String? error, MarkSpamResult? result)> markSpam() async {
+    MarkSpamResult? result;
+    final err = await _run(() async {
+      result = await _api.markLeadSpam(state.lead.id);
+      final refreshed = await _api.getLead(state.lead.id);
+      state = state.copyWith(lead: refreshed);
+    });
+    return (err, result);
+  }
+
   Future<String?> _run(Future<void> Function() action) async {
     state = state.copyWith(busy: true);
     try {

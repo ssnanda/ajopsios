@@ -171,6 +171,43 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
     Navigator.of(context).pop();
   }
 
+  /// Same confirm wording and IP-block outcome reporting as AJOps web's bulkMarkSpam() (just for
+  /// one lead instead of a multi-select). Pops back to the list afterward — same reasoning as
+  /// _deleteLead above: the lead no longer belongs in whatever view (typically Active) staff
+  /// opened it from.
+  Future<void> _markSpam(LeadDetailNotifier notifier, Lead lead) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mark as spam?'),
+        content: Text(
+          "${lead.displayName} will be hidden from Active (recoverable from the Spam view) "
+          "and its IP address will be blocked on Cloudflare.",
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Mark Spam', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final (err, result) = await notifier.markSpam();
+    if (!mounted) return;
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+      return;
+    }
+    // Captured before popping — showSnackBar needs a live BuildContext, and this screen's own
+    // context is about to be removed from the tree.
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pop();
+    messenger.showSnackBar(SnackBar(content: Text(result?.summary ?? 'Marked as spam.')));
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(leadDetailProvider(widget.lead));
@@ -188,6 +225,12 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
               MaterialPageRoute(builder: (_) => LeadEditScreen(lead: lead)),
             ),
           ),
+          if (!lead.isSpam)
+            IconButton(
+              icon: const Icon(Icons.report_outlined),
+              tooltip: 'Mark as Spam',
+              onPressed: state.busy ? null : () => _markSpam(notifier, lead),
+            ),
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded),
             tooltip: 'Delete Lead',

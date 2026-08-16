@@ -371,6 +371,17 @@ class OpsApi {
     await ApiClient.instance.dio.delete(ApiEndpoints.lead(id));
   }
 
+  /// Same POST /ops/leads/bulk (action=mark_spam) endpoint AJOps web's bulkMarkSpam() uses, just
+  /// with a single id — hides the lead from Active (status='spam', recoverable from the Spam
+  /// view) and best-effort blocks its IP address on Cloudflare.
+  Future<MarkSpamResult> markLeadSpam(int id) async {
+    final resp = await ApiClient.instance.dio.post(
+      ApiEndpoints.leadsBulk,
+      data: {'action': 'mark_spam', 'ids': [id]},
+    );
+    return MarkSpamResult.fromJson(resp.data as Map<String, dynamic>);
+  }
+
   /// Same field set AJOps web's Edit Lead form saves (name/email/phone/company/
   /// source/notes/site) — PATCH /ops/leads/{id}. Only non-null fields are sent.
   Future<Lead> updateLead(

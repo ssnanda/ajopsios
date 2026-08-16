@@ -62,6 +62,7 @@ class ApiEndpoints {
   static String lead(int id) => '/ops/leads/$id';
   static String leadNotes(int id) => '/ops/leads/$id/notes';
   static String leadPipelineStatus(int id) => '/ops/leads/$id/pipeline-status';
+  static const String leadsBulk = '/ops/leads/bulk';
 
   // ── Connected sites (site picker on the lead edit form) ────────────────────
   static const String sites = '/ops/sites';

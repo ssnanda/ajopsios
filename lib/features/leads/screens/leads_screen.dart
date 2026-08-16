@@ -72,6 +72,7 @@ class _LeadsScreenState extends ConsumerState<LeadsScreen> {
                 _ViewChip(label: 'Active', view: LeadsView.active, current: state.view, onSelect: notifier.setView),
                 _ViewChip(label: 'Customer', view: LeadsView.customer, current: state.view, onSelect: notifier.setView),
                 _ViewChip(label: 'Lost', view: LeadsView.lost, current: state.view, onSelect: notifier.setView),
+                _ViewChip(label: 'Spam', view: LeadsView.spam, current: state.view, onSelect: notifier.setView),
                 _ViewChip(label: 'All', view: LeadsView.all, current: state.view, onSelect: notifier.setView),
               ],
             ),

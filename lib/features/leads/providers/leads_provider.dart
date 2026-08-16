@@ -4,19 +4,23 @@ import '../../../core/models/lead_model.dart';
 import '../../../core/utils/error_utils.dart';
 
 // Naming matches AJOps web and AJCore's WP-admin queue labels exactly: Active / Lost / Customer /
-// All — kept in sync deliberately so support conversations about "which queue" don't need
+// Spam / All — kept in sync deliberately so support conversations about "which queue" don't need
 // translating between apps.
-enum LeadsView { active, customer, lost, all }
+enum LeadsView { active, customer, lost, spam, all }
 
 extension LeadsViewMatcher on LeadsView {
   bool matches(Lead lead) => switch (this) {
         // A merged/duplicate lead keeps its old pipeline stage (e.g. "engaged") since merging
         // only sets status='duplicate' + merged_into_lead_id, not lead_status — so it must be
-        // excluded here explicitly, same as AJOps web's "active" view does.
-        LeadsView.active => !lead.isWon && !lead.isLost && !lead.isDuplicate,
+        // excluded here explicitly, same as AJOps web's "active" view does. Spam is excluded the
+        // same way (status='spam', lead_status untouched) — this was previously missing here,
+        // which is why a lead marked spam kept showing up as Active on this app specifically
+        // (AJOps web already excluded it; found 2026-08-15).
+        LeadsView.active => !lead.isWon && !lead.isLost && !lead.isDuplicate && !lead.isSpam,
         // Bundles merged duplicates in with actual customers, same as AJOps web's "customer" view.
         LeadsView.customer => lead.isWon || lead.isDuplicate,
         LeadsView.lost => lead.isLost,
+        LeadsView.spam => lead.isSpam,
         LeadsView.all => true,
       };
 }
