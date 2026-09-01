@@ -45,3 +45,12 @@ app.*.map.json
 /android/app/release
 
 CLAUDE.local.md
+
+# CocoaPods lock files — regenerated per machine
+/ios/Podfile.lock
+/macos/Podfile.lock
+
+# Build artifacts staged by bin/*.sh (they live in ~/Documents/GitHub/)
+*.ipa
+*.apk
+*.aab

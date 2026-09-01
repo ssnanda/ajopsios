@@ -1,0 +1,33 @@
+{
+  "name": "AJ Ops",
+  "identifier": "com.ncllcagents.ajops.altstore",
+  "sourceURL": "https://raw.githubusercontent.com/ssnanda/ajopsios/main/altstore.json",
+  "apps": [
+    {
+      "name": "AJ Ops",
+      "bundleIdentifier": "com.ncllcagents.ajopsios",
+      "developerName": "NC LLC Agents Inc.",
+      "subtitle": "Staff app for NC LLC Agents",
+      "localizedDescription": "AJ Ops — internal staff app (mail scan, tasks, live chat, service requests).",
+      "iconURL": "https://raw.githubusercontent.com/ssnanda/ajopsios/main/web/icons/Icon-512.png",
+      "tintColor": "1A3C6E",
+      "screenshotURLs": [],
+      "version": "1.0.67",
+      "versionDate": "2026-08-30",
+      "versionDescription": "Build 1.0.67+62",
+      "downloadURL": "https://github.com/ssnanda/ajopsios/releases/download/ios-latest/ajopsios.ipa",
+      "size": 24839526,
+      "versions": [
+        {
+          "version": "1.0.67",
+          "date": "2026-08-30",
+          "localizedDescription": "Build 1.0.67+62",
+          "downloadURL": "https://github.com/ssnanda/ajopsios/releases/download/ios-latest/ajopsios.ipa",
+          "size": 24839526,
+          "minOSVersion": "13.0"
+        }
+      ]
+    }
+  ],
+  "news": []
+}
