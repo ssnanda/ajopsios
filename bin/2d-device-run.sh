@@ -9,9 +9,9 @@ set -e
 # want to point a physical device at local DDEV for debugging.
 #
 # Common runs:
-#   ./bin/device-run.sh
-#   ./bin/device-run.sh --local
-#   ./bin/device-run.sh --device 00008130-00116C4800A1401C
+#   ./bin/2d-device-run.sh
+#   ./bin/2d-device-run.sh --local
+#   ./bin/2d-device-run.sh --device 00008130-00116C4800A1401C
 
 API_BASE_URL="https://ncllcagents.com/wp-json/ajcore/v1"
 DEVICE_ID=""
@@ -22,7 +22,7 @@ usage() {
 AJ Ops — physical device launcher (defaults to production).
 
 Usage:
-  ./bin/device-run.sh [options]
+  ./bin/2d-device-run.sh [options]
 
 Options:
   --local       Use local DDEV (http://ncllc.ddev.site) instead of production

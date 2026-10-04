@@ -5,24 +5,23 @@ Build + release scripts for **AJ Ops** (`ssnanda/ajopsios`). Same scheme as
 
 | script | purpose | output |
 |---|---|---|
-| `bump-version.sh` | resolve next version → write `pubspec.yaml` → commit `Release AJ Ops X.Y.Z+B` | — |
-| `ajopsios-ipa.sh` | build iOS IPA (API `ncllcagents.com`) → optional publish to rolling `ios-latest` + `altstore.json` | `~/Documents/GitHub/ipa/ajopsios.ipa` |
-| `ajopsios-apk.sh` | build Android APK/AAB → optional publish to rolling `android-latest` | `~/Documents/GitHub/apk/ajopsios.apk` / `.aab` |
-
-These replace the old **`build-ipa.sh`** and **`release.sh`** (still present —
-`git rm bin/build-ipa.sh bin/release.sh` once you're happy with the new ones).
-`device-run.sh`, `sim-iphone.sh`, `sim-ipad.sh` are unchanged; rename them to
-`ajopsios-sim-*.sh` with `git mv` if you want the prefix everywhere.
+| `1-bump-version.sh` | resolve next version → write `pubspec.yaml` → commit `Release AJ Ops X.Y.Z+B` | — |
+| `2a-ajopsios-ipa.sh` | build + publish iOS IPA to rolling `ios-latest` and update `altstore.json` | `~/Documents/GitHub/ipa/ajopsios.ipa` |
+| `2b-sim-iphone.sh` | run the app in the configured iPhone simulator | — |
+| `2c-sim-ipad.sh` | run the app in the configured iPad simulator | — |
+| `2d-device-run.sh` | run the app on a physical iOS device | — |
+| `2e-ajopsios-apk.sh` | build Android APK/AAB → optional publish to rolling `android-latest` | `~/Documents/GitHub/apk/ajopsios.apk` / `.aab` |
 
 ## Usage
 
 ```bash
-./bin/bump-version.sh              # interactive menu, bump + commit
-./bin/ajopsios-ipa.sh             # build current version + commit (no push)
-./bin/ajopsios-ipa.sh --bump patch
-./bin/ajopsios-ipa.sh --bump patch --publish   # + push + roll ios-latest + altstore.json
-./bin/ajopsios-apk.sh --aab
-./bin/ajopsios-ipa.sh --prune-old              # one-time: delete old v* releases/tags
+./bin/1-bump-version.sh           # interactive menu, bump + commit
+./bin/2a-ajopsios-ipa.sh          # bump if dirty, build, push, publish, update AltStore
+./bin/2a-ajopsios-ipa.sh --local  # build only; do not push or publish
+./bin/2b-sim-iphone.sh
+./bin/2c-sim-ipad.sh
+./bin/2d-device-run.sh
+./bin/2e-ajopsios-apk.sh --aab
 ```
 
 ### Default behaviour (no flags)
@@ -31,12 +30,9 @@ These replace the old **`build-ipa.sh`** and **`release.sh`** (still present —
    `bump-version.sh` runs (bump `pubspec.yaml`, commit the tree). Clean tree with
    no flags → builds the current version, no bump.
 2. Build the IPA / APK.
-3. **Stops there** — nothing is pushed, no GitHub release.
-
-`--push` also pushes the branch. `--publish` implies `--push` and additionally:
-force-moves the `ios-latest` / `android-latest` tag to HEAD, deletes the old
-release, creates a fresh one with the artifact attached, and (iOS) regenerates +
-commits `altstore.json`.
+3. The iOS script pushes the branch, regenerates `altstore.json`, and refreshes
+   the rolling `ios-latest` release by default. Use `--local` to stop after the
+   local build. Android publishing remains opt-in with `--publish`.
 
 ## AltStore (iOS auto-update)
 
@@ -49,8 +45,8 @@ https://raw.githubusercontent.com/ssnanda/ajopsios/main/altstore.json
 Add it as a Source in AltStore, install AJ Ops from it, and **Refresh All**
 (AltServer running) pulls the newest IPA from the `ios-latest` release.
 
-- AltStore compares `CFBundleShortVersionString` (`1.0.67`) — use
-  `bump-version.sh` patch/minor/major, not **build**, or AltStore won't see an update.
+- The generated source includes both `CFBundleShortVersionString` as `version`
+  and `CFBundleVersion` as `buildVersion`, plus the IPA's privacy permissions.
 - Bundle id: `com.ncllcagents.ajopsios`.
 - `--publish` keeps the manifest's `version` / `size` / `downloadURL` in sync.
 

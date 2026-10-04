@@ -1,44 +1,34 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# AJ Ops — iOS IPA builder (+ optional publish)
-# --------------------------------------------
-# Builds a release IPA (API: https://ncllcagents.com) and moves it to
-# ~/Documents/GitHub/ipa/ajopsios.ipa.
+# AJ Ops — Android APK/AAB builder (+ optional publish)
+# ----------------------------------------------------
+# Builds a release APK (or AAB) (API: https://ncllcagents.com) and moves it to
+# ~/Documents/GitHub/apk/ajopsios.apk (or .aab).
 #
-# Version bumping lives in bin/bump-version.sh — this script calls it when the
-# working tree has uncommitted changes (or you pass --bump/--version/--no-bump).
-# By default it BUILDS and COMMITS the bump but does NOT push. Add:
-#   --push      also push the branch to origin
-#   --publish   push + refresh the rolling "ios-latest" GitHub release + altstore.json
+# Version bumping lives in bin/1-bump-version.sh — called when the tree is dirty
+# or you pass --bump/--version/--no-bump. By default: build + commit, no push.
+#   --push      also push the branch
+#   --publish   push + refresh the rolling "android-latest" GitHub release
 #
 # Common runs:
-#   ./bin/ajopsios-ipa.sh
-#   ./bin/ajopsios-ipa.sh --quick
-#   ./bin/ajopsios-ipa.sh --bump patch
-#   ./bin/ajopsios-ipa.sh --bump patch --publish
-#   ./bin/ajopsios-ipa.sh --no-git-commit
-#   ./bin/ajopsios-ipa.sh --delete
+#   ./bin/2e-ajopsios-apk.sh
+#   ./bin/2e-ajopsios-apk.sh --aab
+#   ./bin/2e-ajopsios-apk.sh --bump patch --publish
+#   ./bin/2e-ajopsios-apk.sh --no-bump
+#   ./bin/2e-ajopsios-apk.sh --delete
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BIN_DIR="$ROOT_DIR/bin"
 PUBSPEC_FILE="$ROOT_DIR/pubspec.yaml"
-IPA_OUTPUT_DIR="$HOME/Documents/GitHub/ipa"
+APK_OUTPUT_DIR="$HOME/Documents/GitHub/apk"
 APP_NAME="AJ Ops"
-IPA_BUILD_DIR="$ROOT_DIR/build/ios/ipa"
-IPA_FINAL_PATH="$IPA_OUTPUT_DIR/ajopsios.ipa"
 GITHUB_REPO="ssnanda/ajopsios"
-RELEASE_TAG="ios-latest"
-RELEASE_TITLE="AJ Ops — iOS (latest)"
+RELEASE_TAG="android-latest"
+RELEASE_TITLE="AJ Ops — Android (latest)"
 API_BASE_URL="https://ncllcagents.com/wp-json/ajcore/v1"
 
-ALTSTORE_MANIFEST="$ROOT_DIR/altstore.json"
-ALTSTORE_BRANCH="main"
-ALTSTORE_SOURCE_ID="com.ncllcagents.ajops.altstore"
-ALTSTORE_SOURCE_URL="https://raw.githubusercontent.com/$GITHUB_REPO/$ALTSTORE_BRANCH/altstore.json"
-ALTSTORE_ICON_URL="https://raw.githubusercontent.com/$GITHUB_REPO/$ALTSTORE_BRANCH/web/icons/Icon-512.png"
-ALTSTORE_MIN_IOS="13.0"
-
+BUILD_TYPE="apk"
 GIT_COMMIT="true"
 GIT_PUSH="false"
 GITHUB_RELEASE="false"
@@ -48,19 +38,20 @@ PRUNE_OLD="false"
 
 usage() {
   cat <<'USAGE'
-AJ Ops — iOS IPA builder (production API: https://ncllcagents.com).
+AJ Ops — Android APK/AAB builder (production API: https://ncllcagents.com).
 
 Usage:
-  ./bin/ajopsios-ipa.sh [options]
+  ./bin/2e-ajopsios-apk.sh [options]
 
 Options:
-  --version X.Y.Z+B     Force a version (passed to bump-version.sh)
+  --aab                 Build an Android App Bundle instead of an APK
+  --version X.Y.Z+B     Force a version (passed to 1-bump-version.sh)
   --bump patch|minor|major|build
   --no-bump             Build the current version, don't bump
-  --delete              Delete the local IPA and exit (no build)
+  --delete              Delete the local APK/AAB and exit (no build)
   --repo OWNER/REPO     Override GitHub repo (default: ssnanda/ajopsios)
   --push                Push the branch to origin after building
-  --publish             Push + refresh the rolling ios-latest release + altstore.json
+  --publish             Push + refresh the rolling android-latest release
   --prune-old           Delete leftover per-version v* releases/tags, then exit
   --no-git-commit       Rewrite pubspec.yaml only, don't commit the bump
   --quick               Skip flutter clean (faster rebuild)
@@ -82,7 +73,7 @@ validate_version() {
 
 require_files() {
   [[ -f "$PUBSPEC_FILE" ]] || { echo "Error: missing pubspec.yaml at $PUBSPEC_FILE" >&2; exit 1; }
-  [[ -x "$BIN_DIR/bump-version.sh" ]] || { echo "Error: missing bin/bump-version.sh" >&2; exit 1; }
+  [[ -x "$BIN_DIR/1-bump-version.sh" ]] || { echo "Error: missing bin/1-bump-version.sh" >&2; exit 1; }
   command -v flutter >/dev/null 2>&1 || { echo "Error: flutter command is required" >&2; exit 1; }
 }
 
@@ -121,12 +112,17 @@ git_push_branch() {
   echo "Git: pushed $branch"
 }
 
-delete_old_ipa() {
-  [[ -f "$IPA_FINAL_PATH" ]] && { echo "Deleting old IPA: $IPA_FINAL_PATH"; rm -f "$IPA_FINAL_PATH"; }
+delete_old_artifact() {
+  for ext in apk aab; do
+    [[ -f "$APK_OUTPUT_DIR/ajopsios.$ext" ]] && {
+      echo "Deleting old artifact: $APK_OUTPUT_DIR/ajopsios.$ext"
+      rm -f "$APK_OUTPUT_DIR/ajopsios.$ext"
+    }
+  done
   return 0
 }
 
-build_ipa() {
+build_artifact() {
   echo ""
   if [[ "$SKIP_CLEAN" == "true" ]]; then
     echo "Skipping flutter clean (--quick)..."
@@ -136,90 +132,33 @@ build_ipa() {
 
   echo ""; echo "Getting dependencies..."; flutter pub get
 
-  echo ""; echo "Building IPA (API: $API_BASE_URL)..."
-  rm -rf "$IPA_BUILD_DIR"
-  flutter build ipa --release --export-method development \
-    --dart-define="AJ_API_BASE_URL=$API_BASE_URL"
-
-  local built_ipa
-  built_ipa="$(find "$IPA_BUILD_DIR" -maxdepth 1 -name '*.ipa' -print -quit 2>/dev/null || true)"
-  [[ -n "$built_ipa" && -f "$built_ipa" ]] || { echo "Error: no IPA in $IPA_BUILD_DIR" >&2; exit 1; }
-
-  echo ""; echo "Moving IPA to $IPA_FINAL_PATH..."
-  mkdir -p "$IPA_OUTPUT_DIR"
-  mv -f "$built_ipa" "$IPA_FINAL_PATH"
-  [[ -f "$IPA_FINAL_PATH" ]] || { echo "Error: failed to move IPA to $IPA_FINAL_PATH" >&2; exit 1; }
-}
-
-app_bundle_id() {
-  awk -F '[[:space:]]*=[[:space:]]*|;' \
-    '/PRODUCT_BUNDLE_IDENTIFIER/ && !/RunnerTests/ {gsub(/[[:space:]]/,"",$2); print $2; exit}' \
-    "$ROOT_DIR/ios/Runner.xcodeproj/project.pbxproj"
-}
-
-write_altstore_manifest() {
-  require_git
-  cd "$ROOT_DIR"
-
-  local short="${VERSION%+*}" size date bundle dl
-  size="$(stat -f%z "$IPA_FINAL_PATH")"
-  date="$(date +%Y-%m-%d)"
-  bundle="$(app_bundle_id)"; bundle="${bundle:-com.ncllcagents.ajopsios}"
-  dl="https://github.com/$GITHUB_REPO/releases/download/$RELEASE_TAG/$(basename "$IPA_FINAL_PATH")"
-
-  cat > "$ALTSTORE_MANIFEST" <<JSON
-{
-  "name": "$APP_NAME",
-  "identifier": "$ALTSTORE_SOURCE_ID",
-  "sourceURL": "$ALTSTORE_SOURCE_URL",
-  "apps": [
-    {
-      "name": "$APP_NAME",
-      "bundleIdentifier": "$bundle",
-      "developerName": "NC LLC Agents Inc.",
-      "subtitle": "Staff app for NC LLC Agents",
-      "localizedDescription": "AJ Ops — internal staff app (mail scan, tasks, live chat, service requests).",
-      "iconURL": "$ALTSTORE_ICON_URL",
-      "tintColor": "1A3C6E",
-      "screenshotURLs": [],
-      "version": "$short",
-      "versionDate": "$date",
-      "versionDescription": "Build $VERSION",
-      "downloadURL": "$dl",
-      "size": $size,
-      "versions": [
-        {
-          "version": "$short",
-          "date": "$date",
-          "localizedDescription": "Build $VERSION",
-          "downloadURL": "$dl",
-          "size": $size,
-          "minOSVersion": "$ALTSTORE_MIN_IOS"
-        }
-      ]
-    }
-  ],
-  "news": []
-}
-JSON
-
-  git add "$ALTSTORE_MANIFEST"
-  if git diff --cached --quiet; then
-    echo "AltStore: manifest unchanged"
+  local src
+  if [[ "$BUILD_TYPE" == "aab" ]]; then
+    echo ""; echo "Building AAB (API: $API_BASE_URL)..."
+    flutter build appbundle --release --dart-define="AJ_API_BASE_URL=$API_BASE_URL"
+    src="$ROOT_DIR/build/app/outputs/bundle/release/app-release.aab"
   else
-    git commit -m "AltStore manifest $VERSION"
-    echo "AltStore: manifest updated for $VERSION"
+    echo ""; echo "Building APK (API: $API_BASE_URL)..."
+    flutter build apk --release --dart-define="AJ_API_BASE_URL=$API_BASE_URL"
+    src="$ROOT_DIR/build/app/outputs/flutter-apk/app-release.apk"
   fi
+
+  [[ -f "$src" ]] || { echo "Error: artifact not found at $src" >&2; exit 1; }
+
+  echo ""; echo "Moving artifact to $ARTIFACT_FINAL_PATH..."
+  mkdir -p "$APK_OUTPUT_DIR"
+  cp -f "$src" "$ARTIFACT_FINAL_PATH"
+  [[ -f "$ARTIFACT_FINAL_PATH" ]] || { echo "Error: failed to copy artifact to $ARTIFACT_FINAL_PATH" >&2; exit 1; }
 }
 
-publish_latest_ipa() {
+publish_latest_artifact() {
   require_gh
   require_git
   cd "$ROOT_DIR"
 
   local sha notes
   sha="$(git rev-parse --short HEAD)"
-  notes="$APP_NAME iOS — version $VERSION
+  notes="$APP_NAME Android — version $VERSION ($BUILD_TYPE)
 Built $(date '+%Y-%m-%d %H:%M %Z') from commit $sha.
 This release always holds the latest build; older builds are not kept."
 
@@ -232,10 +171,10 @@ This release always holds the latest build; older builds are not kept."
     gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPO" --yes
   fi
 
-  gh release create "$RELEASE_TAG" "$IPA_FINAL_PATH" \
-    --repo "$GITHUB_REPO" --title "$RELEASE_TITLE" --notes "$notes" --latest
+  gh release create "$RELEASE_TAG" "$ARTIFACT_FINAL_PATH" \
+    --repo "$GITHUB_REPO" --title "$RELEASE_TITLE" --notes "$notes"
   echo "GitHub: published $VERSION to $RELEASE_TAG"
-  echo "  https://github.com/$GITHUB_REPO/releases/download/$RELEASE_TAG/$(basename "$IPA_FINAL_PATH")"
+  echo "  https://github.com/$GITHUB_REPO/releases/download/$RELEASE_TAG/$(basename "$ARTIFACT_FINAL_PATH")"
 }
 
 prune_old_releases() {
@@ -265,6 +204,7 @@ NO_BUMP="false"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --aab) BUILD_TYPE="aab"; shift ;;
     --version) VERSION_OVERRIDE="${2:-}"; shift 2 ;;
     --bump) BUMP_PART="${2:-}"; shift 2 ;;
     --no-bump) NO_BUMP="true"; shift ;;
@@ -280,7 +220,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ "$DELETE_ONLY" == "true" ]]; then delete_old_ipa; exit 0; fi
+ARTIFACT_FINAL_PATH="$APK_OUTPUT_DIR/ajopsios.$BUILD_TYPE"
+
+if [[ "$DELETE_ONLY" == "true" ]]; then delete_old_artifact; exit 0; fi
 if [[ "$PRUNE_OLD" == "true" ]]; then require_git; prune_old_releases; exit 0; fi
 
 require_files
@@ -297,7 +239,7 @@ RUN_BUMP="false"
 if [[ -n "$VERSION_OVERRIDE" || -n "$BUMP_PART" || "$NO_BUMP" == "true" ]]; then
   RUN_BUMP="true"
 elif working_tree_dirty; then
-  echo "Uncommitted changes detected — running bump-version.sh"
+  echo "Uncommitted changes detected — running 1-bump-version.sh"
   RUN_BUMP="true"
 else
   echo "Working tree clean and no --bump/--version — building current version $CURRENT_VERSION"
@@ -309,7 +251,7 @@ if [[ "$RUN_BUMP" == "true" ]]; then
   [[ -n "$BUMP_PART" ]] && BUMP_ARGS+=(--bump "$BUMP_PART")
   [[ "$NO_BUMP" == "true" ]] && BUMP_ARGS+=(--no-bump)
   [[ "$GIT_COMMIT" == "true" ]] || BUMP_ARGS+=(--no-commit)
-  "$BIN_DIR/bump-version.sh" ${BUMP_ARGS[@]+"${BUMP_ARGS[@]}"}
+  "$BIN_DIR/1-bump-version.sh" ${BUMP_ARGS[@]+"${BUMP_ARGS[@]}"}
 fi
 
 VERSION="$(get_version)"
@@ -321,37 +263,31 @@ fi
 
 echo ""
 echo "════════════════════════════════════════"
-echo "  $APP_NAME — IPA Builder"
+echo "  $APP_NAME — Android Builder"
 echo "  API: $API_BASE_URL"
+echo "  Type: $BUILD_TYPE"
 echo "════════════════════════════════════════"
 echo "Version: $VERSION"
 echo "════════════════════════════════════════"
 echo ""
 
-delete_old_ipa
-build_ipa
-
-if [[ "$GITHUB_RELEASE" == "true" && "$GIT_COMMIT" == "true" ]]; then
-  write_altstore_manifest
-fi
+delete_old_artifact
+build_artifact
 
 if [[ "$GIT_PUSH" == "true" ]]; then
   git_push_branch
 fi
 
 if [[ "$GITHUB_RELEASE" == "true" ]]; then
-  publish_latest_ipa
+  publish_latest_artifact
 fi
 
 echo ""
 echo "════════════════════════════════════════"
 echo "  Done!"
 echo "════════════════════════════════════════"
-echo "Version:    $VERSION"
-echo "Built IPA:  $IPA_FINAL_PATH"
-if [[ "$GITHUB_RELEASE" == "true" ]]; then
-  echo "Release:    https://github.com/$GITHUB_REPO/releases/tag/$RELEASE_TAG"
-  echo "AltStore:   $ALTSTORE_SOURCE_URL"
-fi
+echo "Version:        $VERSION"
+echo "Built artifact: $ARTIFACT_FINAL_PATH"
+[[ "$GITHUB_RELEASE" == "true" ]] && echo "Release:        https://github.com/$GITHUB_REPO/releases/tag/$RELEASE_TAG"
 echo "════════════════════════════════════════"
 echo ""

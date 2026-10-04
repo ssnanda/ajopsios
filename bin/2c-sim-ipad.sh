@@ -7,8 +7,8 @@ set -e
 # Use --prod to test against the live production server instead.
 #
 # Common runs:
-#   ./bin/sim-ipad.sh
-#   ./bin/sim-ipad.sh --prod
+#   ./bin/2c-sim-ipad.sh
+#   ./bin/2c-sim-ipad.sh --prod
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEVICE_ID="742ECF76-F70A-44B7-A614-6785A7AA8B11"
@@ -21,7 +21,7 @@ usage() {
 AJ Ops — iPad simulator launcher.
 
 Usage:
-  ./bin/sim-ipad.sh [options]
+  ./bin/2c-sim-ipad.sh [options]
 
 Options:
   --prod        Use production server (https://ncllcagents.com) instead of local DDEV

@@ -7,8 +7,8 @@ set -e
 # Use --prod to test against the live production server instead.
 #
 # Common runs:
-#   ./bin/sim-iphone.sh
-#   ./bin/sim-iphone.sh --prod
+#   ./bin/2b-sim-iphone.sh
+#   ./bin/2b-sim-iphone.sh --prod
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEVICE_ID="BAE45ECD-3952-41E5-AAF0-5AD93C703CBE"
@@ -21,7 +21,7 @@ usage() {
 AJ Ops — iPhone simulator launcher.
 
 Usage:
-  ./bin/sim-iphone.sh [options]
+  ./bin/2b-sim-iphone.sh [options]
 
 Options:
   --prod        Use production server (https://ncllcagents.com) instead of local DDEV

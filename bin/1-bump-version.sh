@@ -6,17 +6,17 @@ set -euo pipefail
 # Resolves the next version, writes it to pubspec.yaml, and commits the working
 # tree as "Release AJ Ops X.Y.Z+B".
 #
-# Run it directly, or let bin/ajopsios-ipa.sh / bin/ajopsios-apk.sh call it —
+# Run it directly, or let bin/2a-ajopsios-ipa.sh / bin/2e-ajopsios-apk.sh call it —
 # they invoke this automatically whenever the working tree has uncommitted
 # changes (or when you pass them --bump / --version / --no-bump).
 #
 # Common runs:
-#   ./bin/bump-version.sh                 # interactive menu
-#   ./bin/bump-version.sh --bump patch
-#   ./bin/bump-version.sh --version 1.2.0+7
-#   ./bin/bump-version.sh --no-bump       # commit the current version as-is
-#   ./bin/bump-version.sh --bump patch --push
-#   ./bin/bump-version.sh --no-commit     # only rewrite pubspec.yaml, no commit
+#   ./bin/1-bump-version.sh                 # interactive menu
+#   ./bin/1-bump-version.sh --bump patch
+#   ./bin/1-bump-version.sh --version 1.2.0+7
+#   ./bin/1-bump-version.sh --no-bump       # commit the current version as-is
+#   ./bin/1-bump-version.sh --bump patch --push
+#   ./bin/1-bump-version.sh --no-commit     # only rewrite pubspec.yaml, no commit
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PUBSPEC_FILE="$ROOT_DIR/pubspec.yaml"
@@ -33,7 +33,7 @@ usage() {
 AJ Ops — version bump + release commit.
 
 Usage:
-  ./bin/bump-version.sh [options]
+  ./bin/1-bump-version.sh [options]
 
 Options:
   --version X.Y.Z+B   Set an explicit version
