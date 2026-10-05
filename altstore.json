@@ -12,7 +12,7 @@
       "iconURL": "https://raw.githubusercontent.com/ssnanda/ajopsios/main/web/icons/Icon-512.png",
       "tintColor": "1A3C6E",
       "category": "utilities",
-      "screenshots": [],
+      "screenshotURLs": [],
       "versions": [
         {
           "version": "1.0.72",
@@ -23,16 +23,7 @@
           "size": 24330950,
           "minOSVersion": "13.0"
         }
-      ],
-      "appPermissions": {
-        "entitlements": [
-          "get-task-allow"
-        ],
-        "privacy": {
-          "NSCameraUsageDescription": "Used to scan mail and attach photos to files.",
-          "NSPhotoLibraryUsageDescription": "Used to attach an existing photo when scanning mail or uploading a file."
-        }
-      }
+      ]
     }
   ],
   "news": []

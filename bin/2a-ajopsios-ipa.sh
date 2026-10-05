@@ -180,7 +180,7 @@ write_altstore_manifest() {
       "iconURL": "$ALTSTORE_ICON_URL",
       "tintColor": "1A3C6E",
       "category": "utilities",
-      "screenshots": [],
+      "screenshotURLs": [],
       "versions": [
         {
           "version": "$short",
@@ -191,16 +191,7 @@ write_altstore_manifest() {
           "size": $size,
           "minOSVersion": "$ALTSTORE_MIN_IOS"
         }
-      ],
-      "appPermissions": {
-        "entitlements": [
-          "get-task-allow"
-        ],
-        "privacy": {
-          "NSCameraUsageDescription": "Used to scan mail and attach photos to files.",
-          "NSPhotoLibraryUsageDescription": "Used to attach an existing photo when scanning mail or uploading a file."
-        }
-      }
+      ]
     }
   ],
   "news": []
