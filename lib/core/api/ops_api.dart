@@ -8,7 +8,6 @@ import '../models/service_request_history_model.dart';
 import '../models/staff_model.dart';
 import '../models/chat_session_model.dart';
 import '../models/chat_message_model.dart';
-import '../models/upos_device_model.dart';
 import '../models/lead_model.dart';
 import '../models/connected_site_model.dart';
 import '../models/customer_model.dart';
@@ -258,56 +257,6 @@ class OpsApi {
     );
     return ChatSession.fromJson(
       (resp.data as Map<String, dynamic>)['session'] as Map<String, dynamic>,
-    );
-  }
-
-  // ── UPOS Temps ───────────────────────────────────────────────────────────
-
-  Future<(List<UposDevice>, UposSettingsStatus)> getUposTemps() async {
-    final resp = await ApiClient.instance.dio.get(ApiEndpoints.uposTemps);
-    final data = resp.data as Map<String, dynamic>;
-    final devices = (data['devices'] as List<dynamic>? ?? [])
-        .map((e) => UposDevice.fromJson(e as Map<String, dynamic>))
-        .toList();
-    final settings = UposSettingsStatus.fromJson(
-      data['settings'] as Map<String, dynamic>? ?? {},
-    );
-    return (devices, settings);
-  }
-
-  /// deviceId null = bulk (every configured device) — AJCore exposes these as
-  /// separate route sets, not one endpoint with an optional deviceId.
-  Future<void> setUposSystemMode(
-    String mode, {
-    String? deviceId,
-    List<String>? deviceIds,
-  }) async {
-    final path = deviceId == null
-        ? ApiEndpoints.uposTempsSystemBulk
-        : ApiEndpoints.uposTempsDeviceSystem(deviceId);
-    await ApiClient.instance.dio.post(
-      path,
-      data: {
-        'mode': mode,
-        if (deviceId == null && deviceIds != null) 'device_ids': deviceIds,
-      },
-    );
-  }
-
-  Future<void> setUposFanMode(
-    String mode, {
-    String? deviceId,
-    List<String>? deviceIds,
-  }) async {
-    final path = deviceId == null
-        ? ApiEndpoints.uposTempsFanBulk
-        : ApiEndpoints.uposTempsDeviceFan(deviceId);
-    await ApiClient.instance.dio.post(
-      path,
-      data: {
-        'mode': mode,
-        if (deviceId == null && deviceIds != null) 'device_ids': deviceIds,
-      },
     );
   }
 
