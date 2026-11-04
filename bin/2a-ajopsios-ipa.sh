@@ -85,7 +85,7 @@ require_files() {
 }
 
 require_git() {
-  command -v git >/dev/null 2>&1 || { echo "Error: git command is required" >&2; exit 1; }
+  command -v git >/dev/null 2>&1 || { echo "Error: git command is required" >&2; exit1; }
   git -C "$ROOT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
     echo "Error: $ROOT_DIR is not a git repository" >&2
     exit 1
@@ -97,7 +97,7 @@ require_gh() {
     echo "Error: GitHub CLI required for --publish. 'brew install gh' or drop --publish." >&2
     exit 1
   }
-  gh auth status >/dev/null 2>&1 || { echo "Error: run 'gh auth login'." >&2; exit 1; }
+  gh auth status >/dev/null 2>&1 || { echo "Error: run 'gh auth login'." >&2; exit 1;}
 }
 
 working_tree_dirty() { [[ -n "$(git -C "$ROOT_DIR" status --porcelain)" ]]; }
@@ -134,19 +134,27 @@ build_ipa() {
 
   echo ""; echo "Getting dependencies..."; flutter pub get
 
-  echo ""; echo "Building IPA (API: $API_BASE_URL)..."
+  echo ""; echo "Building unsigned iOS app for AltStore (API: $API_BASE_URL)..."
   rm -rf "$IPA_BUILD_DIR"
-  flutter build ipa --release --export-method development \
+  flutter build ios --release --no-codesign \
     --dart-define="AJ_API_BASE_URL=$API_BASE_URL"
 
-  local built_ipa
-  built_ipa="$(find "$IPA_BUILD_DIR" -maxdepth 1 -name '*.ipa' -print -quit 2>/dev/null || true)"
-  [[ -n "$built_ipa" && -f "$built_ipa" ]] || { echo "Error: no IPA in $IPA_BUILD_DIR" >&2; exit 1; }
+  local built_app="$ROOT_DIR/build/ios/iphoneos/Runner.app"
+  [[ -d "$built_app" ]] || { echo "Error: no Runner.app at $built_app" >&2; exit 1; }
+
+  echo ""; echo "Packaging unsigned IPA for AltStore..."
+  command -v ditto >/dev/null 2>&1 || { echo "Error: macOS ditto command required" >&2; exit 1; }
+  command -v zip >/dev/null 2>&1 || { echo "Error: zip command required" >&2; exit 1; }
+  mkdir -p "$IPA_BUILD_DIR/Payload" "$IPA_OUTPUT_DIR"
+  ditto "$built_app" "$IPA_BUILD_DIR/Payload/Runner.app"
+  (cd "$IPA_BUILD_DIR" && zip -qry ajopsios.ipa Payload)
+
+  local built_ipa="$IPA_BUILD_DIR/ajopsios.ipa"
+  [[ -s "$built_ipa" ]] || { echo "Error: no packaged IPA at $built_ipa" >&2; exit 1; }
 
   echo ""; echo "Moving IPA to $IPA_FINAL_PATH..."
-  mkdir -p "$IPA_OUTPUT_DIR"
   mv -f "$built_ipa" "$IPA_FINAL_PATH"
-  [[ -f "$IPA_FINAL_PATH" ]] || { echo "Error: failed to move IPA to $IPA_FINAL_PATH" >&2; exit 1; }
+  [[ -s "$IPA_FINAL_PATH" ]] || { echo "Error: failed to move IPA to $IPA_FINAL_PATH" >&2; exit 1; }
 }
 
 app_bundle_id() {
