@@ -146,7 +146,6 @@ class _DashboardTiles extends StatelessWidget {
       _Tile(label: 'Live Chat', icon: Icons.chat_bubble_outline_rounded, color: Colors.teal, route: '/live-chat', pending: data.chatUnread, order: 3),
       // No live count available from /ops/summary for these — fixed fallback order below.
       _Tile(label: 'Customers', icon: Icons.people_alt_rounded, color: Colors.blue, route: '/customers', pending: 0, order: 4),
-      _Tile(label: 'UPOS Temps', icon: Icons.thermostat_rounded, color: Colors.cyan, route: '/upos-temps', pending: 0, order: 5),
       _Tile(label: 'Mail', icon: Icons.mail_outline_rounded, color: Colors.amber.shade800, route: '/mail', pending: 0, order: 6),
       _Tile(label: 'Files', icon: Icons.folder_outlined, color: Colors.brown, route: '/files', pending: 0, order: 7),
       _Tile(label: 'Gmail Intake', icon: Icons.move_to_inbox_rounded, color: Colors.pink, route: '/gmail-intake', pending: 0, order: 8),

@@ -7,7 +7,6 @@ class MoreScreen extends StatelessWidget {
   static const _items = [
     (label: 'Customers', icon: Icons.people_alt_rounded, path: '/customers'),
     (label: 'Leads', icon: Icons.person_search_rounded, path: '/leads'),
-    (label: 'UPOS Temps', icon: Icons.thermostat_rounded, path: '/upos-temps'),
     (label: 'Mail', icon: Icons.mail_outline_rounded, path: '/mail'),
     (label: 'Files', icon: Icons.folder_outlined, path: '/files'),
     (label: 'Gmail Intake', icon: Icons.move_to_inbox_rounded, path: '/gmail-intake'),
