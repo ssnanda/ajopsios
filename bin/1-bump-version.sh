@@ -226,3 +226,8 @@ if [[ "$DO_COMMIT" == "true" ]]; then
   commit_release
   [[ "$DO_PUSH" == "true" ]] && push_release
 fi
+
+# A successful commit with pushing disabled is still a successful release bump.
+# Without an explicit zero, the preceding false push-condition returns status 1
+# and causes callers using `set -e` to exit before building the IPA/APK.
+exit 0
