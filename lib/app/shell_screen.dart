@@ -14,7 +14,7 @@ class ShellScreen extends ConsumerWidget {
 
   static const _tabs = [
     _Tab(label: 'Dashboard', icon: Icons.dashboard_rounded, path: '/dashboard'),
-    _Tab(label: 'Requests', icon: Icons.support_agent_rounded, path: '/service-requests'),
+    _Tab(label: 'Requests', icon: Icons.support_agent_rounded, path: '/requests'),
     _Tab(label: 'Chat', icon: Icons.chat_bubble_outline_rounded, path: '/live-chat'),
     _Tab(label: 'More', icon: Icons.more_horiz_rounded, path: '/more'),
   ];

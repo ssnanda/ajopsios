@@ -63,7 +63,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const DashboardScreen(),
           ),
           GoRoute(
-            path: '/service-requests',
+            path: '/requests',
             builder: (context, state) => const ServiceRequestsScreen(),
           ),
           GoRoute(

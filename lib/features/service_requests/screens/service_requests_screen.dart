@@ -45,7 +45,7 @@ class _ServiceRequestsScreenState extends ConsumerState<ServiceRequestsScreen> {
     final notifier = ref.read(serviceRequestsProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Service Requests')),
+      appBar: AppBar(title: const Text('Requests')),
       body: Column(
         children: [
           Padding(
@@ -84,7 +84,7 @@ class _ServiceRequestsScreenState extends ConsumerState<ServiceRequestsScreen> {
                 : state.requests.isEmpty
                 ? const EmptyState(
                     icon: Icons.inbox_outlined,
-                    title: 'No service requests',
+                    title: 'No requests',
                     subtitle: 'Nothing matches the current filters.',
                   )
                 : RefreshIndicator(

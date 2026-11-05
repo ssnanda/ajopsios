@@ -20,15 +20,15 @@ class ApiEndpoints {
   static const String staff = '/ops/staff';
 
   // ── Service Requests ────────────────────────────────────────────────────
-  static const String serviceRequests = '/ops/service-requests';
-  static String updateServiceRequest(int id) => '/ops/service-requests/$id';
+  static const String serviceRequests = '/ops/requests';
+  static String updateServiceRequest(int id) => '/ops/requests/$id';
   static String serviceRequestQuickAction(int id) =>
-      '/ops/service-requests/$id/quick-action';
+      '/ops/requests/$id/quick-action';
   static String serviceRequestNotify(int id) =>
-      '/ops/service-requests/$id/notify';
+      '/ops/requests/$id/notify';
   static String serviceRequestHistory(int id) =>
-      '/ops/service-requests/$id/history';
-  static const String serviceRequestsBulk = '/ops/service-requests/bulk';
+      '/ops/requests/$id/history';
+  static const String serviceRequestsBulk = '/ops/requests/bulk';
 
   // ── Live Chat ───────────────────────────────────────────────────────────
   static const String chatSessions = '/ops/chat/sessions';

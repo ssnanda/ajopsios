@@ -1,4 +1,4 @@
-/// GET /ops/service-requests/{id}/history entry — title is pre-resolved
+/// GET /ops/requests/{id}/history entry — title is pre-resolved
 /// server-side (get_portal_service_request_history_title), same as both web apps.
 class ServiceRequestHistoryEntry {
   final int id;

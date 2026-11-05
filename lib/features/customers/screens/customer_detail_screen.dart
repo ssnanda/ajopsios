@@ -308,7 +308,7 @@ class _ServiceRequestsSection extends StatelessWidget {
         const SizedBox(height: 8),
         if (requests.isEmpty)
           Text(
-            'No service requests.',
+            'No requests.',
             style: TextStyle(color: Colors.grey.shade600),
           )
         else

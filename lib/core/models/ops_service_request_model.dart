@@ -1,4 +1,4 @@
-/// GET /ops/service-requests row shape — mirrors AJOps' RawServiceRequest /
+/// GET /ops/requests row shape — mirrors AJOps' RawServiceRequest /
 /// ServiceRequest types (ajops/src/lib/ajcore/types.ts) exactly, since both
 /// clients read the same endpoint.
 class OpsServiceRequest {

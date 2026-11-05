@@ -139,7 +139,7 @@ class _DashboardTiles extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tiles = [
-      _Tile(label: 'Service Requests', icon: Icons.support_agent_rounded, color: Colors.orange, route: '/service-requests', pending: data.serviceRequestsNeedsAction, order: 0),
+      _Tile(label: 'Requests', icon: Icons.support_agent_rounded, color: Colors.orange, route: '/requests', pending: data.serviceRequestsNeedsAction, order: 0),
       // Active (still in the pipeline, not won/lost) — not a read/unread count, which isn't
       // something actually tracked here. Always shown regardless of the count, unlike the others.
       _Tile(label: 'Leads', icon: Icons.person_search_rounded, color: Colors.green, route: '/leads', pending: data.leadsActive, order: 2),

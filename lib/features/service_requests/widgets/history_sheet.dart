@@ -275,7 +275,7 @@ class _HistorySheetContentState extends State<_HistorySheetContent> {
                 color: Theme.of(context).colorScheme.error,
               ),
               title: Text(
-                'Delete Service Request',
+                'Delete Request',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.error,
                   fontWeight: FontWeight.w600,
