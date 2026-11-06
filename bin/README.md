@@ -47,7 +47,7 @@ Add it as a Source in AltStore, install AJ Ops from it, and **Refresh All**
 
 - The generated source includes both `CFBundleShortVersionString` as `version`
   and `CFBundleVersion` as `buildVersion`, plus the IPA's privacy permissions.
-- Bundle id: `com.ncllcagents.ajopsios`.
+- Bundle id: `com.itspector.ajops`.
 - `--publish` keeps the manifest's `version` / `size` / `downloadURL` in sync.
 
 ## Generated files

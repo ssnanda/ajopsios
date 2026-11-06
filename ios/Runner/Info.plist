@@ -30,7 +30,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>com.ncllcagents.ajopsios</string>
+			<string>com.itspector.ajops</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>ajops</string>

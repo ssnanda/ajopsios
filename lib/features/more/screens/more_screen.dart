@@ -11,6 +11,7 @@ class MoreScreen extends StatelessWidget {
     (label: 'Files', icon: Icons.folder_outlined, path: '/files'),
     (label: 'Gmail Intake', icon: Icons.move_to_inbox_rounded, path: '/gmail-intake'),
     (label: 'AJPhone', icon: Icons.phone_in_talk_rounded, path: '/ajphone'),
+    (label: 'About', icon: Icons.info_outline_rounded, path: '/about'),
   ];
 
   @override

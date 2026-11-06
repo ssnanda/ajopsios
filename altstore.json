@@ -1,11 +1,11 @@
 {
   "name": "AJ Ops",
-  "identifier": "com.ncllcagents.ajops.altstore",
+  "identifier": "com.itspector.ajops.altstore",
   "sourceURL": "https://raw.githubusercontent.com/ssnanda/ajopsios/main/altstore.json",
   "apps": [
     {
       "name": "AJ Ops",
-      "bundleIdentifier": "com.ncllcagents.ajopsios",
+      "bundleIdentifier": "com.itspector.ajops",
       "developerName": "NC LLC Agents Inc.",
       "subtitle": "Staff app for NC LLC Agents",
       "localizedDescription": "AJ Ops — internal staff app (mail scan, tasks, live chat, service requests).",

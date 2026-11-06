@@ -8,7 +8,7 @@
 PRODUCT_NAME = ajopsios
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.ncllcagents.ajopsios
+PRODUCT_BUNDLE_IDENTIFIER = com.itspector.ajops
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 com.ncllcagents. All rights reserved.

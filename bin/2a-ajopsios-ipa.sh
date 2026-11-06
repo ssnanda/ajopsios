@@ -30,7 +30,7 @@ API_BASE_URL="https://ncllcagents.com/wp-json/ajcore/v1"
 
 ALTSTORE_MANIFEST="$ROOT_DIR/altstore.json"
 ALTSTORE_BRANCH="main"
-ALTSTORE_SOURCE_ID="com.ncllcagents.ajops.altstore"
+ALTSTORE_SOURCE_ID="com.itspector.ajops.altstore"
 ALTSTORE_SOURCE_URL="https://raw.githubusercontent.com/$GITHUB_REPO/$ALTSTORE_BRANCH/altstore.json"
 ALTSTORE_ICON_URL="https://raw.githubusercontent.com/$GITHUB_REPO/$ALTSTORE_BRANCH/web/icons/Icon-512.png"
 ALTSTORE_MIN_IOS="13.0"
@@ -170,7 +170,7 @@ write_altstore_manifest() {
   local short="${VERSION%+*}" build="${VERSION#*+}" size date bundle dl
   size="$(stat -f%z "$IPA_FINAL_PATH")"
   date="$(date +%Y-%m-%d)"
-  bundle="$(app_bundle_id)"; bundle="${bundle:-com.ncllcagents.ajopsios}"
+  bundle="$(app_bundle_id)"; bundle="${bundle:-com.itspector.ajops}"
   dl="https://github.com/$GITHUB_REPO/releases/download/$RELEASE_TAG/$(basename "$IPA_FINAL_PATH")"
 
   cat > "$ALTSTORE_MANIFEST" <<JSON
