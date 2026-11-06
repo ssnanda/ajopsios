@@ -24,6 +24,13 @@ class OpsApi {
   OpsApi._();
   static final OpsApi instance = OpsApi._();
 
+  /// Menu items the site's AJCore and extensions offer (null = older AJCore, show everything).
+  Future<List<String>?> getModules() async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.features);
+    final raw = (resp.data as Map<String, dynamic>)['modules'];
+    return raw is List ? raw.map((e) => e.toString()).toList() : null;
+  }
+
   Future<OpsSummaryModel> getSummary() async {
     final resp = await ApiClient.instance.dio.get(ApiEndpoints.summary);
     return OpsSummaryModel.fromJson(resp.data as Map<String, dynamic>);

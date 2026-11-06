@@ -7,6 +7,7 @@ import '../models/api_status_model.dart';
 import '../models/user_model.dart';
 import '../storage/secure_storage.dart';
 import '../storage/cache_storage.dart';
+import '../config/site_url.dart';
 
 class AuthRepository {
   AuthRepository._();
@@ -33,11 +34,19 @@ class AuthRepository {
   // ── Login / logout ───────────────────────────────────────────────────────
 
   Future<UserModel> login({
+    required String siteUrl,
     required String username,
     required String password,
     bool rememberMe = false,
   }) async {
+    final previousSite = await SecureStorage.instance.getSiteUrl();
     try {
+      try {
+        await SecureStorage.instance.saveSiteUrl(normalizeSiteUrl(siteUrl));
+      } on FormatException catch (e) {
+        throw ApiException(statusCode: 0, message: e.message);
+      }
+      ApiClient.instance.reset();
       final resp = await ApiClient.instance.dio.post(
         ApiEndpoints.login,
         data: {'username': username, 'password': password},
@@ -65,6 +74,11 @@ class AuthRepository {
       return user;
     } catch (_) {
       await SecureStorage.instance.clearCredentials();
+      if (previousSite == null) {
+        await SecureStorage.instance.clearSiteUrl();
+      } else {
+        await SecureStorage.instance.saveSiteUrl(previousSite);
+      }
       ApiClient.instance.reset();
       rethrow;
     }
@@ -91,22 +105,25 @@ class AuthRepository {
   Future<List<SavedAccount>> getSavedAccounts() =>
       SecureStorage.instance.getSavedAccounts();
 
-  Future<void> removeAccount(String username) =>
-      SecureStorage.instance.removeAccount(username);
+  Future<void> removeAccount(String id) =>
+      SecureStorage.instance.removeAccount(id);
 
-  /// Restores session for a specific saved account by swapping the active token.
-  Future<UserModel?> switchToAccount(String username) async {
-    final token = await SecureStorage.instance.getAccountToken(username);
-    if (token == null) return null;
+  /// Restores a saved site login (site + user) by swapping the active site and token.
+  Future<UserModel?> switchToAccount(String id) async {
+    final accounts = await SecureStorage.instance.getSavedAccounts();
+    final account = accounts.where((a) => a.id == id).firstOrNull;
+    final token = account == null ? null : await SecureStorage.instance.getAccountToken(id);
+    if (account == null || token == null) return null;
+    if (account.siteUrl.isNotEmpty) await SecureStorage.instance.saveSiteUrl(account.siteUrl);
     await SecureStorage.instance.saveCredentials(
-      username: username,
+      username: account.username,
       token: token,
     );
     ApiClient.instance.reset();
     try {
       final user = await fetchCurrentUser();
       await SecureStorage.instance.updateAccountDisplayName(
-        username,
+        id,
         user.displayName,
       );
       return user;

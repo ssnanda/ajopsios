@@ -1,8 +1,11 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/api/api_interceptors.dart';
 import '../../../core/auth/auth_repository.dart';
 import '../../../core/auth/auth_state.dart';
 import '../../../core/models/user_model.dart';
 import '../../../core/storage/secure_storage.dart';
+import '../../../core/config/site_url.dart';
 
 class AuthNotifier extends StateNotifier<AuthState> {
   AuthNotifier() : super(const AuthState.unknown()) {
@@ -19,6 +22,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> login({
+    required String siteUrl,
     required String username,
     required String password,
     bool rememberMe = false,
@@ -26,14 +30,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState.unknown();
     try {
       final user = await _repo.login(
+        siteUrl: siteUrl,
         username: username,
         password: password,
         rememberMe: rememberMe,
       );
       state = AuthState.authenticated(user);
     } catch (e) {
+      final inner = e is DioException ? e.error : e;
       state = AuthState.unauthenticated(
-        e.toString().replaceFirst('Exception: ', ''),
+        inner is ApiException
+            ? inner.message
+            : (e is DioException
+                ? 'Could not reach AJCore at that URL.'
+                : e.toString().replaceFirst('Exception: ', '')),
       );
     }
   }
@@ -41,6 +51,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     await _repo.logout();
     state = const AuthState.unauthenticated();
+    SiteEpoch.bump(); // drop everything cached from the site we just left
   }
 
   Future<bool> tryBiometricLogin() async {
@@ -55,14 +66,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   /// Switch to a different saved account using its stored token.
-  Future<bool> switchToAccount(String username) async {
+  /// [id] is SavedAccount.id (site + user).
+  Future<bool> switchToAccount(String id) async {
     state = const AuthState.unknown();
-    final user = await _repo.switchToAccount(username);
+    final user = await _repo.switchToAccount(id);
     if (user != null) {
-      state = AuthState.authenticated(user);
+      // Rebuild the provider tree on the new site; auth is restored from the stored site + token.
+      SiteEpoch.bump();
       return true;
     }
     state = const AuthState.unauthenticated();
+    SiteEpoch.bump();
     return false;
   }
 

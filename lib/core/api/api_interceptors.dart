@@ -11,6 +11,9 @@ class AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    // The site is chosen at sign-in (and can change on a site switch), so resolve it per request.
+    final site = await _storage.getSiteUrl();
+    if (site != null && site.isNotEmpty) options.baseUrl = site;
     final token = await _storage.getToken();
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/auth_state.dart';
+import '../../../core/config/app_config.dart';
+import '../../../core/config/site_url.dart';
+import '../../../core/storage/secure_storage.dart';
 import '../../../core/widgets/app_version_label.dart';
 import '../providers/auth_provider.dart';
 
@@ -13,13 +16,25 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _siteCtrl = TextEditingController();
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscure = true;
   bool _submitting = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Last site used, else the build-time default; the user can type any AJCore site.
+    SecureStorage.instance.getSiteUrl().then((v) {
+      if (!mounted || _siteCtrl.text.isNotEmpty) return;
+      _siteCtrl.text = siteHost(v ?? AppConfig.apiBaseUrl);
+    });
+  }
+
+  @override
   void dispose() {
+    _siteCtrl.dispose();
     _usernameCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
@@ -29,6 +44,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _submitting = true);
     await ref.read(authProvider.notifier).login(
+          siteUrl: _siteCtrl.text,
           username: _usernameCtrl.text.trim(),
           password: _passwordCtrl.text,
         );
@@ -67,6 +83,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                   ),
                   const SizedBox(height: 32),
+                  TextFormField(
+                    controller: _siteCtrl,
+                    keyboardType: TextInputType.url,
+                    autocorrect: false,
+                    textCapitalization: TextCapitalization.none,
+                    decoration: const InputDecoration(labelText: 'Site URL', hintText: 'ncllcagents.com', prefixIcon: Icon(Icons.language_rounded)),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 14),
                   TextFormField(
                     controller: _usernameCtrl,
                     autofillHints: const [AutofillHints.username],

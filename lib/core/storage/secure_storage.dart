@@ -5,16 +5,24 @@ class SavedAccount {
   final String username;
   final String displayName;
 
-  const SavedAccount({required this.username, required this.displayName});
+  /// API base URL of the AJCore site this login belongs to.
+  final String siteUrl;
+
+  const SavedAccount({required this.username, required this.displayName, this.siteUrl = ''});
+
+  /// One saved login per site + user.
+  String get id => '$siteUrl|$username';
 
   Map<String, dynamic> toJson() => {
         'username': username,
         'displayName': displayName,
+        'siteUrl': siteUrl,
       };
 
   factory SavedAccount.fromJson(Map<String, dynamic> j) => SavedAccount(
         username: j['username'] as String? ?? '',
         displayName: j['displayName'] as String? ?? '',
+        siteUrl: j['siteUrl'] as String? ?? '',
       );
 }
 
@@ -37,12 +45,13 @@ class SecureStorage {
   static const _keyRememberMe = 'aj_remember_me';
   static const _keyBiometricEnabled = 'aj_biometric_enabled';
   static const _keySiteUuid = 'aj_site_uuid';
+  static const _keySiteUrl = 'aj_site_url';
 
   // ── Multi-account keys ────────────────────────────────────────────────────
   static const _keyAccountsList = 'aj_accounts_list';
 
-  String _accountTokenKey(String username) => 'aj_acct_token_$username';
-  String _accountDisplayKey(String username) => 'aj_acct_display_$username';
+  String _accountTokenKey(String id) => 'aj_acct_token_$id';
+  String _accountDisplayKey(String id) => 'aj_acct_display_$id';
 
   // ── Active session credentials ────────────────────────────────────────────
 
@@ -74,18 +83,21 @@ class SecureStorage {
     required String token,
     String displayName = '',
   }) async {
-    await _storage.write(key: _accountTokenKey(username), value: token);
+    final siteUrl = await getSiteUrl() ?? '';
+    final entry = SavedAccount(
+      username: username,
+      displayName: displayName.isNotEmpty ? displayName : username,
+      siteUrl: siteUrl,
+    );
+    await _storage.write(key: _accountTokenKey(entry.id), value: token);
     if (displayName.isNotEmpty) {
-      await _storage.write(key: _accountDisplayKey(username), value: displayName);
+      await _storage.write(key: _accountDisplayKey(entry.id), value: displayName);
     }
     // Merge into accounts list
     final accounts = await getSavedAccounts();
     final updated = [
-      SavedAccount(
-        username: username,
-        displayName: displayName.isNotEmpty ? displayName : username,
-      ),
-      ...accounts.where((a) => a.username != username),
+      entry,
+      ...accounts.where((a) => a.id != entry.id),
     ];
     await _storage.write(
       key: _keyAccountsList,
@@ -107,17 +119,17 @@ class SecureStorage {
     }
   }
 
-  Future<String?> getAccountToken(String username) =>
-      _storage.read(key: _accountTokenKey(username));
+  Future<String?> getAccountToken(String id) =>
+      _storage.read(key: _accountTokenKey(id));
 
-  Future<void> updateAccountDisplayName(String username, String displayName) =>
-      _storage.write(key: _accountDisplayKey(username), value: displayName);
+  Future<void> updateAccountDisplayName(String id, String displayName) =>
+      _storage.write(key: _accountDisplayKey(id), value: displayName);
 
-  Future<void> removeAccount(String username) async {
-    await _storage.delete(key: _accountTokenKey(username));
-    await _storage.delete(key: _accountDisplayKey(username));
+  Future<void> removeAccount(String id) async {
+    await _storage.delete(key: _accountTokenKey(id));
+    await _storage.delete(key: _accountDisplayKey(id));
     final accounts = await getSavedAccounts();
-    final updated = accounts.where((a) => a.username != username).toList();
+    final updated = accounts.where((a) => a.id != id).toList();
     await _storage.write(
       key: _keyAccountsList,
       value: jsonEncode(updated.map((a) => a.toJson()).toList()),
@@ -143,6 +155,13 @@ class SecureStorage {
   }
 
   // ── Site ──────────────────────────────────────────────────────────────────
+
+  /// API base URL of the active AJCore site (chosen at sign-in). Null = the build-time default.
+  Future<String?> getSiteUrl() => _storage.read(key: _keySiteUrl);
+
+  Future<void> saveSiteUrl(String url) => _storage.write(key: _keySiteUrl, value: url);
+
+  Future<void> clearSiteUrl() => _storage.delete(key: _keySiteUrl);
 
   Future<void> saveSiteUuid(String uuid) =>
       _storage.write(key: _keySiteUuid, value: uuid);

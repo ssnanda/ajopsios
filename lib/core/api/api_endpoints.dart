@@ -8,6 +8,8 @@ class ApiEndpoints {
   // ── System ──────────────────────────────────────────────────────────────
   static const String status = '/status';
 
+  static const String features = '/ops/features';
+
   // ── Auth ────────────────────────────────────────────────────────────────
   static const String login = '/ops/auth/login';
   static const String logout = '/ops/auth/logout';
