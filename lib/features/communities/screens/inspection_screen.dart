@@ -20,6 +20,7 @@ class _InspectionScreenState extends State<InspectionScreen> {
   static const _prefKey = 'inspect_last_community';
 
   List<HoaCommunity> _communities = const [];
+  bool _loaded = false;
   List<String> _types = const [];
   HoaCommunity? _community;
   String? _loadError;
@@ -53,17 +54,18 @@ class _InspectionScreenState extends State<InspectionScreen> {
   Future<void> _load() async {
     try {
       final results = await Future.wait([OpsApi.instance.getHoaCommunities(), OpsApi.instance.getHoaViolationTypes()]);
-      final communities = (results[0] as List<HoaCommunity>).where((c) => c.units > 0).toList();
+      final communities = results[0] as List<HoaCommunity>; // all of them, including ones with no units yet
       final prefs = await SharedPreferences.getInstance();
       final last = prefs.getString(_prefKey);
       if (!mounted) return;
       setState(() {
         _communities = communities;
+        _loaded = true;
         _types = results[1] as List<String>;
         _community = communities.where((c) => c.id == last).firstOrNull ?? (communities.length == 1 ? communities.first : null);
       });
     } catch (e) {
-      if (mounted) setState(() => _loadError = e.toString());
+      if (mounted) setState(() { _loadError = e.toString(); _loaded = true; });
     }
   }
 
@@ -171,10 +173,15 @@ class _InspectionScreenState extends State<InspectionScreen> {
                   onTap: _communities.isEmpty ? null : _pickCommunity,
                   child: InputDecorator(
                     decoration: const InputDecoration(border: OutlineInputBorder(), suffixIcon: Icon(Icons.arrow_drop_down_rounded)),
-                    child: Text(_community?.name ?? (_communities.isEmpty ? 'Loading…' : 'Choose community'), style: const TextStyle(fontSize: 16)),
+                    child: Text(_community?.name ?? (!_loaded ? 'Loading…' : _communities.isEmpty ? 'No communities yet' : 'Choose community'), style: const TextStyle(fontSize: 16)),
                   ),
                 ),
               ),
+              if (_community != null && _community!.units == 0)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: Text('This community has no units yet, so findings are filed against the community by address only.', style: TextStyle(fontSize: 12)),
+                ),
               // 2 — photo + address
               _StepCard(
                 n: 2,
@@ -293,7 +300,7 @@ class _CommunitySheetState extends State<_CommunitySheet> {
           Padding(padding: const EdgeInsets.all(12), child: TextField(autofocus: false, decoration: const InputDecoration(prefixIcon: Icon(Icons.search_rounded), hintText: 'Search communities', border: OutlineInputBorder()), onChanged: (v) => setState(() => _q = v))),
           Expanded(
             child: ListView(children: [
-              for (final c in shown) ListTile(title: Text(c.name), subtitle: Text('${c.units} units'), onTap: () => Navigator.pop(context, c)),
+              for (final c in shown) ListTile(title: Text(c.name), subtitle: Text(c.units == 0 ? 'No units yet' : '${c.units} units'), onTap: () => Navigator.pop(context, c)),
             ]),
           ),
         ]),

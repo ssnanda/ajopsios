@@ -87,18 +87,12 @@ class CommunitiesScreen extends ConsumerWidget {
         loading: () => const AjLoadingIndicator(),
         error: (e, _) => ErrorState(message: e.toString(), onRetry: () => ref.invalidate(_communitiesProvider)),
         data: (list) {
-          final withUnits = list.where((c) => c.units > 0).toList();
-          final empty = list.where((c) => c.units == 0).toList();
           return RefreshIndicator(
             onRefresh: () async => ref.refresh(_communitiesProvider.future),
             child: ListView(
               padding: const EdgeInsets.all(12),
               children: [
-                for (final c in withUnits) _CommunityCard(c),
-                if (empty.isNotEmpty) ...[
-                  const Padding(padding: EdgeInsets.fromLTRB(4, 16, 4, 6), child: Text('NO UNITS YET', style: TextStyle(fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.w600))),
-                  Wrap(spacing: 8, runSpacing: 8, children: [for (final c in empty) ActionChip(label: Text(c.name), onPressed: () => context.push('/communities/${Uri.encodeComponent(c.id)}'))]),
-                ],
+                for (final c in list) _CommunityCard(c),
                 if (list.isEmpty) const Padding(padding: EdgeInsets.all(32), child: Center(child: Text('No communities yet.'))),
               ],
             ),
