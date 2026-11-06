@@ -32,7 +32,7 @@ ALTSTORE_MANIFEST="$ROOT_DIR/altstore.json"
 ALTSTORE_BRANCH="main"
 ALTSTORE_SOURCE_ID="com.itspector.ajops.altstore"
 ALTSTORE_SOURCE_URL="https://raw.githubusercontent.com/$GITHUB_REPO/$ALTSTORE_BRANCH/altstore.json"
-ALTSTORE_ICON_URL="https://raw.githubusercontent.com/$GITHUB_REPO/$ALTSTORE_BRANCH/web/icons/Icon-512.png"
+ALTSTORE_ICON_URL="https://raw.githubusercontent.com/$GITHUB_REPO/$ALTSTORE_BRANCH/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024%401x.png"
 ALTSTORE_MIN_IOS="13.0"
 
 GIT_COMMIT="true"

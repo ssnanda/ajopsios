@@ -9,7 +9,7 @@
       "developerName": "NC LLC Agents Inc.",
       "subtitle": "Staff app for NC LLC Agents",
       "localizedDescription": "AJ Ops — internal staff app (mail scan, tasks, live chat, service requests).",
-      "iconURL": "https://raw.githubusercontent.com/ssnanda/ajopsios/main/web/icons/Icon-512.png",
+      "iconURL": "https://raw.githubusercontent.com/ssnanda/ajopsios/main/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024%401x.png",
       "tintColor": "1A3C6E",
       "category": "utilities",
       "screenshotURLs": [],
