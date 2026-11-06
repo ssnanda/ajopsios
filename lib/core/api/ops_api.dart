@@ -32,6 +32,12 @@ class OpsApi {
     return raw.map((k, v) => MapEntry(k, ((v as Map<String, dynamic>)['value'] as num?)?.toInt() ?? 0));
   }
 
+  /// What is already on file for an address (violations of the matching unit and of that street).
+  Future<HoaAddressInfo> getHoaAddressViolations({required String communityId, required String address}) async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.hoaAddressViolations, queryParameters: {'community_id': communityId, 'address': address});
+    return HoaAddressInfo.fromJson(resp.data as Map<String, dynamic>);
+  }
+
   Future<List<String>> getHoaViolationTypes() async {
     final resp = await ApiClient.instance.dio.get(ApiEndpoints.hoaViolationTypes);
     return ((resp.data as Map<String, dynamic>)['types'] as List<dynamic>? ?? []).map((e) => e.toString()).toList();
@@ -46,8 +52,10 @@ class OpsApi {
     double? lat,
     double? lng,
     String? photoPath,
+    required String clientRequestId,
   }) async {
     final form = FormData.fromMap({
+      'client_request_id': clientRequestId,
       'community_id': communityId,
       'address': address,
       'violation_type': violationType,

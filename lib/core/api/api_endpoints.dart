@@ -10,6 +10,7 @@ class ApiEndpoints {
 
   static const String features = '/ops/features';
   static const String hoaViolationTypes = '/ops/hoa/violation-types';
+  static const String hoaAddressViolations = '/ops/hoa/address-violations';
   static const String hoaInspections = '/ops/hoa/inspections';
   static const String counts = '/ops/counts';
   static const String hoaCommunities = '/ops/hoa/communities';

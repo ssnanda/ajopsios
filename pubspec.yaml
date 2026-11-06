@@ -1,7 +1,7 @@
 name: ajopsios
 description: "AJ Ops mobile — staff app for NC LLC Agents, sharing core auth/api/storage with ajcoreios."
 publish_to: 'none'
-version: 1.0.83+78
+version: 1.0.84+79
 
 environment:
   sdk: ^3.12.2
@@ -60,6 +60,9 @@ dependencies:
   # Inspections: where the photo was taken (GPS) and the street address for it (native reverse geocoding)
   geolocator: ^13.0.2
   geocoding: ^3.0.0
+
+  # Inspection photos are copied here so they survive until they are uploaded
+  path_provider: ^2.1.5
 
   # Opening a File's file_url in the system browser/viewer
   url_launcher: ^6.3.1

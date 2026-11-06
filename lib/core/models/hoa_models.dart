@@ -117,3 +117,44 @@ class HoaUnitDetail {
   /// Everyone who owned the unit, newest first.
   List<HoaOwner> get history => [...current, ...previous]..sort((a, b) => b.startDate.compareTo(a.startDate));
 }
+
+/// A violation already on file for an address (inspection discovery). [open] = not completed or cancelled.
+class HoaAddressViolation {
+  final int requestId;
+  final String number;
+  final String title;
+  final String statusLabel;
+  final String createdAt;
+  final String ownersAtTime;
+  final bool open;
+  const HoaAddressViolation({required this.requestId, required this.number, required this.title, required this.statusLabel, required this.createdAt, required this.ownersAtTime, required this.open});
+
+  factory HoaAddressViolation.fromJson(Map<String, dynamic> j) => HoaAddressViolation(
+        requestId: _i(j['request_id']),
+        number: _s(j['number']),
+        title: _s(j['title']),
+        statusLabel: _s(j['status_label']),
+        createdAt: _s(j['created_at']),
+        ownersAtTime: _s(j['owners_at_time']),
+        open: j['open'] == true,
+      );
+}
+
+class HoaAddressInfo {
+  final bool matched;
+  final String unit;
+  final List<String> owners;
+  final List<HoaAddressViolation> violations;
+  const HoaAddressInfo({required this.matched, required this.unit, required this.owners, required this.violations});
+
+  static const empty = HoaAddressInfo(matched: false, unit: '', owners: [], violations: []);
+
+  factory HoaAddressInfo.fromJson(Map<String, dynamic> j) => HoaAddressInfo(
+        matched: j['matched'] == true,
+        unit: _s(j['unit']),
+        owners: ((j['owners'] as List?) ?? const []).map((e) => e.toString()).toList(),
+        violations: ((j['violations'] as List?) ?? const []).map((e) => HoaAddressViolation.fromJson(e as Map<String, dynamic>)).toList(),
+      );
+
+  int get openCount => violations.where((v) => v.open).length;
+}

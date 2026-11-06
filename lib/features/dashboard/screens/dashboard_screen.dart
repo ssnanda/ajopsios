@@ -8,6 +8,7 @@ import '../../../core/widgets/aj_card.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/providers/modules_provider.dart';
+import '../../../core/services/inspection_queue.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
 
@@ -144,11 +145,29 @@ class _InspectButton extends ConsumerWidget {
     if (modules == null || !modules.contains('communities')) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: FilledButton.icon(
-        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-        onPressed: () => context.push('/inspect'),
-        icon: const Icon(Icons.photo_camera_rounded),
-        label: const Text('Start inspection', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+      child: ListenableBuilder(
+        listenable: InspectionQueue.instance,
+        builder: (context, _) {
+          final w = InspectionQueue.instance.waiting;
+          final f = InspectionQueue.instance.failed;
+          return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            FilledButton.icon(
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+              onPressed: () => context.push('/inspect'),
+              icon: const Icon(Icons.photo_camera_rounded),
+              label: const Text('Start inspection', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+            if (w > 0 || f > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  [if (w > 0) '$w finding${w == 1 ? '' : 's'} uploading', if (f > 0) '$f failed'].join(' · '),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: f > 0 ? Colors.red : null),
+                ),
+              ),
+          ]);
+        },
       ),
     );
   }
