@@ -16,6 +16,7 @@ import '../models/customer_file_model.dart';
 import '../models/gmail_intake_item_model.dart';
 import '../models/visitor_model.dart';
 import '../models/api_status_model.dart';
+import '../models/hoa_models.dart';
 
 /// Thin wrapper around the shared Dio client for the `/ops/*` endpoints.
 /// Mirrors AJOps' own AJCoreClient (ajops/src/lib/ajcore/client.ts) so both
@@ -23,6 +24,60 @@ import '../models/api_status_model.dart';
 class OpsApi {
   OpsApi._();
   static final OpsApi instance = OpsApi._();
+
+  /// Number per menu route ("violations", "work-orders", "leads"…) from AJCore /ops/counts; empty on older AJCore.
+  Future<Map<String, int>> getCounts() async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.counts);
+    final raw = (resp.data as Map<String, dynamic>)['counts'] as Map<String, dynamic>? ?? {};
+    return raw.map((k, v) => MapEntry(k, ((v as Map<String, dynamic>)['value'] as num?)?.toInt() ?? 0));
+  }
+
+  Future<List<String>> getHoaViolationTypes() async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.hoaViolationTypes);
+    return ((resp.data as Map<String, dynamic>)['types'] as List<dynamic>? ?? []).map((e) => e.toString()).toList();
+  }
+
+  /// One inspection finding: photo + address + type becomes a Violation request (linked to the unit when the address matches).
+  Future<({int requestId, String unit})> submitInspection({
+    required String communityId,
+    required String address,
+    required String violationType,
+    String notes = '',
+    double? lat,
+    double? lng,
+    String? photoPath,
+  }) async {
+    final form = FormData.fromMap({
+      'community_id': communityId,
+      'address': address,
+      'violation_type': violationType,
+      'notes': notes,
+      'lat': ?lat?.toString(),
+      'lng': ?lng?.toString(),
+      if (photoPath != null) 'photo': await MultipartFile.fromFile(photoPath, filename: photoPath.split('/').last),
+    });
+    final resp = await ApiClient.instance.dio.post(ApiEndpoints.hoaInspections, data: form);
+    final data = resp.data as Map<String, dynamic>;
+    return (requestId: (data['request_id'] as num?)?.toInt() ?? 0, unit: (data['unit'] ?? '').toString());
+  }
+
+  Future<List<HoaCommunity>> getHoaCommunities() async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.hoaCommunities);
+    final list = (resp.data as Map<String, dynamic>)['communities'] as List<dynamic>? ?? [];
+    return list.map((e) => HoaCommunity.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<({String name, List<HoaUnitSummary> units})> getHoaCommunity(String id) async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.hoaCommunity(id));
+    final data = resp.data as Map<String, dynamic>;
+    final units = (data['units'] as List<dynamic>? ?? []).map((e) => HoaUnitSummary.fromJson(e as Map<String, dynamic>)).toList();
+    return (name: ((data['community'] as Map<String, dynamic>?)?['name'] ?? '').toString(), units: units);
+  }
+
+  Future<HoaUnitDetail> getHoaUnit(int id) async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.hoaUnit(id));
+    return HoaUnitDetail.fromJson(resp.data as Map<String, dynamic>);
+  }
 
   /// Menu items the site's AJCore and extensions offer (null = older AJCore, show everything).
   Future<List<String>?> getModules() async {

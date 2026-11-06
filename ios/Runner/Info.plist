@@ -39,8 +39,10 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Used to find the street address where an inspection photo is taken.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Used to scan mail and attach photos to files.</string>
+	<string>Used to photograph issues during community inspections.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Used to attach an existing photo when scanning mail or uploading a file.</string>
 	<key>UIBackgroundModes</key>

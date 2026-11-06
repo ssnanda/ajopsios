@@ -7,6 +7,7 @@ import '../../../core/models/ops_summary_model.dart';
 import '../../../core/widgets/aj_card.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
+import '../../../core/providers/modules_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
 
@@ -50,6 +51,7 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               const Center(child: _SyncAllButton()),
               const SizedBox(height: 16),
+              const _InspectButton(),
               // Every menu destination gets a tile now — no more hide-if-zero. Ordering does the
               // work instead: tiles with a pending count sort to the top (highest count first),
               // then everything else keeps a fixed, sensible order. No "Recent" section label —
@@ -132,23 +134,49 @@ class _Tile {
   });
 }
 
-class _DashboardTiles extends StatelessWidget {
+/// Big "Start inspection" button, only on sites with the HOA module.
+class _InspectButton extends ConsumerWidget {
+  const _InspectButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final modules = ref.watch(modulesProvider).value;
+    if (modules == null || !modules.contains('communities')) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: FilledButton.icon(
+        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+        onPressed: () => context.push('/inspect'),
+        icon: const Icon(Icons.photo_camera_rounded),
+        label: const Text('Start inspection', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+}
+
+class _DashboardTiles extends ConsumerWidget {
   final OpsSummaryModel data;
   const _DashboardTiles({required this.data});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final modules = ref.watch(modulesProvider).value;
+    final counts = ref.watch(countsProvider).value ?? const <String, int>{};
+    final hoa = modules != null && modules.contains('communities');
+    // HOA sites split Requests into the two kinds of work they actually do.
     final tiles = [
-      _Tile(label: 'Requests', icon: Icons.support_agent_rounded, color: Colors.orange, route: '/requests', pending: data.serviceRequestsNeedsAction, order: 0),
+      if (hoa) ...[
+        _Tile(label: 'Violations', icon: Icons.report_gmailerrorred_rounded, color: Colors.red, route: '/requests?type=hoa_violation&title=Violations', pending: counts['violations'] ?? 0, order: 0),
+        _Tile(label: 'Work Orders', icon: Icons.build_circle_outlined, color: Colors.orange, route: '/requests?type=hoa_work_order_invoice&title=Work%20Orders', pending: counts['work-orders'] ?? 0, order: 1),
+        _Tile(label: 'Communities', icon: Icons.apartment_rounded, color: Colors.deepPurple, route: '/communities', pending: 0, order: 5),
+      ] else
+        _Tile(label: 'Requests', icon: Icons.support_agent_rounded, color: Colors.orange, route: '/requests', pending: data.serviceRequestsNeedsAction, order: 0),
       // Active (still in the pipeline, not won/lost) — not a read/unread count, which isn't
       // something actually tracked here. Always shown regardless of the count, unlike the others.
       _Tile(label: 'Leads', icon: Icons.person_search_rounded, color: Colors.green, route: '/leads', pending: data.leadsActive, order: 2),
       _Tile(label: 'Live Chat', icon: Icons.chat_bubble_outline_rounded, color: Colors.teal, route: '/live-chat', pending: data.chatUnread, order: 3),
       // No live count available from /ops/summary for these — fixed fallback order below.
       _Tile(label: 'Customers', icon: Icons.people_alt_rounded, color: Colors.blue, route: '/customers', pending: 0, order: 4),
-      _Tile(label: 'Mail', icon: Icons.mail_outline_rounded, color: Colors.amber.shade800, route: '/mail', pending: 0, order: 6),
-      _Tile(label: 'Files', icon: Icons.folder_outlined, color: Colors.brown, route: '/files', pending: 0, order: 7),
-      _Tile(label: 'Gmail Intake', icon: Icons.move_to_inbox_rounded, color: Colors.pink, route: '/gmail-intake', pending: 0, order: 8),
       _Tile(label: 'AJPhone', icon: Icons.phone_in_talk_rounded, color: Colors.indigo, route: '/ajphone', pending: 0, order: 9),
     ];
 
@@ -173,7 +201,7 @@ class _DashboardTiles extends StatelessWidget {
           value: t.pending > 0 || t.label == 'Leads' ? '${t.pending}' : '',
           icon: t.icon,
           accentColor: t.color,
-          onTap: t.route == null ? null : () => context.go(t.route!),
+          onTap: t.route == null ? null : () => (t.route == '/communities' ? context.push(t.route!) : context.go(t.route!)),
         );
       }).toList(),
     );

@@ -9,7 +9,10 @@ import '../widgets/history_sheet.dart';
 import '../widgets/service_status_stepper.dart';
 
 class ServiceRequestsScreen extends ConsumerStatefulWidget {
-  const ServiceRequestsScreen({super.key});
+  /// Only requests of this type (e.g. hoa_violation), with [title] as the screen title. Null = all requests.
+  final String? requestType;
+  final String? title;
+  const ServiceRequestsScreen({super.key, this.requestType, this.title});
 
   @override
   ConsumerState<ServiceRequestsScreen> createState() =>
@@ -39,13 +42,17 @@ class _ServiceRequestsScreenState extends ConsumerState<ServiceRequestsScreen> {
     );
   }
 
+  List<OpsServiceRequest> _shown(ServiceRequestsState state) => widget.requestType == null
+      ? state.requests
+      : state.requests.where((r) => r.requestType == widget.requestType).toList();
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(serviceRequestsProvider);
     final notifier = ref.read(serviceRequestsProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Requests')),
+      appBar: AppBar(title: Text(widget.title ?? 'Requests')),
       body: Column(
         children: [
           Padding(
@@ -81,7 +88,7 @@ class _ServiceRequestsScreenState extends ConsumerState<ServiceRequestsScreen> {
                 ? const AjLoadingIndicator()
                 : state.error != null
                 ? ErrorState(message: state.error!, onRetry: notifier.load)
-                : state.requests.isEmpty
+                : _shown(state).isEmpty
                 ? const EmptyState(
                     icon: Icons.inbox_outlined,
                     title: 'No requests',
@@ -91,10 +98,10 @@ class _ServiceRequestsScreenState extends ConsumerState<ServiceRequestsScreen> {
                     onRefresh: notifier.load,
                     child: ListView.separated(
                       padding: const EdgeInsets.all(12),
-                      itemCount: state.requests.length,
+                      itemCount: _shown(state).length,
                       separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (context, i) {
-                        final r = state.requests[i];
+                        final r = _shown(state)[i];
                         return _RequestCard(
                           request: r,
                           selected: state.selectedIds.contains(r.id),

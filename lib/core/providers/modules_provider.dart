@@ -10,3 +10,12 @@ final modulesProvider = FutureProvider<List<String>?>((ref) async {
     return null;
   }
 });
+
+/// Number per menu route from AJCore /ops/counts ("violations", "work-orders"…). Empty if unavailable.
+final countsProvider = FutureProvider<Map<String, int>>((ref) async {
+  try {
+    return await OpsApi.instance.getCounts();
+  } catch (_) {
+    return <String, int>{};
+  }
+});

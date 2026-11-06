@@ -5,6 +5,8 @@ import '../core/auth/auth_state.dart';
 import '../core/widgets/coming_soon_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/login_screen.dart';
+import '../features/communities/screens/communities_screens.dart';
+import '../features/communities/screens/inspection_screen.dart';
 import '../features/customers/screens/customers_screen.dart';
 import '../features/dashboard/screens/dashboard_screen.dart';
 import '../features/files/screens/files_screen.dart';
@@ -65,7 +67,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/requests',
-            builder: (context, state) => const ServiceRequestsScreen(),
+            builder: (context, state) => ServiceRequestsScreen(
+              requestType: state.uri.queryParameters['type'],
+              title: state.uri.queryParameters['title'],
+            ),
+          ),
+          GoRoute(
+            path: '/inspect',
+            builder: (context, state) => const InspectionScreen(),
           ),
           GoRoute(
             path: '/live-chat',
@@ -87,6 +96,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/customers',
             builder: (context, state) => const CustomersScreen(),
+          ),
+          GoRoute(
+            path: '/communities',
+            builder: (context, state) => const CommunitiesScreen(),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (context, state) => CommunityScreen(id: state.pathParameters['id']!),
+                routes: [
+                  GoRoute(
+                    path: 'units/:unitId',
+                    builder: (context, state) => UnitScreen(unitId: int.tryParse(state.pathParameters['unitId'] ?? '') ?? 0),
+                  ),
+                ],
+              ),
+            ],
           ),
           GoRoute(
             path: '/leads',

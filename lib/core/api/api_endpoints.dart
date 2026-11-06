@@ -9,6 +9,12 @@ class ApiEndpoints {
   static const String status = '/status';
 
   static const String features = '/ops/features';
+  static const String hoaViolationTypes = '/ops/hoa/violation-types';
+  static const String hoaInspections = '/ops/hoa/inspections';
+  static const String counts = '/ops/counts';
+  static const String hoaCommunities = '/ops/hoa/communities';
+  static String hoaCommunity(String id) => '/ops/hoa/communities/${Uri.encodeComponent(id)}';
+  static String hoaUnit(int id) => '/ops/hoa/units/$id';
 
   // ── Auth ────────────────────────────────────────────────────────────────
   static const String login = '/ops/auth/login';

@@ -12,10 +12,9 @@ class MoreScreen extends ConsumerWidget {
   // module = the route key the site must offer (null = always shown).
   static const _items = [
     (label: 'Customers', icon: Icons.people_alt_rounded, path: '/customers', module: 'customers'),
+    (label: 'Start inspection', icon: Icons.fact_check_rounded, path: '/inspect', module: 'communities'),
+    (label: 'Communities', icon: Icons.apartment_rounded, path: '/communities', module: 'communities'),
     (label: 'Leads', icon: Icons.person_search_rounded, path: '/leads', module: 'leads'),
-    (label: 'Mail', icon: Icons.mail_outline_rounded, path: '/mail', module: 'mail'),
-    (label: 'Files', icon: Icons.folder_outlined, path: '/files', module: 'files'),
-    (label: 'Gmail Intake', icon: Icons.move_to_inbox_rounded, path: '/gmail-intake', module: 'gmail-intake'),
     (label: 'AJPhone', icon: Icons.phone_in_talk_rounded, path: '/ajphone', module: 'ajphone'),
     (label: 'About', icon: Icons.info_outline_rounded, path: '/about', module: null),
   ];
