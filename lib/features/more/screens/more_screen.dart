@@ -22,8 +22,12 @@ class MoreScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final modules = ref.watch(modulesProvider).value;
-    final items = _items.where((i) => i.module == null || modules == null || modules.contains(i.module)).toList();
+    final modulesAsync = ref.watch(modulesProvider);
+    final modules = modulesAsync.value;
+    // While the site's module list is loading, show only always-on items (no flash of Mail, Gmail Intake…);
+    // if it can't be loaded or the site is older AJCore without it, show everything.
+    final loading = modulesAsync.isLoading;
+    final items = _items.where((i) => i.module == null || (!loading && (modules == null || modules.contains(i.module)))).toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text('More')),
