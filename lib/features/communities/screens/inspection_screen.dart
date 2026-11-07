@@ -1,3 +1,4 @@
+import '../../../core/widgets/site_chip.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
@@ -97,6 +98,7 @@ class _InspectionScreenState extends State<InspectionScreen> {
         _types = results[1] as List<String>;
         _community = communities.where((c) => c.id == last).firstOrNull ?? (communities.length == 1 ? communities.first : null);
       });
+      _autoPhoto(); // continuous mode: community known -> straight to the camera
     } catch (e) {
       if (mounted) setState(() { _loadError = e.toString(); _loaded = true; });
     }
@@ -111,13 +113,31 @@ class _InspectionScreenState extends State<InspectionScreen> {
     if (picked == null) return;
     (await SharedPreferences.getInstance()).setString(_prefKey, picked.id);
     setState(() => _community = picked);
+    _autoPhoto();
+  }
+
+  bool _cameraOpen = false;
+
+  /// Continuous mode: whenever there is nothing in progress, go straight to the camera.
+  void _autoPhoto() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _community != null && _photo == null && _view == null && !_cameraOpen) _takePhoto();
+    });
   }
 
   Future<void> _takePhoto() async {
-    final shot = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85, maxWidth: 2200);
+    if (_cameraOpen) return;
+    _cameraOpen = true;
+    XFile? shot;
+    try {
+      shot = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85, maxWidth: 2200);
+    } finally {
+      _cameraOpen = false;
+    }
     if (shot == null) return;
+    final taken = shot;
     setState(() {
-      _photo = File(shot.path);
+      _photo = File(taken.path);
       _addressCtrl.clear();
       _lat = null;
       _lng = null;
@@ -254,7 +274,9 @@ class _InspectionScreenState extends State<InspectionScreen> {
 
   Future<void> _next() async {
     await _saveDraft();
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved. Uploading in the background.'), duration: Duration(seconds: 2)));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved. Uploading in the background.'), duration: Duration(seconds: 2)));
+    _autoPhoto(); // back to back: straight to the next photo
   }
 
   Future<void> _end() async {
@@ -306,7 +328,7 @@ class _InspectionScreenState extends State<InspectionScreen> {
     final viewing = _view != null && _view! < _saved.length ? _saved[_view!] : null;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Inspection'),
+        title: const AjAppBarTitle('Inspection'),
         actions: [
           IconButton(
             tooltip: _discovery ? 'Discovery on: checking nearby addresses' : 'Discovery off',
@@ -410,25 +432,18 @@ class _InspectionScreenState extends State<InspectionScreen> {
       // 1 — community
       _StepCard(
         n: 1,
-        title: 'Community',
         done: _community != null,
         child: InkWell(
           onTap: _communities.isEmpty ? null : _pickCommunity,
           child: InputDecorator(
-            decoration: const InputDecoration(border: OutlineInputBorder(), suffixIcon: Icon(Icons.arrow_drop_down_rounded)),
-            child: Text(_community?.name ?? (!_loaded ? 'Loading…' : _communities.isEmpty ? 'No communities yet' : 'Choose community'), style: const TextStyle(fontSize: 16)),
+            decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 9), border: OutlineInputBorder(), suffixIcon: Icon(Icons.arrow_drop_down_rounded)),
+            child: Text(_community?.name ?? (!_loaded ? 'Loading…' : _communities.isEmpty ? 'No communities yet' : 'Choose community'), style: const TextStyle(fontSize: 14), overflow: TextOverflow.ellipsis),
           ),
         ),
       ),
-      if (_community != null && _community!.units == 0)
-        const Padding(
-          padding: EdgeInsets.only(bottom: 12),
-          child: Text('This community has no units yet, so findings are filed against the community by address only.', style: TextStyle(fontSize: 12)),
-        ),
       // 2 — photo + address
       _StepCard(
         n: 2,
-        title: 'Photo and address',
         done: _photo != null && _addressCtrl.text.trim().isNotEmpty,
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           if (_photo == null)
@@ -468,13 +483,12 @@ class _InspectionScreenState extends State<InspectionScreen> {
       // 3 — type
       _StepCard(
         n: 3,
-        title: 'Violation',
         done: _type != null,
         child: Column(children: [
           DropdownButtonFormField<String>(
             initialValue: _type,
             isExpanded: true,
-            decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Type'),
+            decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 9), border: OutlineInputBorder(), labelText: 'Violation type'),
             items: [for (final t in _types) DropdownMenuItem(value: t, child: Text(t))],
             onChanged: (v) => setState(() => _type = v),
           ),
@@ -511,26 +525,24 @@ class _InspectionScreenState extends State<InspectionScreen> {
 
 class _StepCard extends StatelessWidget {
   final int n;
-  final String title;
   final bool done;
   final Widget child;
-  const _StepCard({required this.n, required this.title, required this.done, required this.child});
+  const _StepCard({required this.n, required this.done, required this.child});
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Row(children: [
-            CircleAvatar(radius: 12, backgroundColor: done ? Colors.green : scheme.surfaceContainerHighest, child: done ? const Icon(Icons.check_rounded, size: 16, color: Colors.white) : Text('$n', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
-            const SizedBox(width: 10),
-            Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-          ]),
-          const SizedBox(height: 12),
-          child,
+        padding: const EdgeInsets.all(12),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: CircleAvatar(radius: 12, backgroundColor: done ? Colors.green : scheme.surfaceContainerHighest, child: done ? const Icon(Icons.check_rounded, size: 16, color: Colors.white) : Text('$n', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: child),
         ]),
       ),
     );

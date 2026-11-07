@@ -1,3 +1,4 @@
+import '../../../core/widgets/site_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/lead_model.dart';
@@ -32,7 +33,7 @@ class _LeadsScreenState extends ConsumerState<LeadsScreen> {
     final filtered = state.filtered;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Leads')),
+      appBar: AppBar(title: const AjAppBarTitle('Leads')),
       floatingActionButton: FloatingActionButton(
         tooltip: 'New Lead',
         onPressed: () => Navigator.of(context).push(

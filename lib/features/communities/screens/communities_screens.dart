@@ -1,3 +1,4 @@
+import '../../../core/widgets/site_chip.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -82,7 +83,7 @@ class CommunitiesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(_communitiesProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Communities')),
+      appBar: AppBar(title: const AjAppBarTitle('Communities')),
       body: async.when(
         loading: () => const AjLoadingIndicator(),
         error: (e, _) => ErrorState(message: e.toString(), onRetry: () => ref.invalidate(_communitiesProvider)),
@@ -167,7 +168,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(_communityProvider(widget.id));
     return Scaffold(
-      appBar: AppBar(title: Text(async.value?.name ?? 'Community')),
+      appBar: AppBar(title: AjAppBarTitle(async.value?.name ?? 'Community')),
       body: async.when(
         loading: () => const AjLoadingIndicator(),
         error: (e, _) => ErrorState(message: e.toString(), onRetry: () => ref.invalidate(_communityProvider(widget.id))),
@@ -266,7 +267,7 @@ class UnitScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(_unitProvider(unitId));
     return Scaffold(
-      appBar: AppBar(title: Text(async.value == null ? 'Unit' : 'Unit ${async.value!.unit}')),
+      appBar: AppBar(title: AjAppBarTitle(async.value == null ? 'Unit' : 'Unit ${async.value!.unit}')),
       body: async.when(
         loading: () => const AjLoadingIndicator(),
         error: (e, _) => ErrorState(message: e.toString(), onRetry: () => ref.invalidate(_unitProvider(unitId))),

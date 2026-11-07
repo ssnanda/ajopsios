@@ -1,3 +1,4 @@
+import '../../../core/widgets/site_chip.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,7 +44,7 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
     final notifier = ref.read(filesProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Files')),
+      appBar: AppBar(title: const AjAppBarTitle('Files')),
       floatingActionButton: FloatingActionButton(
         onPressed: state.uploading ? null : _attachFile,
         child: state.uploading

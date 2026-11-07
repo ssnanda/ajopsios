@@ -1,3 +1,4 @@
+import 'site_chip.dart';
 import 'package:flutter/material.dart';
 
 /// Placeholder for a nav destination that has a route (so it's reachable
@@ -12,7 +13,7 @@ class ComingSoonScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(title: AjAppBarTitle(title)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),

@@ -1,3 +1,4 @@
+import '../../../core/widgets/site_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/customer_model.dart';
@@ -31,7 +32,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Customers'),
+        title: const AjAppBarTitle('Customers'),
         actions: [
           IconButton(
             icon: Icon(state.includeArchived ? Icons.archive_rounded : Icons.archive_outlined),

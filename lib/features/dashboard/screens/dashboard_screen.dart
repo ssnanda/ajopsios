@@ -1,8 +1,7 @@
-import 'dart:async';
+import '../../../core/widgets/site_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/api/ops_api.dart';
 import '../../../core/models/ops_summary_model.dart';
 import '../../../core/widgets/aj_card.dart';
 import '../../../core/widgets/error_state.dart';
@@ -18,11 +17,10 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(dashboardProvider);
-    final user = ref.watch(authProvider).user;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const AjAppBarTitle('Dashboard'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout_rounded),
@@ -42,16 +40,6 @@ class DashboardScreen extends ConsumerWidget {
           data: (data) => ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              if (user != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    'Welcome back, ${user.displayName.isNotEmpty ? user.displayName : user.username}',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-              const Center(child: _SyncAllButton()),
-              const SizedBox(height: 16),
               const _InspectButton(),
               // Every menu destination gets a tile now — no more hide-if-zero. Ordering does the
               // work instead: tiles with a pending count sort to the top (highest count first),
@@ -62,57 +50,6 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _SyncAllButton extends ConsumerStatefulWidget {
-  const _SyncAllButton();
-
-  @override
-  ConsumerState<_SyncAllButton> createState() => _SyncAllButtonState();
-}
-
-class _SyncAllButtonState extends ConsumerState<_SyncAllButton> {
-  bool _running = false;
-
-  Future<void> _run() async {
-    setState(() => _running = true);
-    try {
-      final runKey = await OpsApi.instance.triggerSync();
-      Map<String, dynamic> status = {'done': false};
-      // Same poll cadence/timeout as AJOps web's Full Sync Now button.
-      for (var i = 0; i < 60 && !(status['done'] == true); i++) {
-        await Future.delayed(const Duration(milliseconds: 1500));
-        status = await OpsApi.instance.getSyncRunStatus(runKey);
-      }
-      if (!mounted) return;
-      final synced = status['records_synced'];
-      final errors = (status['errors'] as List<dynamic>?) ?? const [];
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          status['done'] == true
-              ? (errors.isEmpty ? 'Sync complete${synced != null ? ' — $synced records' : ''}.' : 'Sync finished with ${errors.length} error(s).')
-              : 'Sync is still running in the background.',
-        ),
-      ));
-      ref.invalidate(dashboardProvider);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sync failed: $e')));
-    } finally {
-      if (mounted) setState(() => _running = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: _running ? null : _run,
-      icon: _running
-          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-          : const Icon(Icons.sync_rounded, size: 18),
-      label: Text(_running ? 'Syncing…' : 'Sync All'),
     );
   }
 }

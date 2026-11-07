@@ -1,3 +1,4 @@
+import '../../../core/widgets/site_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -18,7 +19,7 @@ class MailScreen extends ConsumerWidget {
     final notifier = ref.read(mailProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mail')),
+      appBar: AppBar(title: const AjAppBarTitle('Mail')),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddMailSheet(context, notifier),
         child: const Icon(Icons.add_rounded),

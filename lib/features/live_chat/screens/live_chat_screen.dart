@@ -1,3 +1,4 @@
+import '../../../core/widgets/site_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/chat_session_model.dart';
@@ -19,7 +20,7 @@ class LiveChatScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Live Chat'),
+        title: const AjAppBarTitle('Live Chat'),
         actions: [
           IconButton(
             icon: const Icon(Icons.sensors_rounded),

@@ -1,3 +1,4 @@
+import '../../../core/widgets/site_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/ops_service_request_model.dart';
@@ -52,7 +53,7 @@ class _ServiceRequestsScreenState extends ConsumerState<ServiceRequestsScreen> {
     final notifier = ref.read(serviceRequestsProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title ?? 'Requests')),
+      appBar: AppBar(title: AjAppBarTitle(widget.title ?? 'Requests')),
       body: Column(
         children: [
           Padding(

@@ -1,3 +1,4 @@
+import '../../../core/widgets/site_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import '../../../core/config/site_url.dart';
 import '../../../core/providers/modules_provider.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../widgets/sync_all_tile.dart';
 
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
@@ -31,10 +33,12 @@ class MoreScreen extends ConsumerWidget {
     final items = _items.where((i) => (!hoa || i.path != '/customers') && (i.module == null || (!loading && (modules == null || modules.contains(i.module))))).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('More')),
+      appBar: AppBar(title: const AjAppBarTitle('More')),
       body: ListView(
         children: [
           const _SitesSection(),
+          const Divider(height: 1),
+          const SyncAllTile(),
           const Divider(height: 1),
           for (final item in items) ...[
             ListTile(
