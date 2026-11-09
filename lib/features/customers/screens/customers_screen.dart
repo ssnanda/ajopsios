@@ -57,26 +57,45 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
               onSubmitted: notifier.setSearch,
             ),
           ),
-          // Small filter chips on one scrolling line, so the list keeps almost all of the screen.
-          SizedBox(
-            height: 34,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                for (final f in const [
-                  ('all', 'All'),
-                  ('active', 'Active'),
-                  ('disabled', 'Disabled'),
-                  ('no_login', 'No login'),
-                  ('archived', 'Archived'),
-                ])
-                  _MiniChip(label: f.$2, selected: state.statusFilter == f.$1, onTap: () => notifier.setStatusFilter(f.$1)),
-                const SizedBox(width: 6),
-                _MiniChip(label: 'Suite lease', selected: state.suiteOnly, onTap: notifier.toggleSuiteOnly, icon: Icons.apartment_rounded),
+          // Same two filter rows as AJOps (Partner, Service), kept small: one scrolling line each.
+          if (state.showPartners)
+            _FilterRow(
+              label: 'Partner',
+              chips: [
+                for (final t in [(key: '', name: 'All'), ...state.partners])
+                  _MiniChip(
+                    label: '${t.name} ${state.partnerCount(t.key)}',
+                    selected: state.partnerFilter == t.key,
+                    dim: state.partnerCount(t.key) == 0 && state.partnerFilter != t.key,
+                    onTap: () => notifier.setPartnerFilter(t.key),
+                  ),
               ],
             ),
+          _FilterRow(
+            label: 'Service',
+            chips: [
+              for (final f in serviceFilters)
+                if (state.showSubscriptionTypes || !const {'ra', 'vo', 'none'}.contains(f.$1))
+                  _MiniChip(
+                    label: '${f.$2} ${state.serviceCount(f.$1)}',
+                    selected: state.serviceFilter == f.$1,
+                    dim: state.serviceCount(f.$1) == 0 && state.serviceFilter != f.$1,
+                    onTap: () => notifier.setServiceFilter(f.$1),
+                  ),
+            ],
           ),
+          if (state.filtered)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
+              child: Row(children: [
+                Text('Showing ${visible.length}', style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: notifier.clearFilters,
+                  child: Text('Clear all', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
+                ),
+              ]),
+            ),
           const SizedBox(height: 4),
           Expanded(
             child: state.loading
@@ -109,23 +128,48 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   }
 }
 
+class _FilterRow extends StatelessWidget {
+  final String label;
+  final List<Widget> chips;
+  const _FilterRow({required this.label, required this.chips});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 32,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Text(label.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1, color: Colors.grey.shade500)),
+            ),
+          ),
+          ...chips,
+        ],
+      ),
+    );
+  }
+}
+
 class _MiniChip extends StatelessWidget {
   final String label;
   final bool selected;
+  final bool dim;
   final VoidCallback onTap;
-  final IconData? icon;
-  const _MiniChip({required this.label, required this.selected, required this.onTap, this.icon});
+  const _MiniChip({required this.label, required this.selected, required this.onTap, this.dim = false});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(right: 6),
       child: FilterChip(
-        label: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-        avatar: icon == null ? null : Icon(icon, size: 14),
+        label: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: dim ? Colors.grey.shade400 : null)),
         selected: selected,
         showCheckmark: false,
-        onSelected: (_) => onTap(),
+        onSelected: dim ? null : (_) => onTap(),
         visualDensity: const VisualDensity(horizontal: -3, vertical: -3),
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         padding: const EdgeInsets.symmetric(horizontal: 2),

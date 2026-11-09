@@ -88,6 +88,34 @@ class OpsApi {
   }
 
   /// Menu items the site's AJCore and extensions offer (null = older AJCore, show everything).
+  /// Partner accounts (Alliance VO, OPUS, ...): key + name, for the Customers partner filter.
+  Future<List<({String key, String name})>> getPartners() async {
+    final resp = await ApiClient.instance.dio.get('/ops/partners');
+    final list = (resp.data as Map<String, dynamic>)['partners'] as List<dynamic>? ?? const [];
+    return [for (final p in list) (key: '${(p as Map)['partner_key'] ?? ''}', name: '${p['name'] ?? ''}')]
+        .where((p) => p.key.isNotEmpty)
+        .toList();
+  }
+
+  /// Customer ids with a Registered Agent / Virtual Office / any subscription (Customers service filter).
+  Future<({Set<String> ra, Set<String> vo, Set<String> any})> getProductCounts() async {
+    final resp = await ApiClient.instance.dio.get('/ops/product-counts');
+    final counts = ((resp.data as Map<String, dynamic>)['counts'] as Map?) ?? const {};
+    Set<String> ids(String k) => ((counts[k] as List?) ?? const []).map((e) => e.toString()).toSet();
+    return (
+      ra: ids('registered_agent_subscription_customers'),
+      vo: ids('virtual_office_subscription_customers'),
+      any: ids('any_subscription_customers'),
+    );
+  }
+
+  /// Which optional Customers filters this site has: partners and Registered Agent / Virtual Office.
+  Future<({bool partners, bool registeredAgent})> getCustomerFeatures() async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.features);
+    final d = resp.data as Map<String, dynamic>;
+    return (partners: d['partners'] == true, registeredAgent: d['registered_agent'] != false);
+  }
+
   Future<List<String>?> getModules() async {
     final resp = await ApiClient.instance.dio.get(ApiEndpoints.features);
     final raw = (resp.data as Map<String, dynamic>)['modules'];

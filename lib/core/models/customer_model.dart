@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// GET /ops/customers row shape (format_ops_customer_row in
 /// class-ajcore-rest-api.php). The web detail view has 8+ panels (payments,
 /// Stripe charges, local ledger, profile/1583 docs, files...) — this mobile
@@ -17,6 +19,8 @@ class Customer {
   final bool enabledPortal;
   final List<String>
   serviceTypes; // active subscription / local-contract service names
+  final String partnerKey; // '' = none (Alliance VO, OPUS, ...)
+  final String customerKind; // e.g. 'suite_client'
 
   const Customer({
     required this.stripeCustomerId,
@@ -29,6 +33,8 @@ class Customer {
     required this.portalStatus,
     required this.enabledPortal,
     this.serviceTypes = const [],
+    this.partnerKey = '',
+    this.customerKind = '',
   });
 
   factory Customer.fromJson(Map<String, dynamic> json) {
@@ -49,7 +55,22 @@ class Customer {
               ?.map((e) => e.toString())
               .toList() ??
           const [],
+      partnerKey: json['partner_key']?.toString() ?? '',
+      customerKind: _kindOf(json['metadata']),
     );
+  }
+
+  /// metadata arrives as an object or as a JSON string; customer_kind marks e.g. Suite Clients.
+  static String _kindOf(dynamic metadata) {
+    var m = metadata;
+    if (m is String && m.isNotEmpty) {
+      try {
+        m = jsonDecode(m);
+      } catch (_) {
+        return '';
+      }
+    }
+    return m is Map ? (m['customer_kind']?.toString() ?? '') : '';
   }
 
   /// AJCore returns address as a structured object ({line1, line2, city, state,
