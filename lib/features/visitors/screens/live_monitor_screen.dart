@@ -15,7 +15,9 @@ import 'visitor_history_screen.dart' show pickVisitorLinkTarget;
 /// configured URL for at all — see the AJPhone/Live Monitor architecture discussion. Polls AJCore's
 /// durable open/close-row view of "currently online" every 10s instead of a live push.
 class LiveMonitorScreen extends ConsumerWidget {
-  const LiveMonitorScreen({super.key});
+  /// Inside the Visitors tab: no app bar of its own.
+  final bool embedded;
+  const LiveMonitorScreen({super.key, this.embedded = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,12 +25,14 @@ class LiveMonitorScreen extends ConsumerWidget {
     final notifier = ref.read(liveMonitorProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Live Monitor${state.visitors.isNotEmpty ? ' (${state.visitors.length})' : ''}'),
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: () => notifier.load()),
-        ],
-      ),
+      appBar: embedded
+          ? null
+          : AppBar(
+              title: Text('Live Monitor${state.visitors.isNotEmpty ? ' (${state.visitors.length})' : ''}'),
+              actions: [
+                IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: () => notifier.load()),
+              ],
+            ),
       body: state.loading
           ? const AjLoadingIndicator()
           : state.error != null

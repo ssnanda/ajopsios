@@ -18,6 +18,8 @@ class MoreScreen extends ConsumerWidget {
     (label: 'Communities', icon: Icons.apartment_rounded, path: '/communities', module: 'communities'),
     (label: 'Leads', icon: Icons.person_search_rounded, path: '/leads', module: 'leads'),
     (label: 'AJPhone', icon: Icons.phone_in_talk_rounded, path: '/ajphone', module: 'ajphone'),
+    (label: 'Email Log', icon: Icons.mark_email_read_outlined, path: '/email-log', module: 'emails'),
+    (label: 'Settings', icon: Icons.settings_outlined, path: '/settings', module: 'settings'),
     (label: 'About', icon: Icons.info_outline_rounded, path: '/about', module: null),
   ];
 

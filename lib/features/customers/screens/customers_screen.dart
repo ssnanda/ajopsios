@@ -33,13 +33,6 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const AjAppBarTitle('Customers'),
-        actions: [
-          IconButton(
-            icon: Icon(state.includeArchived ? Icons.archive_rounded : Icons.archive_outlined),
-            tooltip: state.includeArchived ? 'Hide archived' : 'Show archived',
-            onPressed: notifier.toggleIncludeArchived,
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -64,6 +57,27 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
               onSubmitted: notifier.setSearch,
             ),
           ),
+          // Small filter chips on one scrolling line, so the list keeps almost all of the screen.
+          SizedBox(
+            height: 34,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                for (final f in const [
+                  ('all', 'All'),
+                  ('active', 'Active'),
+                  ('disabled', 'Disabled'),
+                  ('no_login', 'No login'),
+                  ('archived', 'Archived'),
+                ])
+                  _MiniChip(label: f.$2, selected: state.statusFilter == f.$1, onTap: () => notifier.setStatusFilter(f.$1)),
+                const SizedBox(width: 6),
+                _MiniChip(label: 'Suite lease', selected: state.suiteOnly, onTap: notifier.toggleSuiteOnly, icon: Icons.apartment_rounded),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
           Expanded(
             child: state.loading
                 ? const AjLoadingIndicator()
@@ -90,6 +104,31 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                           ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MiniChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final IconData? icon;
+  const _MiniChip({required this.label, required this.selected, required this.onTap, this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: FilterChip(
+        label: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+        avatar: icon == null ? null : Icon(icon, size: 14),
+        selected: selected,
+        showCheckmark: false,
+        onSelected: (_) => onTap(),
+        visualDensity: const VisualDensity(horizontal: -3, vertical: -3),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: const EdgeInsets.symmetric(horizontal: 2),
       ),
     );
   }

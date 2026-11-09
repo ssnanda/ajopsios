@@ -14,6 +14,7 @@ class CustomerDetailScreen extends ConsumerWidget {
     WidgetRef ref,
     String action, {
     String? confirmMessage,
+    Map<String, String>? extra,
   }) async {
     if (confirmMessage != null) {
       final ok = await showDialog<bool>(
@@ -37,9 +38,11 @@ class CustomerDetailScreen extends ConsumerWidget {
     }
     final err = await ref
         .read(customerDetailProvider(customer.stripeCustomerId).notifier)
-        .runAction(action);
-    if (err != null && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+        .runAction(action, extra: extra);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err ?? (action == 'send_ra_authorization' ? 'RA authorization sent.' : 'Done.'))),
+      );
     }
   }
 
@@ -73,6 +76,10 @@ class CustomerDetailScreen extends ConsumerWidget {
                       ref,
                       action,
                       confirmMessage: confirm,
+                      // {company} in the authorization email is the filing entity, not the contact person.
+                      extra: action == 'send_ra_authorization'
+                          ? {'company': state.detail!.businessName.isNotEmpty ? state.detail!.businessName : customer.displayName}
+                          : null,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -200,13 +207,6 @@ class _ActionsCard extends StatelessWidget {
                     onPressed: busy ? null : () => onAction('disable', null),
                     child: const Text('Disable'),
                   ),
-                if (status != 'archived')
-                  OutlinedButton(
-                    onPressed: busy
-                        ? null
-                        : () => onAction('archive', 'Archive this customer?'),
-                    child: const Text('Archive'),
-                  ),
                 if (status == 'archived')
                   OutlinedButton(
                     onPressed: busy ? null : () => onAction('restore', null),
@@ -229,6 +229,15 @@ class _ActionsCard extends StatelessWidget {
                           'Resend the welcome email?',
                         ),
                   child: const Text('Send welcome'),
+                ),
+                FilledButton.tonal(
+                  onPressed: busy
+                      ? null
+                      : () => onAction(
+                          'send_ra_authorization',
+                          'Email the Registered Agent authorization to ${detail.customer.email}?',
+                        ),
+                  child: const Text('Send RA Authorization'),
                 ),
               ],
             ),

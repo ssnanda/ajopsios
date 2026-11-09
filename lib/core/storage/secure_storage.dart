@@ -46,6 +46,7 @@ class SecureStorage {
   static const _keyBiometricEnabled = 'aj_biometric_enabled';
   static const _keySiteUuid = 'aj_site_uuid';
   static const _keySiteUrl = 'aj_site_url';
+  static const _keyOpsUrl = 'aj_ops_url';
 
   // ── Multi-account keys ────────────────────────────────────────────────────
   static const _keyAccountsList = 'aj_accounts_list';
@@ -167,6 +168,15 @@ class SecureStorage {
       _storage.write(key: _keySiteUuid, value: uuid);
 
   Future<String?> getSiteUuid() => _storage.read(key: _keySiteUuid);
+
+  // ── AJOps server (AJPhone and anything else only AJOps can do) ────────────────
+
+  /// Optional override of the AJOps web address; null = derived from the site (ops.<host>).
+  Future<String?> getOpsUrl() => _storage.read(key: _keyOpsUrl);
+
+  Future<void> saveOpsUrl(String url) => _storage.write(key: _keyOpsUrl, value: url);
+
+  Future<void> clearOpsUrl() => _storage.delete(key: _keyOpsUrl);
 
   // ── Wipe all ──────────────────────────────────────────────────────────────
 

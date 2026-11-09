@@ -11,40 +11,126 @@ import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../providers/visitor_history_provider.dart';
 
-class VisitorHistoryScreen extends ConsumerWidget {
-  const VisitorHistoryScreen({super.key});
+class VisitorHistoryScreen extends ConsumerStatefulWidget {
+  /// Inside the Visitors tab: no app bar of its own.
+  final bool embedded;
+  const VisitorHistoryScreen({super.key, this.embedded = false});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VisitorHistoryScreen> createState() => _VisitorHistoryScreenState();
+}
+
+class _VisitorHistoryScreenState extends ConsumerState<VisitorHistoryScreen> {
+  final _search = TextEditingController();
+  String _range = 'week'; // today | week | all
+  bool _linkedOnly = false;
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  /// lastSeen arrives as UTC "YYYY-MM-DD HH:MM:SS".
+  DateTime? _seen(Visitor v) => DateTime.tryParse(v.lastSeen.replaceFirst(' ', 'T') + (v.lastSeen.endsWith('Z') ? '' : 'Z'));
+
+  List<Visitor> _filter(List<Visitor> all) {
+    final now = DateTime.now().toUtc();
+    final q = _search.text.trim().toLowerCase();
+    return all.where((v) {
+      final seen = _seen(v);
+      if (_range != 'all' && seen != null) {
+        final days = _range == 'today' ? 1 : 7;
+        if (now.difference(seen).inHours > days * 24) return false;
+      }
+      if (_linkedOnly && !v.isLinked) return false;
+      if (q.isEmpty) return true;
+      return '${v.ipAddress} ${v.location} ${v.browser} ${v.os} ${v.lastPage} ${v.linkedCustomerName} ${v.linkedLeadName}'.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  Widget _chip(String label, bool selected, VoidCallback onTap) => Padding(
+    padding: const EdgeInsets.only(right: 6),
+    child: FilterChip(
+      label: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+      selected: selected,
+      showCheckmark: false,
+      onSelected: (_) => onTap(),
+      visualDensity: const VisualDensity(horizontal: -3, vertical: -3),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(visitorHistoryProvider);
     final notifier = ref.read(visitorHistoryProvider.notifier);
+    final shown = _filter(state.visitors);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Visitor History'),
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: () => notifier.load()),
+      appBar: widget.embedded
+          ? null
+          : AppBar(
+              title: const Text('Visitor History'),
+              actions: [IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: () => notifier.load())],
+            ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: TextField(
+              controller: _search,
+              decoration: InputDecoration(
+                hintText: 'Search IP, place, page, customer or lead…',
+                prefixIcon: const Icon(Icons.search_rounded),
+                isDense: true,
+                suffixIcon: _search.text.isEmpty ? null : IconButton(icon: const Icon(Icons.clear_rounded), onPressed: () => setState(_search.clear)),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+          ),
+          SizedBox(
+            height: 34,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                _chip('Today', _range == 'today', () => setState(() => _range = 'today')),
+                _chip('7 days', _range == 'week', () => setState(() => _range = 'week')),
+                _chip('All', _range == 'all', () => setState(() => _range = 'all')),
+                const SizedBox(width: 6),
+                _chip('Linked only', _linkedOnly, () => setState(() => _linkedOnly = !_linkedOnly)),
+              ],
+            ),
+          ),
+          if (!state.loading && state.error == null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+              child: Align(alignment: Alignment.centerLeft, child: Text('${shown.length} visitor${shown.length == 1 ? '' : 's'}', style: TextStyle(fontSize: 12, color: Colors.grey.shade600))),
+            ),
+          Expanded(
+            child: state.loading
+                ? const AjLoadingIndicator()
+                : state.error != null
+                    ? ErrorState(message: state.error!, onRetry: () => notifier.load())
+                    : shown.isEmpty
+                        ? const EmptyState(
+                            icon: Icons.groups_outlined,
+                            title: 'No visitors match',
+                            subtitle: 'Try a wider date range or clear the search.',
+                          )
+                        : RefreshIndicator(
+                            onRefresh: () => notifier.load(),
+                            child: ListView.separated(
+                              padding: const EdgeInsets.all(12),
+                              itemCount: shown.length,
+                              separatorBuilder: (_, _) => const SizedBox(height: 10),
+                              itemBuilder: (context, i) => _VisitorCard(visitor: shown[i]),
+                            ),
+                          ),
+          ),
         ],
       ),
-      body: state.loading
-          ? const AjLoadingIndicator()
-          : state.error != null
-          ? ErrorState(message: state.error!, onRetry: () => notifier.load())
-          : state.visitors.isEmpty
-          ? const EmptyState(
-              icon: Icons.groups_outlined,
-              title: 'No visitor history yet',
-              subtitle: 'Past visits show up here once someone leaves the site.',
-            )
-          : RefreshIndicator(
-              onRefresh: () => notifier.load(),
-              child: ListView.separated(
-                padding: const EdgeInsets.all(12),
-                itemCount: state.visitors.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, i) => _VisitorCard(visitor: state.visitors[i]),
-              ),
-            ),
     );
   }
 }

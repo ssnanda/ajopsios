@@ -6,8 +6,6 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../providers/live_chat_provider.dart';
-import '../../visitors/screens/live_monitor_screen.dart';
-import '../../visitors/screens/visitor_history_screen.dart';
 import 'chat_conversation_screen.dart';
 
 class LiveChatScreen extends ConsumerWidget {
@@ -20,22 +18,8 @@ class LiveChatScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const AjAppBarTitle('Live Chat'),
+        title: const AjAppBarTitle('Chat'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.sensors_rounded),
-            tooltip: 'Live Monitor',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const LiveMonitorScreen()),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.groups_outlined),
-            tooltip: 'Visitor History',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const VisitorHistoryScreen()),
-            ),
-          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => notifier.load(),

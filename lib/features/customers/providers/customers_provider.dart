@@ -8,14 +8,18 @@ class CustomersState {
   final bool loading;
   final String? error;
   final String search;
-  final bool includeArchived;
+  /// 'all' (everything not archived), 'active', 'disabled', 'no_login' or 'archived'.
+  final String statusFilter;
+  /// Only customers with a Suite lease service.
+  final bool suiteOnly;
 
   const CustomersState({
     this.customers = const [],
     this.loading = true,
     this.error,
     this.search = '',
-    this.includeArchived = false,
+    this.statusFilter = 'all',
+    this.suiteOnly = false,
   });
 
   CustomersState copyWith({
@@ -24,14 +28,16 @@ class CustomersState {
     String? error,
     bool clearError = false,
     String? search,
-    bool? includeArchived,
+    String? statusFilter,
+    bool? suiteOnly,
   }) {
     return CustomersState(
       customers: customers ?? this.customers,
       loading: loading ?? this.loading,
       error: clearError ? null : (error ?? this.error),
       search: search ?? this.search,
-      includeArchived: includeArchived ?? this.includeArchived,
+      statusFilter: statusFilter ?? this.statusFilter,
+      suiteOnly: suiteOnly ?? this.suiteOnly,
     );
   }
 
@@ -39,7 +45,17 @@ class CustomersState {
   // customer_number is a fixed-width "YYYY-MM-NNNN" string assigned at creation time — sorting
   // it descending as a string puts the most recently created customers first.
   List<Customer> get visible {
-    final list = includeArchived ? [...customers] : customers.where((c) => c.portalStatus != 'archived').toList();
+    final list = customers.where((c) {
+      final status = c.portalStatus;
+      final statusOk = switch (statusFilter) {
+        'active' => status == 'active',
+        'disabled' => status == 'disabled',
+        'no_login' => status == 'without_portal_login',
+        'archived' => status == 'archived',
+        _ => status != 'archived',
+      };
+      return statusOk && (!suiteOnly || c.serviceTypes.any((s) => s.toLowerCase().startsWith('suite')));
+    }).toList();
     list.sort((a, b) => b.customerNumber.compareTo(a.customerNumber));
     return list;
   }
@@ -67,7 +83,9 @@ class CustomersNotifier extends StateNotifier<CustomersState> {
     load();
   }
 
-  void toggleIncludeArchived() => state = state.copyWith(includeArchived: !state.includeArchived);
+  void setStatusFilter(String value) => state = state.copyWith(statusFilter: value);
+
+  void toggleSuiteOnly() => state = state.copyWith(suiteOnly: !state.suiteOnly);
 }
 
 final customersProvider = StateNotifierProvider.autoDispose<CustomersNotifier, CustomersState>(

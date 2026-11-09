@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/auth/auth_state.dart';
-import '../core/widgets/coming_soon_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/communities/screens/communities_screens.dart';
 import '../features/communities/screens/inspection_screen.dart';
 import '../features/customers/screens/customers_screen.dart';
 import '../features/dashboard/screens/dashboard_screen.dart';
+import '../features/ajphone/ajphone_screens.dart';
+import '../features/email_log/email_log_screen.dart';
 import '../features/files/screens/files_screen.dart';
+import '../features/settings/settings_screen.dart';
 import '../features/gmail_intake/screens/gmail_intake_screen.dart';
 import '../features/live_chat/screens/chat_conversation_by_id_screen.dart';
 import '../features/live_chat/screens/live_chat_screen.dart';
+import '../features/visitors/screens/visitors_hub_screen.dart';
 import '../features/leads/screens/leads_screen.dart';
 import '../features/mail/screens/mail_screen.dart';
 import '../features/more/screens/about_screen.dart';
@@ -77,6 +80,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const InspectionScreen(),
           ),
           GoRoute(
+            path: '/visitors',
+            builder: (context, state) => const VisitorsHubScreen(),
+          ),
+          GoRoute(
             path: '/live-chat',
             builder: (context, state) => const LiveChatScreen(),
             routes: [
@@ -130,12 +137,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const GmailIntakeScreen(),
           ),
           GoRoute(
+            path: '/email-log',
+            builder: (context, state) => const EmailLogScreen(),
+          ),
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
             path: '/about',
             builder: (context, state) => const AboutScreen(),
           ),
           GoRoute(
             path: '/ajphone',
-            builder: (context, state) => const ComingSoonScreen(title: 'AJPhone', icon: Icons.phone_in_talk_rounded),
+            builder: (context, state) => const AjphoneScreen(),
           ),
         ],
       ),

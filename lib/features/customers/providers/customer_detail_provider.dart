@@ -39,10 +39,10 @@ class CustomerDetailNotifier extends StateNotifier<CustomerDetailState> {
     }
   }
 
-  Future<String?> runAction(String action) async {
+  Future<String?> runAction(String action, {Map<String, String>? extra}) async {
     state = state.copyWith(actionBusy: true);
     try {
-      await _api.runCustomerAction(stripeCustomerId, action);
+      await _api.runCustomerAction(stripeCustomerId, action, extra: extra);
       await load();
       state = state.copyWith(actionBusy: false);
       return null;

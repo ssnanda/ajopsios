@@ -90,4 +90,15 @@ class ApiEndpoints {
   static const String sync = '/ops/sync';
   static const String syncRunStatus = '/ops/sync/run-status';
   static const String syncStatus = '/ops/sync/status';
+
+  // ── Email Log ────────────────────────────────────────────────────────────
+  static const String emailLog = '/ops/email-log';
+  static String emailLogEntry(int id) => '/ops/email-log/$id';
+
+  // ── Settings: staff + reception (front desk iPad keys) ───────────────────
+  static String staffMember(int id) => '/ops/staff/$id';
+  static String staffProfile(int id) => '/ops/staff/$id/profile';
+  static String staffPermissions(int id) => '/ops/staff/$id/permissions';
+  static const String receptionDevices = '/ops/reception/devices';
+  static String receptionDeviceRevoke(String id) => '/ops/reception/devices/$id/revoke';
 }

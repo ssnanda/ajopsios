@@ -5,7 +5,7 @@ import '../core/services/app_badge_sync_provider.dart';
 import '../core/widgets/app_version_label.dart';
 import '../features/live_chat/providers/live_chat_provider.dart';
 
-/// Bottom nav holds the 4 most-used destinations; everything past that
+/// Bottom nav holds the 5 most-used destinations (Live = Live Monitor + Visitor History, Chat = conversations); everything past that
 /// (Customers, Leads, Mail, Files, Gmail Intake, AJPhone) lives
 /// behind "More" rather than crowding a phone-width NavigationBar.
 class ShellScreen extends ConsumerWidget {
@@ -15,6 +15,7 @@ class ShellScreen extends ConsumerWidget {
   static const _tabs = [
     _Tab(label: 'Dashboard', icon: Icons.dashboard_rounded, path: '/dashboard'),
     _Tab(label: 'Requests', icon: Icons.support_agent_rounded, path: '/requests'),
+    _Tab(label: 'Live', icon: Icons.sensors_rounded, path: '/visitors'),
     _Tab(label: 'Chat', icon: Icons.chat_bubble_outline_rounded, path: '/live-chat'),
     _Tab(label: 'More', icon: Icons.more_horiz_rounded, path: '/more'),
   ];

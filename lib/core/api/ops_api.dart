@@ -504,10 +504,11 @@ class OpsApi {
   }
 
   /// action: enable | disable | archive | restore | reset_password | send_welcome
-  Future<void> runCustomerAction(String stripeCustomerId, String action) async {
+  /// [extra] carries per-action inputs, e.g. {'company': ...} for send_ra_authorization.
+  Future<void> runCustomerAction(String stripeCustomerId, String action, {Map<String, String>? extra}) async {
     await ApiClient.instance.dio.post(
       ApiEndpoints.customerAction(stripeCustomerId),
-      data: {'action': action},
+      data: {'action': action, ...?extra},
     );
   }
 
