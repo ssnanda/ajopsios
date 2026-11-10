@@ -82,8 +82,8 @@ class LeadStatusStepper extends StatelessWidget {
                             child: Column(
                               children: [
                                 Container(
-                                  width: 32,
-                                  height: 32,
+                                  width: 28,
+                                  height: 28,
                                   alignment: Alignment.center,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
@@ -131,29 +131,46 @@ class LeadStatusStepper extends StatelessWidget {
           ),
         ],
         if (canBranch) ...[
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          const SizedBox(height: 8),
+          // One compact row of three equal buttons (icon + short label), grey until chosen —
+          // 40px tall keeps them easy to tap without the old full-width, 52px-each stack.
+          Row(
             children: [
-              FilledButton.tonal(
-                onPressed: busy ? null : () => onChange('customer'),
-                style: FilledButton.styleFrom(backgroundColor: Colors.grey.shade200, foregroundColor: Colors.grey.shade700),
-                child: const Text('Customer'),
-              ),
-              FilledButton.tonal(
-                onPressed: busy ? null : () => onChange('future_follow_up'),
-                style: FilledButton.styleFrom(backgroundColor: Colors.grey.shade200, foregroundColor: Colors.grey.shade700),
-                child: const Text('Future Follow-Up'),
-              ),
-              OutlinedButton(
-                onPressed: busy ? null : () => onChange('lost'),
-                child: const Text('Lost'),
-              ),
+              Expanded(child: _BranchButton(icon: Icons.check_circle_outline_rounded, label: 'Customer', busy: busy, onTap: () => onChange('customer'))),
+              const SizedBox(width: 8),
+              Expanded(child: _BranchButton(icon: Icons.event_repeat_rounded, label: 'Follow-Up', busy: busy, onTap: () => onChange('future_follow_up'))),
+              const SizedBox(width: 8),
+              Expanded(child: _BranchButton(icon: Icons.cancel_outlined, label: 'Lost', busy: busy, onTap: () => onChange('lost'))),
             ],
           ),
         ],
       ],
+    );
+  }
+}
+
+class _BranchButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool busy;
+  final VoidCallback onTap;
+  const _BranchButton({required this.icon, required this.label, required this.busy, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    // AjTheme sets an infinite-width minimumSize on buttons (see lead_detail_screen's note on
+    // Add Note) — override it so these size to their Expanded slot instead.
+    return FilledButton.tonalIcon(
+      onPressed: busy ? null : onTap,
+      icon: Icon(icon, size: 18),
+      label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(0, 40),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        backgroundColor: Colors.grey.shade200,
+        foregroundColor: Colors.grey.shade800,
+        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+      ),
     );
   }
 }
