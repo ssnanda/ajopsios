@@ -14,12 +14,22 @@ class LeadDetailState {
       LeadDetailState(lead: lead ?? this.lead, busy: busy ?? this.busy);
 }
 
-/// Takes the Lead the list screen already has (from GET /ops/leads) rather
-/// than re-fetching — GET /ops/leads/{id} returns the same shape plus
-/// all_fields, only worth the extra round trip if that's actually shown.
+/// Starts from the Lead the list screen already has (GET /ops/leads), then loads
+/// GET /ops/leads/{id} in the background for all_fields (Additional Fields section).
 class LeadDetailNotifier extends StateNotifier<LeadDetailState> {
   LeadDetailNotifier(this._ref, Lead initial)
-    : super(LeadDetailState(lead: initial));
+    : super(LeadDetailState(lead: initial)) {
+    _loadFull();
+  }
+
+  Future<void> _loadFull() async {
+    try {
+      final full = await _api.getLead(state.lead.id);
+      if (mounted) state = state.copyWith(lead: full);
+    } catch (_) {
+      // Non-fatal: the list-row data is already showing.
+    }
+  }
 
   final Ref _ref;
   final _api = OpsApi.instance;
@@ -39,7 +49,7 @@ class LeadDetailNotifier extends StateNotifier<LeadDetailState> {
     String? notes,
     String? siteUuid,
   }) => _run(() async {
-    final updated = await _api.updateLead(
+    await _api.updateLead(
       state.lead.id,
       name: name,
       email: email,
@@ -49,7 +59,7 @@ class LeadDetailNotifier extends StateNotifier<LeadDetailState> {
       notes: notes,
       siteUuid: siteUuid,
     );
-    state = state.copyWith(lead: updated);
+    state = state.copyWith(lead: await _api.getLead(state.lead.id));
   });
 
   Future<String?> setStage(

@@ -25,6 +25,10 @@ class Lead {
   /// (see get_lead_pipeline_linear_stages() in class-ajforms-admin.php) — mirrors AJOps web's
   /// Lead.leadPipelineStages. Falls back to the generic default when AJCore omits it.
   final List<String> leadPipelineStages;
+  final String sourceUrl;
+  /// Every non-empty form field (GET /ops/leads/{id} only — empty on list rows). Drives the
+  /// "Additional Fields" section, same as AJOps web's lead.allFields.
+  final List<LeadField> allFields;
 
   const Lead({
     required this.id,
@@ -46,6 +50,8 @@ class Lead {
     required this.siteLabel,
     required this.notesList,
     required this.leadPipelineStages,
+    this.sourceUrl = '',
+    this.allFields = const [],
   });
 
   factory Lead.fromJson(Map<String, dynamic> json) {
@@ -74,10 +80,23 @@ class Lead {
       notesList: (json['notes_list'] as List<dynamic>? ?? [])
           .map((e) => LeadNote.fromJson(e as Map<String, dynamic>))
           .toList(),
+      sourceUrl: json['source_url'] as String? ?? '',
+      allFields: (json['all_fields'] as List<dynamic>? ?? [])
+          .map((e) => LeadField.fromJson(e as Map<String, dynamic>))
+          .toList(),
       leadPipelineStages: (stages != null && stages.isNotEmpty)
           ? stages
           : defaultLeadPipelineStages,
     );
+  }
+
+  /// Form fields not already shown as primary contact rows or the Message — same filter as
+  /// AJOps web's extraFields (LeadDetailClient.tsx).
+  List<LeadField> get extraFields {
+    const known = {'name', 'email', 'phone', 'company', 'source', 'notes'};
+    return allFields
+        .where((f) => !known.contains(f.key.toLowerCase()) && !known.contains(f.label.toLowerCase()))
+        .toList();
   }
 
   String get displayName => name.isNotEmpty ? name : (email.isNotEmpty ? email : 'Lead #$id');
@@ -112,6 +131,19 @@ class Lead {
 
   @override
   int get hashCode => id.hashCode;
+}
+
+class LeadField {
+  final String key;
+  final String label;
+  final String value;
+  const LeadField({required this.key, required this.label, required this.value});
+
+  factory LeadField.fromJson(Map<String, dynamic> json) => LeadField(
+        key: json['key']?.toString() ?? '',
+        label: json['label']?.toString() ?? '',
+        value: json['value']?.toString() ?? '',
+      );
 }
 
 class LeadNote {

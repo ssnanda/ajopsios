@@ -242,7 +242,8 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           _InfoCard(lead: lead),
-          const SizedBox(height: 16),
+          _MessageAndFields(lead: lead),
+          const SizedBox(height: 4),
           Text(
             'LEAD STATUS',
             style: TextStyle(
@@ -356,23 +357,117 @@ class _InfoCard extends StatelessWidget {
             if (lead.company.isNotEmpty)
               _Row(icon: Icons.business_rounded, text: lead.company),
             if (lead.email.isNotEmpty)
-              _Row(icon: Icons.email_outlined, text: lead.email),
+              _Row(
+                icon: Icons.email_outlined,
+                text: lead.email,
+                onTap: () => launchUrl(Uri(scheme: 'mailto', path: lead.email)),
+              ),
             if (lead.phone.isNotEmpty)
               _PhoneRow(phone: lead.phone, firstName: lead.name.trim().split(RegExp(r'\s+')).first),
-            if (lead.source.isNotEmpty)
-              _Row(icon: Icons.source_outlined, text: lead.source),
+            if (lead.siteLabel.isNotEmpty)
+              _Row(icon: Icons.public_rounded, text: lead.siteLabel),
             if (lead.formTitle.isNotEmpty)
               _Row(icon: Icons.description_outlined, text: lead.formTitle),
-            if (lead.ipAddress.isNotEmpty)
-              _Row(icon: Icons.language_rounded, text: 'IP ${lead.ipAddress}'),
             if (lead.createdAt.isNotEmpty)
               _Row(icon: Icons.schedule_outlined, text: 'Submitted ${formatSiteLocalDatetime(lead.createdAt)}'),
-            if (lead.notes.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(lead.notes, style: TextStyle(color: Colors.grey.shade700)),
-            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Message + remaining form fields. Fields that merely repeat the contact card (name, email,
+/// company, phone) or the message itself are dropped — Source/IP/Source URL are intentionally
+/// not shown on mobile.
+class _MessageAndFields extends StatelessWidget {
+  final Lead lead;
+  const _MessageAndFields({required this.lead});
+
+  @override
+  Widget build(BuildContext context) {
+    final shown = {lead.name, lead.email, lead.company, lead.phone, lead.notes}
+        .map((v) => v.trim().toLowerCase())
+        .where((v) => v.isNotEmpty)
+        .toSet();
+    final fields = lead.extraFields.where((f) => !shown.contains(f.value.trim().toLowerCase())).toList();
+    // Long free text (the message) goes in its own full-width block, short answers in label/value rows.
+    final message = lead.notes.trim();
+    final longFields = fields.where((f) => f.value.length > 80).toList();
+    final shortFields = fields.where((f) => f.value.length <= 80).toList();
+    if (message.isEmpty && fields.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        if (shortFields.isNotEmpty)
+          _Section(
+            title: 'DETAILS',
+            children: [for (final f in shortFields) _FieldBlock(label: f.label, value: f.value)],
+          ),
+        if (message.isNotEmpty) _Section(title: 'MESSAGE', children: [SelectableText(message)]),
+        for (final f in longFields)
+          if (f.value.trim() != message)
+            _Section(title: f.label.toUpperCase(), children: [SelectableText(f.value)]),
+      ],
+    );
+  }
+}
+
+class _Section extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+  const _Section({required this.title, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 6),
+          Card(
+            elevation: 0,
+            margin: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Colors.grey.shade200),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FieldBlock extends StatelessWidget {
+  final String label;
+  final String value;
+  const _FieldBlock({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+          SelectableText(value),
+        ],
       ),
     );
   }
@@ -416,7 +511,8 @@ class _PhoneRow extends StatelessWidget {
 class _Row extends StatelessWidget {
   final IconData icon;
   final String text;
-  const _Row({required this.icon, required this.text});
+  final VoidCallback? onTap;
+  const _Row({required this.icon, required this.text, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -426,7 +522,11 @@ class _Row extends StatelessWidget {
         children: [
           Icon(icon, size: 16, color: Colors.grey.shade600),
           const SizedBox(width: 8),
-          Expanded(child: Text(text)),
+          Expanded(
+            child: onTap == null
+                ? Text(text)
+                : InkWell(onTap: onTap, child: Text(text, style: TextStyle(color: Theme.of(context).colorScheme.primary))),
+          ),
         ],
       ),
     );
