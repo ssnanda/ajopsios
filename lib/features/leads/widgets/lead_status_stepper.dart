@@ -69,10 +69,11 @@ class LeadStatusStepper extends StatelessWidget {
                     ),
                   ),
                 SizedBox(
-                  width: groups[i].length > 1 ? 88 : 72,
+                  width: groups[i].length > 1 && i >= currentIdx ? 88 : 72,
                   child: Column(
                     children: [
-                      for (final key in groups[i])
+                      // Past the fork the branch taken isn't known — one "Reached" check, not both.
+                      for (final key in (i < currentIdx && groups[i].length > 1 ? const ['reached'] : groups[i]))
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: busy ? null : () => onChange(key),
@@ -137,12 +138,12 @@ class LeadStatusStepper extends StatelessWidget {
             children: [
               FilledButton.tonal(
                 onPressed: busy ? null : () => onChange('customer'),
-                style: FilledButton.styleFrom(backgroundColor: Colors.green.shade100, foregroundColor: Colors.green.shade900),
+                style: FilledButton.styleFrom(backgroundColor: Colors.grey.shade200, foregroundColor: Colors.grey.shade700),
                 child: const Text('Customer'),
               ),
               FilledButton.tonal(
                 onPressed: busy ? null : () => onChange('future_follow_up'),
-                style: FilledButton.styleFrom(backgroundColor: Colors.amber.shade100, foregroundColor: Colors.amber.shade900),
+                style: FilledButton.styleFrom(backgroundColor: Colors.grey.shade200, foregroundColor: Colors.grey.shade700),
                 child: const Text('Future Follow-Up'),
               ),
               OutlinedButton(
