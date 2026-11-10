@@ -37,9 +37,18 @@ class LeadStatusStepper extends StatelessWidget {
       return _TerminalBadge(lead: lead, current: current, busy: busy, onChange: onChange);
     }
 
-    final steps = lead.linearPipelineStages;
-    final currentIdx = steps.indexOf(current);
-    final canBranch = _branchEligibleFrom.contains(current) || currentIdx >= steps.length - 1;
+    // 'auto_reached' (cron) and 'reached' (manual) are parallel alternatives that both lead to
+    // Engaged — grouped into one forked step; every other stage is a group of one.
+    final groups = <List<String>>[];
+    for (final k in lead.linearPipelineStages) {
+      if (k == 'reached' && groups.isNotEmpty && groups.last.contains('auto_reached')) {
+        groups.last.add(k);
+      } else {
+        groups.add([k]);
+      }
+    }
+    final currentIdx = groups.indexWhere((g) => g.contains(current));
+    final canBranch = _branchEligibleFrom.contains(current) || currentIdx >= groups.length - 1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,7 +58,7 @@ class LeadStatusStepper extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (int i = 0; i < steps.length; i++) ...[
+              for (int i = 0; i < groups.length; i++) ...[
                 if (i > 0)
                   Padding(
                     padding: const EdgeInsets.only(top: 17),
@@ -60,48 +69,53 @@ class LeadStatusStepper extends StatelessWidget {
                     ),
                   ),
                 SizedBox(
-                  width: 72,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: busy ? null : () => onChange(steps[i]),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: i < currentIdx
-                                  ? Colors.green
-                                  : i == currentIdx
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.surfaceContainerHighest,
-                              border: i == currentIdx
-                                  ? Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.25), width: 4)
-                                  : null,
+                  width: groups[i].length > 1 ? 88 : 72,
+                  child: Column(
+                    children: [
+                      for (final key in groups[i])
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: busy ? null : () => onChange(key),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: i < currentIdx
+                                        ? Colors.green
+                                        : key == current
+                                        ? theme.colorScheme.primary
+                                        : theme.colorScheme.surfaceContainerHighest,
+                                    border: key == current
+                                        ? Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.25), width: 4)
+                                        : null,
+                                  ),
+                                  child: i < currentIdx
+                                      ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
+                                      : null,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  leadPipelineLabels[key] ?? key,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: key == current ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
                             ),
-                            child: i < currentIdx
-                                ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
-                                : null,
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            leadPipelineLabels[steps[i]] ?? steps[i],
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: i == currentIdx ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
+                    ],
                   ),
                 ),
               ],

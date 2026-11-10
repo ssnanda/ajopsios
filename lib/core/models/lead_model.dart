@@ -5,7 +5,7 @@ class Lead {
   final int id;
   final String formTitle;
   final String status; // new | read | won | lost | duplicate | spam
-  final String leadStatus; // pipeline: new|auto_reached|engaged|tour|customer|future_follow_up|lost
+  final String leadStatus; // pipeline: new|auto_reached|reached|engaged|tour|customer|future_follow_up|lost
   final String leadFollowUpAt;
   final String name;
   final String email;
@@ -208,11 +208,12 @@ class MarkSpamResult {
 /// Fallback linear stage order used only when AJCore's row is missing
 /// `lead_pipeline_stages` (older cached data) — normally each Lead carries its
 /// own site-resolved list instead (see Lead.leadPipelineStages above).
-const defaultLeadPipelineStages = ['new', 'auto_reached', 'engaged', 'customer'];
+const defaultLeadPipelineStages = ['new', 'auto_reached', 'reached', 'engaged', 'customer'];
 
 const leadPipelineLabels = {
   'new': 'New',
-  'auto_reached': 'Reached',
+  'auto_reached': 'Auto Reached',
+  'reached': 'Reached',
   'engaged': 'Engaged',
   'tour': 'Tour',
   'future_follow_up': 'Follow-up',
