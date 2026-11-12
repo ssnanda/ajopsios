@@ -6,6 +6,7 @@ import '../../../core/models/lead_model.dart';
 import '../../../core/utils/timezone_utils.dart';
 import '../../../core/widgets/customer_picker.dart';
 import '../providers/lead_detail_provider.dart';
+import '../widgets/lead_compose_sheet.dart';
 import '../widgets/lead_status_stepper.dart';
 import 'lead_edit_screen.dart';
 
@@ -242,6 +243,32 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           _InfoCard(lead: lead),
+          if (lead.email.isNotEmpty || lead.phone.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Row(children: [
+              if (lead.email.isNotEmpty)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.mark_email_unread_outlined, size: 18),
+                    label: const Text('Email (AI)'),
+                    onPressed: () async {
+                      if (await showLeadComposeSheet(context, lead, email: true)) await notifier.refresh();
+                    },
+                  ),
+                ),
+              if (lead.email.isNotEmpty && lead.phone.isNotEmpty) const SizedBox(width: 10),
+              if (lead.phone.isNotEmpty)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.sms_outlined, size: 18),
+                    label: const Text('Text (AI)'),
+                    onPressed: () async {
+                      if (await showLeadComposeSheet(context, lead, email: false)) await notifier.refresh();
+                    },
+                  ),
+                ),
+            ]),
+          ],
           const SizedBox(height: 16),
           Text(
             'LEAD STATUS',

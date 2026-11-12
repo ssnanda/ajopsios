@@ -34,6 +34,9 @@ class LeadDetailNotifier extends StateNotifier<LeadDetailState> {
   final Ref _ref;
   final _api = OpsApi.instance;
 
+  /// Reloads the lead (notes included), e.g. after an email/text was sent from the compose sheet.
+  Future<void> refresh() => _loadFull();
+
   Future<String?> addNote(String note) => _run(() async {
     await _api.addLeadNote(state.lead.id, note);
     final refreshed = await _api.getLead(state.lead.id);
