@@ -15,12 +15,12 @@
       "screenshotURLs": [],
       "versions": [
         {
-          "version": "1.0.92",
-          "buildVersion": "87",
-          "date": "2026-11-10",
-          "localizedDescription": "Build 1.0.92+87",
+          "version": "1.0.93",
+          "buildVersion": "88",
+          "date": "2026-11-12",
+          "localizedDescription": "Build 1.0.93+88",
           "downloadURL": "https://github.com/ssnanda/ajopsios/releases/download/ios-latest/ajopsios.ipa",
-          "size": 25093505,
+          "size": 25099708,
           "minOSVersion": "13.0"
         }
       ]
