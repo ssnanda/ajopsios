@@ -13,7 +13,7 @@ import '../models/connected_site_model.dart';
 import '../models/customer_model.dart';
 import '../models/mail_item_model.dart';
 import '../models/customer_file_model.dart';
-import '../models/gmail_intake_item_model.dart';
+import '../models/pipeline_item_model.dart';
 import '../models/visitor_model.dart';
 import '../models/api_status_model.dart';
 import '../models/hoa_models.dart';
@@ -649,12 +649,12 @@ class OpsApi {
   // ── Pipeline ─────────────────────────────────────────────────────────
 
   /// Items, per-status stats and each mailbox's connection state ({gmail|zoho: {connected, enabled}}).
-  Future<(List<GmailIntakeItem>, Map<String, int>, Map<String, Map<String, bool>>)> getGmailIntakeItems({
+  Future<(List<PipelineItem>, Map<String, int>, Map<String, Map<String, bool>>)> getPipelineItems({
     String? search,
     String? status,
   }) async {
     final resp = await ApiClient.instance.dio.get(
-      ApiEndpoints.gmailIntake,
+      ApiEndpoints.pipeline,
       queryParameters: {
         if (search != null && search.isNotEmpty) 'search': search,
         if (status != null) 'status': status,
@@ -663,7 +663,7 @@ class OpsApi {
     );
     final data = resp.data as Map<String, dynamic>;
     final items = (data['items'] as List<dynamic>? ?? [])
-        .map((e) => GmailIntakeItem.fromJson(e as Map<String, dynamic>))
+        .map((e) => PipelineItem.fromJson(e as Map<String, dynamic>))
         .toList();
     final statsJson = data['stats'] as Map<String, dynamic>? ?? {};
     final stats = statsJson.map(
@@ -677,25 +677,25 @@ class OpsApi {
     return (items, stats, sources);
   }
 
-  Future<GmailIntakePreview> getGmailIntakePreview(int id) async {
+  Future<PipelinePreview> getPipelinePreview(int id) async {
     final resp = await ApiClient.instance.dio.get(
-      ApiEndpoints.gmailIntakePreview(id),
+      ApiEndpoints.pipelinePreview(id),
     );
-    return GmailIntakePreview.fromJson(resp.data as Map<String, dynamic>);
+    return PipelinePreview.fromJson(resp.data as Map<String, dynamic>);
   }
 
-  Future<void> resolveGmailIntakeItem(
+  Future<void> resolvePipelineItem(
     int id, {
     String? stripeCustomerId,
   }) async {
     await ApiClient.instance.dio.post(
-      '${ApiEndpoints.gmailIntakeItem(id)}/resolve',
+      '${ApiEndpoints.pipelineItem(id)}/resolve',
       data: {'stripe_customer_id': stripeCustomerId ?? ''},
     );
   }
 
   /// Files the message's attachments onto a customer's file record.
-  Future<void> fileGmailIntakeItem(
+  Future<void> filePipelineItem(
     int id, {
     required String stripeCustomerId,
     String? tag,
@@ -703,7 +703,7 @@ class OpsApi {
     bool notify = false,
   }) async {
     await ApiClient.instance.dio.post(
-      ApiEndpoints.gmailIntakeFile(id),
+      ApiEndpoints.pipelineFile(id),
       data: {
         'stripe_customer_id': stripeCustomerId,
         if (tag != null && tag.isNotEmpty) 'tag': tag,
@@ -713,18 +713,18 @@ class OpsApi {
     );
   }
 
-  Future<void> processGmailIntakeNow() async {
-    await ApiClient.instance.dio.post('${ApiEndpoints.gmailIntake}/process');
+  Future<void> processPipelineNow() async {
+    await ApiClient.instance.dio.post('${ApiEndpoints.pipeline}/process');
   }
 
   /// Marks a Pipeline entry as already filed (or a duplicate): clears it from Pending without uploading anything.
-  Future<void> markGmailIntakeItemFiled(int id) async {
-    await ApiClient.instance.dio.post(ApiEndpoints.gmailIntakeMarkFiled(id));
+  Future<void> markPipelineItemFiled(int id) async {
+    await ApiClient.instance.dio.post(ApiEndpoints.pipelineMarkFiled(id));
   }
 
   /// Clears pending Pipeline entries (filed ones are kept); the real mailboxes are not touched.
-  Future<void> resetGmailIntakeLog() async {
-    await ApiClient.instance.dio.post(ApiEndpoints.gmailIntakeReset);
+  Future<void> resetPipelineLog() async {
+    await ApiClient.instance.dio.post(ApiEndpoints.pipelineReset);
   }
 
   // ── Sync ─────────────────────────────────────────────────────────────────

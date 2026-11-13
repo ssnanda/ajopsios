@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/models/gmail_intake_item_model.dart';
+import '../../../core/models/pipeline_item_model.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
-import '../providers/gmail_intake_provider.dart';
-import 'gmail_intake_detail_screen.dart';
+import '../providers/pipeline_provider.dart';
+import 'pipeline_detail_screen.dart';
 
 /// Pipeline: emails from the Gmail and Zoho mailboxes, matched to customers. Mirrors the AJOps web screen:
 /// mailbox tiles, Pending / Filed, search, Clear, Refresh and Reset log.
-class GmailIntakeScreen extends ConsumerStatefulWidget {
-  const GmailIntakeScreen({super.key});
+class PipelineScreen extends ConsumerStatefulWidget {
+  const PipelineScreen({super.key});
 
   @override
-  ConsumerState<GmailIntakeScreen> createState() => _GmailIntakeScreenState();
+  ConsumerState<PipelineScreen> createState() => _PipelineScreenState();
 }
 
-class _GmailIntakeScreenState extends ConsumerState<GmailIntakeScreen> {
+class _PipelineScreenState extends ConsumerState<PipelineScreen> {
   final _searchCtrl = TextEditingController();
 
   @override
@@ -31,7 +31,7 @@ class _GmailIntakeScreenState extends ConsumerState<GmailIntakeScreen> {
   }
 
   Future<void> _refresh() async {
-    final err = await ref.read(gmailIntakeProvider.notifier).processNow();
+    final err = await ref.read(pipelineProvider.notifier).processNow();
     if (err != null) _snack(err);
   }
 
@@ -48,14 +48,14 @@ class _GmailIntakeScreenState extends ConsumerState<GmailIntakeScreen> {
       ),
     );
     if (ok != true) return;
-    final err = await ref.read(gmailIntakeProvider.notifier).resetLog();
+    final err = await ref.read(pipelineProvider.notifier).resetLog();
     _snack(err ?? 'Pipeline log cleared.');
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(gmailIntakeProvider);
-    final notifier = ref.read(gmailIntakeProvider.notifier);
+    final state = ref.watch(pipelineProvider);
+    final notifier = ref.read(pipelineProvider.notifier);
     final items = state.items;
 
     return Scaffold(
@@ -151,7 +151,7 @@ class _GmailIntakeScreenState extends ConsumerState<GmailIntakeScreen> {
                                 return _IntakeCard(
                                   item: item,
                                   onTap: () => Navigator.of(context).push(
-                                    MaterialPageRoute(builder: (_) => GmailIntakeDetailScreen(item: item)),
+                                    MaterialPageRoute(builder: (_) => PipelineDetailScreen(item: item)),
                                   ),
                                 );
                               },
@@ -169,7 +169,7 @@ class _MailboxTile extends StatelessWidget {
   final String sourceKey; // '' = all
   final Color color;
   final IconData icon;
-  final GmailIntakeState state;
+  final PipelineState state;
   final void Function(String) onTap;
   const _MailboxTile({required this.label, required this.sourceKey, required this.color, required this.icon, required this.state, required this.onTap});
 
@@ -271,7 +271,7 @@ class _SourcePill extends StatelessWidget {
 }
 
 class _IntakeCard extends StatelessWidget {
-  final GmailIntakeItem item;
+  final PipelineItem item;
   final VoidCallback onTap;
   const _IntakeCard({required this.item, required this.onTap});
 

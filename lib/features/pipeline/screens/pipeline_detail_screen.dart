@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import '../../../core/api/ops_api.dart';
-import '../../../core/models/gmail_intake_item_model.dart';
+import '../../../core/models/pipeline_item_model.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
 
-class GmailIntakeDetailScreen extends StatefulWidget {
-  final GmailIntakeItem item;
-  const GmailIntakeDetailScreen({super.key, required this.item});
+class PipelineDetailScreen extends StatefulWidget {
+  final PipelineItem item;
+  const PipelineDetailScreen({super.key, required this.item});
 
   @override
-  State<GmailIntakeDetailScreen> createState() => _GmailIntakeDetailScreenState();
+  State<PipelineDetailScreen> createState() => _PipelineDetailScreenState();
 }
 
-class _GmailIntakeDetailScreenState extends State<GmailIntakeDetailScreen> {
+class _PipelineDetailScreenState extends State<PipelineDetailScreen> {
   final _api = OpsApi.instance;
   final _customerIdCtrl = TextEditingController();
-  GmailIntakePreview? _preview;
+  PipelinePreview? _preview;
   bool _loading = true;
   String? _error;
   bool _busy = false;
@@ -36,7 +36,7 @@ class _GmailIntakeDetailScreenState extends State<GmailIntakeDetailScreen> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final preview = await _api.getGmailIntakePreview(widget.item.id);
+      final preview = await _api.getPipelinePreview(widget.item.id);
       setState(() { _preview = preview; _loading = false; });
     } catch (e) {
       setState(() { _loading = false; _error = e.toString(); });
@@ -51,7 +51,7 @@ class _GmailIntakeDetailScreenState extends State<GmailIntakeDetailScreen> {
     }
     setState(() => _busy = true);
     try {
-      await _api.fileGmailIntakeItem(widget.item.id, stripeCustomerId: customerId, notify: notify);
+      await _api.filePipelineItem(widget.item.id, stripeCustomerId: customerId, notify: notify);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Filed.')));
         Navigator.of(context).pop();
@@ -80,7 +80,7 @@ class _GmailIntakeDetailScreenState extends State<GmailIntakeDetailScreen> {
     if (ok != true) return;
     setState(() => _busy = true);
     try {
-      await _api.markGmailIntakeItemFiled(widget.item.id);
+      await _api.markPipelineItemFiled(widget.item.id);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {

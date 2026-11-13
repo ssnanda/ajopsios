@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/ops_api.dart';
-import '../../../core/models/gmail_intake_item_model.dart';
+import '../../../core/models/pipeline_item_model.dart';
 import '../../../core/utils/error_utils.dart';
 
 const kPipelinePending = {'needs_review', 'matched_pending_file', 'skipped_no_attachment'};
 const kPipelineFiled = {'filed', 'resolved', 'duplicate'};
 
-class GmailIntakeState {
-  final List<GmailIntakeItem> all;
+class PipelineState {
+  final List<PipelineItem> all;
   final Map<String, Map<String, bool>> sources; // gmail|zoho -> {connected, enabled}
   final bool loading;
   final String? error;
@@ -15,7 +15,7 @@ class GmailIntakeState {
   final String source; // '' = all mailboxes, gmail | zoho
   final String search;
 
-  const GmailIntakeState({
+  const PipelineState({
     this.all = const [],
     this.sources = const {},
     this.loading = true,
@@ -30,7 +30,7 @@ class GmailIntakeState {
       all.where((i) => (source.isEmpty || i.source == source) && statuses.contains(i.status)).length;
 
   /// The list shown: selected status group and mailbox, narrowed by the search text.
-  List<GmailIntakeItem> get items {
+  List<PipelineItem> get items {
     final group = status == 'filed' ? kPipelineFiled : kPipelinePending;
     final q = search.trim().toLowerCase();
     return all.where((i) {
@@ -44,8 +44,8 @@ class GmailIntakeState {
     }).toList();
   }
 
-  GmailIntakeState copyWith({
-    List<GmailIntakeItem>? all,
+  PipelineState copyWith({
+    List<PipelineItem>? all,
     Map<String, Map<String, bool>>? sources,
     bool? loading,
     String? error,
@@ -54,7 +54,7 @@ class GmailIntakeState {
     String? source,
     String? search,
   }) {
-    return GmailIntakeState(
+    return PipelineState(
       all: all ?? this.all,
       sources: sources ?? this.sources,
       loading: loading ?? this.loading,
@@ -66,8 +66,8 @@ class GmailIntakeState {
   }
 }
 
-class GmailIntakeNotifier extends StateNotifier<GmailIntakeState> {
-  GmailIntakeNotifier() : super(const GmailIntakeState()) {
+class PipelineNotifier extends StateNotifier<PipelineState> {
+  PipelineNotifier() : super(const PipelineState()) {
     load();
   }
 
@@ -76,7 +76,7 @@ class GmailIntakeNotifier extends StateNotifier<GmailIntakeState> {
   Future<void> load() async {
     state = state.copyWith(loading: true, clearError: true);
     try {
-      final (items, _, sources) = await _api.getGmailIntakeItems();
+      final (items, _, sources) = await _api.getPipelineItems();
       state = state.copyWith(all: items, sources: sources, loading: false);
     } catch (e) {
       state = state.copyWith(loading: false, error: friendlyError(e));
@@ -92,7 +92,7 @@ class GmailIntakeNotifier extends StateNotifier<GmailIntakeState> {
   /// Reads every connected mailbox now, then reloads. Returns an error message or null.
   Future<String?> processNow() async {
     try {
-      await _api.processGmailIntakeNow();
+      await _api.processPipelineNow();
       await load();
       return null;
     } catch (e) {
@@ -103,7 +103,7 @@ class GmailIntakeNotifier extends StateNotifier<GmailIntakeState> {
   /// Clears pending entries (filed ones stay). Returns an error message or null.
   Future<String?> resetLog() async {
     try {
-      await _api.resetGmailIntakeLog();
+      await _api.resetPipelineLog();
       await load();
       return null;
     } catch (e) {
@@ -112,6 +112,6 @@ class GmailIntakeNotifier extends StateNotifier<GmailIntakeState> {
   }
 }
 
-final gmailIntakeProvider = StateNotifierProvider.autoDispose<GmailIntakeNotifier, GmailIntakeState>(
-  (ref) => GmailIntakeNotifier(),
+final pipelineProvider = StateNotifierProvider.autoDispose<PipelineNotifier, PipelineState>(
+  (ref) => PipelineNotifier(),
 );

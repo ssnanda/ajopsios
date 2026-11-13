@@ -1,6 +1,6 @@
-/// GET /ops/gmail-intake row shape (format_gmail_intake_log_row in
+/// GET /ops/gmail-intake row shape (format_pipeline_log_row in
 /// class-ajcore-rest-api.php).
-class GmailIntakeItem {
+class PipelineItem {
   final int id;
   final String subject;
   final String sender;
@@ -14,7 +14,7 @@ class GmailIntakeItem {
   final String receivedAt;
   final String source; // gmail | zoho
 
-  const GmailIntakeItem({
+  const PipelineItem({
     required this.id,
     required this.subject,
     required this.sender,
@@ -29,8 +29,8 @@ class GmailIntakeItem {
     required this.source,
   });
 
-  factory GmailIntakeItem.fromJson(Map<String, dynamic> json) {
-    return GmailIntakeItem(
+  factory PipelineItem.fromJson(Map<String, dynamic> json) {
+    return PipelineItem(
       id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
       subject: json['subject'] as String? ?? '',
       sender: json['sender'] as String? ?? '',
@@ -48,14 +48,14 @@ class GmailIntakeItem {
 }
 
 /// GET /ops/gmail-intake/{id}/preview response.
-class GmailIntakePreview {
+class PipelinePreview {
   final String subject;
   final String sender;
   final String date;
   final String body;
-  final List<GmailIntakeAttachment> attachments;
+  final List<PipelineAttachment> attachments;
 
-  const GmailIntakePreview({
+  const PipelinePreview({
     required this.subject,
     required this.sender,
     required this.date,
@@ -63,26 +63,26 @@ class GmailIntakePreview {
     required this.attachments,
   });
 
-  factory GmailIntakePreview.fromJson(Map<String, dynamic> json) {
-    return GmailIntakePreview(
+  factory PipelinePreview.fromJson(Map<String, dynamic> json) {
+    return PipelinePreview(
       subject: json['subject'] as String? ?? '',
       sender: json['sender'] as String? ?? '',
       date: json['date'] as String? ?? '',
       body: json['body'] as String? ?? '',
       attachments: (json['attachments'] as List<dynamic>? ?? [])
-          .map((e) => GmailIntakeAttachment.fromJson(e as Map<String, dynamic>))
+          .map((e) => PipelineAttachment.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }
 }
 
-class GmailIntakeAttachment {
+class PipelineAttachment {
   final String attachmentId;
   final String filename;
 
-  const GmailIntakeAttachment({required this.attachmentId, required this.filename});
+  const PipelineAttachment({required this.attachmentId, required this.filename});
 
-  factory GmailIntakeAttachment.fromJson(Map<String, dynamic> json) => GmailIntakeAttachment(
+  factory PipelineAttachment.fromJson(Map<String, dynamic> json) => PipelineAttachment(
         attachmentId: json['attachment_id']?.toString() ?? '',
         filename: json['filename'] as String? ?? '',
       );

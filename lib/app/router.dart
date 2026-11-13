@@ -12,7 +12,7 @@ import '../features/ajphone/ajphone_screens.dart';
 import '../features/email_log/email_log_screen.dart';
 import '../features/files/screens/files_screen.dart';
 import '../features/settings/settings_screen.dart';
-import '../features/gmail_intake/screens/gmail_intake_screen.dart';
+import '../features/pipeline/screens/pipeline_screen.dart';
 import '../features/live_chat/screens/chat_conversation_by_id_screen.dart';
 import '../features/live_chat/screens/live_chat_screen.dart';
 import '../features/visitors/screens/visitors_hub_screen.dart';
@@ -134,12 +134,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/pipeline',
-            builder: (context, state) => const GmailIntakeScreen(),
+            builder: (context, state) => const PipelineScreen(),
           ),
           // Old path, kept so existing links still open the Pipeline.
           GoRoute(
             path: '/gmail-intake',
-            builder: (context, state) => const GmailIntakeScreen(),
+            builder: (context, state) => const PipelineScreen(),
           ),
           GoRoute(
             path: '/email-log',
