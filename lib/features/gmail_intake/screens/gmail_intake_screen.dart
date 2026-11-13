@@ -325,7 +325,7 @@ class _StatusBadge extends StatelessWidget {
     final color = switch (status) {
       'filed' || 'resolved' => Colors.green,
       'needs_review' => Colors.orange,
-      'skipped_no_attachment' => Colors.grey,
+      'skipped_no_attachment' || 'duplicate' => Colors.grey,
       _ => Colors.blue,
     };
     return Container(

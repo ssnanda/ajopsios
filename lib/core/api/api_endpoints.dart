@@ -86,6 +86,7 @@ class ApiEndpoints {
   static String gmailIntakePreview(int id) => '/ops/gmail-intake/$id/preview';
   static String gmailIntakeFile(int id) => '/ops/gmail-intake/$id/file';
   static const String gmailIntakeReset = '/ops/gmail-intake/reset';
+  static String gmailIntakeMarkFiled(int id) => '/ops/gmail-intake/$id/mark-filed';
 
   // ── Sync (Stripe products/customers/subscriptions/invoices) ───────────────
   static const String sync = '/ops/sync';

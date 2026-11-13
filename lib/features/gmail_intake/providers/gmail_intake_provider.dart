@@ -4,7 +4,7 @@ import '../../../core/models/gmail_intake_item_model.dart';
 import '../../../core/utils/error_utils.dart';
 
 const kPipelinePending = {'needs_review', 'matched_pending_file', 'skipped_no_attachment'};
-const kPipelineFiled = {'filed', 'resolved'};
+const kPipelineFiled = {'filed', 'resolved', 'duplicate'};
 
 class GmailIntakeState {
   final List<GmailIntakeItem> all;

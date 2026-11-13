@@ -64,10 +64,23 @@ class _GmailIntakeDetailScreenState extends State<GmailIntakeDetailScreen> {
     }
   }
 
-  Future<void> _resolveWithoutFiling() async {
+  /// Same as "Mark as Already Filed" on the web: clears the entry from Pending without uploading or attaching anything.
+  Future<void> _markAlreadyFiled() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mark as already filed?'),
+        content: const Text('This just clears it from Pending. It does not upload or attach anything.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Mark as filed')),
+        ],
+      ),
+    );
+    if (ok != true) return;
     setState(() => _busy = true);
     try {
-      await _api.resolveGmailIntakeItem(widget.item.id);
+      await _api.markGmailIntakeItemFiled(widget.item.id);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
@@ -143,8 +156,8 @@ class _GmailIntakeDetailScreenState extends State<GmailIntakeDetailScreen> {
                     ),
                     const SizedBox(height: 8),
                     TextButton(
-                      onPressed: _busy ? null : _resolveWithoutFiling,
-                      child: const Text('Mark resolved without filing'),
+                      onPressed: _busy ? null : _markAlreadyFiled,
+                      child: const Text('Mark as already filed'),
                     ),
                   ],
                 ),

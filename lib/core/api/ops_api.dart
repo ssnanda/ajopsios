@@ -717,6 +717,11 @@ class OpsApi {
     await ApiClient.instance.dio.post('${ApiEndpoints.gmailIntake}/process');
   }
 
+  /// Marks a Pipeline entry as already filed (or a duplicate): clears it from Pending without uploading anything.
+  Future<void> markGmailIntakeItemFiled(int id) async {
+    await ApiClient.instance.dio.post(ApiEndpoints.gmailIntakeMarkFiled(id));
+  }
+
   /// Clears pending Pipeline entries (filed ones are kept); the real mailboxes are not touched.
   Future<void> resetGmailIntakeLog() async {
     await ApiClient.instance.dio.post(ApiEndpoints.gmailIntakeReset);
