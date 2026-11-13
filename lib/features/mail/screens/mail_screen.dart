@@ -19,7 +19,7 @@ class MailScreen extends ConsumerWidget {
     final notifier = ref.read(mailProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: const AjAppBarTitle('Mail')),
+      appBar: AppBar(title: const AjAppBarTitle('Postal Mail')),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddMailSheet(context, notifier),
         child: const Icon(Icons.add_rounded),
