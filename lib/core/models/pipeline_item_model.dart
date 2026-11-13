@@ -9,6 +9,7 @@ class PipelineItem {
   final String status; // filed | matched_pending_file | skipped_no_attachment | needs_review | resolved
   final String stripeCustomerId;
   final String customerName;
+  final String customerEmail;
   final List<String> filedFilenames;
   final String errorMessage;
   final String receivedAt;
@@ -23,6 +24,7 @@ class PipelineItem {
     required this.status,
     required this.stripeCustomerId,
     required this.customerName,
+    required this.customerEmail,
     required this.filedFilenames,
     required this.errorMessage,
     required this.receivedAt,
@@ -39,6 +41,7 @@ class PipelineItem {
       status: json['status'] as String? ?? 'needs_review',
       stripeCustomerId: json['stripe_customer_id'] as String? ?? '',
       customerName: json['customer_name'] as String? ?? '',
+      customerEmail: json['customer_email'] as String? ?? '',
       filedFilenames: (json['filed_filenames'] as List<dynamic>? ?? []).map((e) => e.toString()).toList(),
       errorMessage: json['error_message'] as String? ?? '',
       receivedAt: json['received_at'] as String? ?? '',

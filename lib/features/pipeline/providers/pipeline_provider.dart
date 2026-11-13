@@ -14,6 +14,7 @@ class PipelineState {
   final String status; // pending | filed
   final String source; // '' = all mailboxes, gmail | zoho
   final String search;
+  final bool reviewOnly; // pending list narrowed to needs_review
 
   const PipelineState({
     this.all = const [],
@@ -23,6 +24,7 @@ class PipelineState {
     this.status = 'pending',
     this.source = '',
     this.search = '',
+    this.reviewOnly = false,
   });
 
   /// Count for the tiles: entries in [statuses] for one mailbox ('' = all).
@@ -35,6 +37,7 @@ class PipelineState {
     final q = search.trim().toLowerCase();
     return all.where((i) {
       if (!group.contains(i.status)) return false;
+      if (reviewOnly && status != 'filed' && i.status != 'needs_review') return false;
       if (source.isNotEmpty && i.source != source) return false;
       if (q.isEmpty) return true;
       return i.subject.toLowerCase().contains(q) ||
@@ -53,6 +56,7 @@ class PipelineState {
     String? status,
     String? source,
     String? search,
+    bool? reviewOnly,
   }) {
     return PipelineState(
       all: all ?? this.all,
@@ -62,6 +66,7 @@ class PipelineState {
       status: status ?? this.status,
       source: source ?? this.source,
       search: search ?? this.search,
+      reviewOnly: reviewOnly ?? this.reviewOnly,
     );
   }
 }
@@ -84,10 +89,11 @@ class PipelineNotifier extends StateNotifier<PipelineState> {
   }
 
   // Everything below filters the loaded list immediately; nothing waits on a Filter button.
-  void setStatus(String value) => state = state.copyWith(status: value);
+  void setStatus(String value) => state = state.copyWith(status: value, reviewOnly: false);
+  void toggleReviewOnly() => state = state.copyWith(status: 'pending', reviewOnly: !(state.reviewOnly && state.status == 'pending'));
   void setSource(String value) => state = state.copyWith(source: value);
   void setSearch(String value) => state = state.copyWith(search: value);
-  void clearFilters() => state = state.copyWith(status: 'pending', source: '', search: '');
+  void clearFilters() => state = state.copyWith(status: 'pending', source: '', search: '', reviewOnly: false);
 
   /// Reads every connected mailbox now, then reloads. Returns an error message or null.
   Future<String?> processNow() async {
