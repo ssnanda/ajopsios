@@ -12,6 +12,7 @@ class GmailIntakeItem {
   final List<String> filedFilenames;
   final String errorMessage;
   final String receivedAt;
+  final String source; // gmail | zoho
 
   const GmailIntakeItem({
     required this.id,
@@ -25,6 +26,7 @@ class GmailIntakeItem {
     required this.filedFilenames,
     required this.errorMessage,
     required this.receivedAt,
+    required this.source,
   });
 
   factory GmailIntakeItem.fromJson(Map<String, dynamic> json) {
@@ -40,6 +42,7 @@ class GmailIntakeItem {
       filedFilenames: (json['filed_filenames'] as List<dynamic>? ?? []).map((e) => e.toString()).toList(),
       errorMessage: json['error_message'] as String? ?? '',
       receivedAt: json['received_at'] as String? ?? '',
+      source: json['source'] == 'zoho' || (json['gmail_message_id']?.toString() ?? '').startsWith('zoho:') ? 'zoho' : 'gmail',
     );
   }
 }

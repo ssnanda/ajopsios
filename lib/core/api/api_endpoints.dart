@@ -80,11 +80,12 @@ class ApiEndpoints {
   static const String files = '/ops/files';
   static String file(int id) => '/ops/files/$id';
 
-  // ── Gmail Intake ─────────────────────────────────────────────────────────
+  // ── Pipeline ─────────────────────────────────────────────────────────
   static const String gmailIntake = '/ops/gmail-intake';
   static String gmailIntakeItem(int id) => '/ops/gmail-intake/$id';
   static String gmailIntakePreview(int id) => '/ops/gmail-intake/$id/preview';
   static String gmailIntakeFile(int id) => '/ops/gmail-intake/$id/file';
+  static const String gmailIntakeReset = '/ops/gmail-intake/reset';
 
   // ── Sync (Stripe products/customers/subscriptions/invoices) ───────────────
   static const String sync = '/ops/sync';

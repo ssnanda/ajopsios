@@ -133,6 +133,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const FilesScreen(),
           ),
           GoRoute(
+            path: '/pipeline',
+            builder: (context, state) => const GmailIntakeScreen(),
+          ),
+          // Old path, kept so existing links still open the Pipeline.
+          GoRoute(
             path: '/gmail-intake',
             builder: (context, state) => const GmailIntakeScreen(),
           ),

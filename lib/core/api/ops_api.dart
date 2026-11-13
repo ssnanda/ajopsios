@@ -646,9 +646,10 @@ class OpsApi {
     return CustomerFile.fromJson(resp.data as Map<String, dynamic>);
   }
 
-  // ── Gmail Intake ─────────────────────────────────────────────────────────
+  // ── Pipeline ─────────────────────────────────────────────────────────
 
-  Future<(List<GmailIntakeItem>, Map<String, int>)> getGmailIntakeItems({
+  /// Items, per-status stats and each mailbox's connection state ({gmail|zoho: {connected, enabled}}).
+  Future<(List<GmailIntakeItem>, Map<String, int>, Map<String, Map<String, bool>>)> getGmailIntakeItems({
     String? search,
     String? status,
   }) async {
@@ -668,7 +669,12 @@ class OpsApi {
     final stats = statsJson.map(
       (k, v) => MapEntry(k, int.tryParse(v?.toString() ?? '0') ?? 0),
     );
-    return (items, stats);
+    final sourcesJson = data['sources'] as Map<String, dynamic>? ?? {};
+    final sources = sourcesJson.map((k, v) {
+      final m = v as Map<String, dynamic>? ?? {};
+      return MapEntry(k, {'connected': m['connected'] == true, 'enabled': m['enabled'] != false});
+    });
+    return (items, stats, sources);
   }
 
   Future<GmailIntakePreview> getGmailIntakePreview(int id) async {
@@ -709,6 +715,11 @@ class OpsApi {
 
   Future<void> processGmailIntakeNow() async {
     await ApiClient.instance.dio.post('${ApiEndpoints.gmailIntake}/process');
+  }
+
+  /// Clears pending Pipeline entries (filed ones are kept); the real mailboxes are not touched.
+  Future<void> resetGmailIntakeLog() async {
+    await ApiClient.instance.dio.post(ApiEndpoints.gmailIntakeReset);
   }
 
   // ── Sync ─────────────────────────────────────────────────────────────────

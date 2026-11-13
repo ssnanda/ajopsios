@@ -133,6 +133,12 @@ class _DashboardTiles extends ConsumerWidget {
       _Tile(label: 'Live Chat', icon: Icons.chat_bubble_outline_rounded, color: Colors.teal, route: '/live-chat', pending: data.chatUnread, order: 3),
       // No live count available from /ops/summary for these — fixed fallback order below.
       if (!hoa) _Tile(label: 'Customers', icon: Icons.people_alt_rounded, color: Colors.blue, route: '/customers', pending: 0, order: 4),
+      // Pipeline (Gmail + Zoho intake): pending count comes from /ops/counts; only on sites that offer it.
+      if (modules == null || modules.contains('gmail-intake'))
+        _Tile(label: 'Pipeline', icon: Icons.move_to_inbox_rounded, color: Colors.deepOrange, route: '/pipeline', pending: counts['gmail-intake'] ?? 0, order: 6),
+      // Postal Mail (AJCore-RA module): shown only on sites that offer it.
+      if (modules == null || modules.contains('mail'))
+        _Tile(label: 'Postal Mail', icon: Icons.markunread_mailbox_outlined, color: Colors.brown, route: '/mail', pending: counts['mail'] ?? 0, order: 7),
       _Tile(label: 'AJPhone', icon: Icons.phone_in_talk_rounded, color: Colors.indigo, route: '/ajphone', pending: 0, order: 9),
     ];
 

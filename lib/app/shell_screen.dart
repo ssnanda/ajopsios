@@ -6,7 +6,7 @@ import '../core/widgets/app_version_label.dart';
 import '../features/live_chat/providers/live_chat_provider.dart';
 
 /// Bottom nav holds the 5 most-used destinations (Live = Live Monitor + Visitor History, Chat = conversations); everything past that
-/// (Customers, Leads, Mail, Files, Gmail Intake, AJPhone) lives
+/// (Customers, Leads, Mail, Files, Pipeline, AJPhone) lives
 /// behind "More" rather than crowding a phone-width NavigationBar.
 class ShellScreen extends ConsumerWidget {
   final Widget child;

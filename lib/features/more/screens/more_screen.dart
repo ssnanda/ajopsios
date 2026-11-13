@@ -17,6 +17,8 @@ class MoreScreen extends ConsumerWidget {
     (label: 'Start inspection', icon: Icons.fact_check_rounded, path: '/inspect', module: 'communities'),
     (label: 'Communities', icon: Icons.apartment_rounded, path: '/communities', module: 'communities'),
     (label: 'Leads', icon: Icons.person_search_rounded, path: '/leads', module: 'leads'),
+    (label: 'Pipeline', icon: Icons.move_to_inbox_rounded, path: '/pipeline', module: 'gmail-intake'),
+    (label: 'Postal Mail', icon: Icons.markunread_mailbox_outlined, path: '/mail', module: 'mail'),
     (label: 'AJPhone', icon: Icons.phone_in_talk_rounded, path: '/ajphone', module: 'ajphone'),
     (label: 'Email Log', icon: Icons.mark_email_read_outlined, path: '/email-log', module: 'emails'),
     (label: 'Settings', icon: Icons.settings_outlined, path: '/settings', module: 'settings'),
@@ -27,7 +29,7 @@ class MoreScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final modulesAsync = ref.watch(modulesProvider);
     final modules = modulesAsync.value;
-    // While the site's module list is loading, show only always-on items (no flash of Mail, Gmail Intake…);
+    // While the site's module list is loading, show only always-on items (no flash of Mail, Pipeline…);
     // if it can't be loaded or the site is older AJCore without it, show everything.
     final loading = modulesAsync.isLoading;
     // HOA sites: communities replace customers.
