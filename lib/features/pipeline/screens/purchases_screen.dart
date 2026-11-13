@@ -125,7 +125,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
       ),
       body: Column(
         children: [
-          const PipelineSwitch(purchases: true),
+          const PipelineSwitch(current: 'purchases'),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),

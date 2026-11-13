@@ -5,7 +5,6 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../providers/pipeline_provider.dart';
-import '../../../core/providers/modules_provider.dart';
 import 'pipeline_detail_screen.dart';
 import 'pipeline_switch.dart';
 
@@ -101,7 +100,7 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
       ),
       body: Column(
         children: [
-          if (ref.watch(modulesProvider).value?.contains('purchases') ?? false) const PipelineSwitch(purchases: false),
+          const PipelineSwitch(current: 'filings'),
           // One row: status filters on the left, mailbox picker (settings-style icon) on the right.
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 4, 0),

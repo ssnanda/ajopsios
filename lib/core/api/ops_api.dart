@@ -670,6 +670,34 @@ class OpsApi {
     return resp.data as Map<String, dynamic>;
   }
 
+  // ── Pipeline > Invoices / Insurance & HOA ───────────────────────────
+
+  Future<Map<String, dynamic>> getMailPipeline(String pipe, {String? stage, String? search}) async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.mailPipeline(pipe), queryParameters: {
+      if (stage != null && stage.isNotEmpty) 'stage': stage,
+      if (search != null && search.isNotEmpty) 'q': search,
+    });
+    return resp.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getMailPipelineItem(String pipe, int id) async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.mailPipelineItem(pipe, id));
+    return (resp.data as Map<String, dynamic>)['item'] as Map<String, dynamic>;
+  }
+
+  Future<void> updateMailPipelineItem(String pipe, int id, Map<String, dynamic> body) async {
+    await ApiClient.instance.dio.post(ApiEndpoints.mailPipelineItem(pipe, id), data: body);
+  }
+
+  Future<void> setMailPipelineStage(String pipe, List<int> ids, String stage) async {
+    await ApiClient.instance.dio.post(ApiEndpoints.mailPipelineStage(pipe), data: {'ids': ids, 'stage': stage});
+  }
+
+  Future<Map<String, dynamic>> processMailPipeline(String pipe) async {
+    final resp = await ApiClient.instance.dio.post(ApiEndpoints.mailPipelineProcess(pipe), data: {});
+    return resp.data as Map<String, dynamic>;
+  }
+
   // ── Pipeline ─────────────────────────────────────────────────────────
 
   /// Items, per-status stats and each mailbox's connection state ({gmail|zoho: {connected, enabled}}).

@@ -94,6 +94,13 @@ class ApiEndpoints {
   static const String purchasesStage = '/ops/purchases/stage';
   static const String purchasesProcess = '/ops/purchases/process';
 
+  // ── Pipeline > Invoices / Insurance & HOA (mailbox sub-pipelines) ─────
+  static String mailPipeline(String pipe) => '/ops/mail-pipelines/$pipe';
+  static String mailPipelineItem(String pipe, int id) => '/ops/mail-pipelines/$pipe/items/$id';
+  static String mailPipelineStage(String pipe) => '/ops/mail-pipelines/$pipe/stage';
+  static String mailPipelineProcess(String pipe) => '/ops/mail-pipelines/$pipe/process';
+  static String mailPipelineSettings(String pipe) => '/ops/mail-pipelines/$pipe/settings';
+
   // ── Sync (Stripe products/customers/subscriptions/invoices) ───────────────
   static const String sync = '/ops/sync';
   static const String syncRunStatus = '/ops/sync/run-status';
