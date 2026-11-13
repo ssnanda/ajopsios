@@ -646,6 +646,30 @@ class OpsApi {
     return CustomerFile.fromJson(resp.data as Map<String, dynamic>);
   }
 
+  // ── Pipeline > Purchases ─────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getPurchases({String? stage, String? search}) async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.purchases, queryParameters: {
+      if (stage != null && stage.isNotEmpty) 'stage': stage,
+      if (search != null && search.isNotEmpty) 'q': search,
+    });
+    return resp.data as Map<String, dynamic>;
+  }
+
+  Future<void> updatePurchase(int id, Map<String, dynamic> body) async {
+    await ApiClient.instance.dio.post(ApiEndpoints.purchase(id), data: body);
+  }
+
+  Future<void> setPurchasesStage(List<int> ids, String stage) async {
+    await ApiClient.instance.dio.post(ApiEndpoints.purchasesStage, data: {'ids': ids, 'stage': stage});
+  }
+
+  /// Reads the next batch from the shop mailbox now. Returns {new, scanned, complete, errors}.
+  Future<Map<String, dynamic>> processPurchases() async {
+    final resp = await ApiClient.instance.dio.post(ApiEndpoints.purchasesProcess, data: {});
+    return resp.data as Map<String, dynamic>;
+  }
+
   // ── Pipeline ─────────────────────────────────────────────────────────
 
   /// Items, per-status stats and each mailbox's connection state ({gmail|zoho: {connected, enabled}}).

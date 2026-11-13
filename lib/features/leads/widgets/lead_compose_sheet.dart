@@ -37,6 +37,8 @@ class _ComposeSheetState extends State<_ComposeSheet> {
   final _body = TextEditingController();
   List<String> _assistants = [];
   String? _assistant;
+  // Email sender: '' = AJCore's routed default, smtp = non-metered, smtp2 = metered.
+  String _profile = '';
   bool _drafting = false;
   bool _sending = false;
   bool _drafted = false;
@@ -115,7 +117,7 @@ class _ComposeSheetState extends State<_ComposeSheet> {
       await AjopsApi.instance.post(
         widget.email ? '/api/leads/send-email' : '/api/leads/send-text',
         widget.email
-            ? {'id': widget.lead.id, 'subject': _subject.text.trim(), 'body': _body.text.trim()}
+            ? {'id': widget.lead.id, 'subject': _subject.text.trim(), 'body': _body.text.trim(), 'profile': _profile}
             : {'id': widget.lead.id, 'body': _body.text.trim()},
       );
       if (mounted) Navigator.of(context).pop(true);
@@ -153,6 +155,20 @@ class _ComposeSheetState extends State<_ComposeSheet> {
               ),
             ),
           ]),
+          if (email) ...[
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              initialValue: _profile,
+              isDense: true,
+              decoration: const InputDecoration(labelText: 'Send from', border: OutlineInputBorder()),
+              items: const [
+                DropdownMenuItem(value: '', child: Text('Default sender')),
+                DropdownMenuItem(value: 'smtp', child: Text('Non-metered SMTP')),
+                DropdownMenuItem(value: 'smtp2', child: Text('Metered SMTP')),
+              ],
+              onChanged: (v) => setState(() => _profile = v ?? ''),
+            ),
+          ],
           const SizedBox(height: 8),
           TextField(
             controller: _instruction,
@@ -190,11 +206,25 @@ class _ComposeSheetState extends State<_ComposeSheet> {
           ),
           if (_error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_error!, style: const TextStyle(color: Colors.red))),
           const SizedBox(height: 12),
-          Row(children: [
-            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-            const Spacer(),
-            FilledButton(onPressed: canSend ? _send : null, child: Text(_sending ? 'Sending…' : (email ? 'Send email' : 'Send text'))),
-          ]),
+          // Full-width Send so it can't be missed (a disabled FilledButton is nearly invisible on the dark theme).
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: canSend ? _send : null,
+              icon: const Icon(Icons.send, size: 18),
+              label: Text(_sending ? 'Sending…' : (email ? 'Send email' : 'Send text')),
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+            ),
+          ),
+          if (!canSend && !_sending && !_drafting)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                target.isEmpty ? 'This lead has no ${email ? 'email address' : 'phone number'}.' : (over ? 'Message is over $_textMax characters.' : (email && _subject.text.trim().isEmpty ? 'Add a subject to send.' : 'Draft or write a message to send.')),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              ),
+            ),
+          Align(alignment: Alignment.centerLeft, child: TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel'))),
         ],
       ),
     );

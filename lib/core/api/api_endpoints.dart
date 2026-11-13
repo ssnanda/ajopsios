@@ -88,6 +88,12 @@ class ApiEndpoints {
   static const String pipelineReset = '/ops/gmail-intake/reset';
   static String pipelineMarkFiled(int id) => '/ops/gmail-intake/$id/mark-filed';
 
+  // ── Pipeline > Purchases (AJCore-RA) ─────────────────────────────────
+  static const String purchases = '/ops/purchases';
+  static String purchase(int id) => '/ops/purchases/$id';
+  static const String purchasesStage = '/ops/purchases/stage';
+  static const String purchasesProcess = '/ops/purchases/process';
+
   // ── Sync (Stripe products/customers/subscriptions/invoices) ───────────────
   static const String sync = '/ops/sync';
   static const String syncRunStatus = '/ops/sync/run-status';
