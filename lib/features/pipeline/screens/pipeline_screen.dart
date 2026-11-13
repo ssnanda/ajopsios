@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/pipeline_item_model.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -51,33 +50,6 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
     if (ok != true) return;
     final err = await ref.read(pipelineProvider.notifier).resetLog();
     _snack(err ?? 'Pipeline log cleared.');
-  }
-
-  /// Gmail and Zoho: connection state, pending count, and a tap to filter the list to one mailbox.
-  void _openMailboxes(PipelineState state, PipelineNotifier notifier) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Text('Mailboxes', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-            ),
-            _MailboxRow(label: 'All mailboxes', sourceKey: '', icon: Icons.all_inbox_rounded, color: Colors.indigo, state: state, onPick: (k) { Navigator.of(ctx).pop(); notifier.setSource(k); }),
-            _MailboxRow(label: 'Gmail', sourceKey: 'gmail', icon: Icons.mail_outline_rounded, color: Colors.red, state: state, onPick: (k) { Navigator.of(ctx).pop(); notifier.setSource(k); }),
-            _MailboxRow(label: 'Zoho', sourceKey: 'zoho', icon: Icons.move_to_inbox_rounded, color: Colors.blue, state: state, onPick: (k) { Navigator.of(ctx).pop(); notifier.setSource(k); }),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
-              child: Text('Connect or change a mailbox in AJ Core (Client Portal > Pipeline).', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
