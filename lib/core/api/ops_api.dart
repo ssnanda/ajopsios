@@ -648,8 +648,9 @@ class OpsApi {
 
   // ── Pipeline > Purchases ─────────────────────────────────────────────
 
-  Future<Map<String, dynamic>> getPurchases({String? stage, String? search, String? label}) async {
+  Future<Map<String, dynamic>> getPurchases({String? stage, String? search, String? label, String? issue}) async {
     final resp = await ApiClient.instance.dio.get(ApiEndpoints.purchases, queryParameters: {
+      if (issue != null && issue.isNotEmpty) 'issue': issue,
       if (label != null && label.isNotEmpty) 'label': label,
       if (stage != null && stage.isNotEmpty) 'stage': stage,
       if (search != null && search.isNotEmpty) 'q': search,

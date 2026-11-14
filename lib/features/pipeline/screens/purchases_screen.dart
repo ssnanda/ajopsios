@@ -40,6 +40,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
   bool _loading = true;
   String _stage = '';
   String _label = ''; // '' | 'marketing'
+  String _issue = ''; // '' | no_property | no_name | no_total | no_order (orders with bad data)
   final _search = TextEditingController();
 
   @override
@@ -60,7 +61,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
       _error = null;
     });
     try {
-      final d = await OpsApi.instance.getPurchases(stage: _stage, search: _search.text.trim(), label: _label);
+      final d = await OpsApi.instance.getPurchases(stage: _stage, search: _search.text.trim(), label: _label, issue: _issue);
       if (mounted) setState(() => _data = d);
     } catch (e) {
       if (mounted) setState(() => _error = friendlyError(e));
@@ -179,14 +180,32 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
               ),
             ]),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+          // Orders with bad data: tap to filter, tap again to clear.
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
             child: Row(children: [
-              Text('Total ${_money(stats['total_spent'])}', style: const TextStyle(fontWeight: FontWeight.w700)),
-              const SizedBox(width: 14),
-              Text('This month ${_money(stats['this_month'])}'),
-              const SizedBox(width: 14),
-              Text('No property ${stats['unassigned'] ?? 0}'),
+              const Text('Needs attention', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              const SizedBox(width: 8),
+              for (final e in const [('no_property', 'No property'), ('no_name', 'Property not named'), ('no_total', 'No total'), ('no_order', 'No order #')])
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: FilterChip(
+                    label: Text('${e.$2}  ${((d?['issues'] as Map?)?[e.$1] ?? 0)}', style: const TextStyle(fontSize: 12)),
+                    selected: _issue == e.$1,
+                    selectedColor: Colors.amber.withValues(alpha: .35),
+                    visualDensity: VisualDensity.compact,
+                    onSelected: (((d?['issues'] as Map?)?[e.$1] ?? 0) == 0 && _issue != e.$1)
+                        ? null
+                        : (_) {
+                            setState(() {
+                              _label = '';
+                              _issue = _issue == e.$1 ? '' : e.$1;
+                            });
+                            _load();
+                          },
+                  ),
+                ),
             ]),
           ),
           Padding(
