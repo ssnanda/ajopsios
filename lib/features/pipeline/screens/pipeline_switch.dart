@@ -16,6 +16,8 @@ const kPipelineViews = [
   (key: 'hoa_legal', label: 'Legal', path: '/pipeline/hoa_legal', module: 'hoa_legal'),
   (key: 'hoa_closing', label: 'Closing', path: '/pipeline/hoa_closing', module: 'hoa_closing'),
   (key: 'hoa_insurance', label: 'Insurance', path: '/pipeline/hoa_insurance', module: 'hoa_insurance'),
+  // AJCore
+  (key: 'marketing', label: 'Marketing', path: '/pipeline/marketing', module: 'marketing'),
 ];
 
 /// Switch between the sub-pipelines the site offers (hidden when there is only Filings).

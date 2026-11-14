@@ -210,6 +210,26 @@ class _ItemSheetState extends State<_ItemSheet> {
     super.dispose();
   }
 
+  Future<void> _marketing() async {
+    final rule = await showDialog<String>(
+      context: context,
+      builder: (c) => SimpleDialog(title: const Text('Label as marketing'), children: [
+        SimpleDialogOption(onPressed: () => Navigator.pop(c, ''), child: const Text('Only this email')),
+        SimpleDialogOption(onPressed: () => Navigator.pop(c, 'address'), child: const Text('This and future mail from this sender')),
+      ]),
+    );
+    if (rule == null) return;
+    setState(() => _busy = true);
+    try {
+      await OpsApi.instance.labelMarketing(widget.pipe, [widget.item['id'] as int], rule);
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) setState(() => _error = friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _save([String? stage]) async {
     setState(() {
       _busy = true;
@@ -257,6 +277,7 @@ class _ItemSheetState extends State<_ItemSheet> {
           SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : () => _save(), child: const Text('Save note'))),
           const SizedBox(height: 8),
           Wrap(spacing: 8, children: [
+            OutlinedButton(onPressed: _busy ? null : _marketing, child: const Text('Marketing')),
             for (final k in widget.stages.keys.where((k) => k != cur))
               OutlinedButton(onPressed: _busy ? null : () => _save(k), child: Text('Mark ${'${widget.stages[k]}'.toLowerCase()}')),
           ]),
