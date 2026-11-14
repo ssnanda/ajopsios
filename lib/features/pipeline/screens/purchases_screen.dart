@@ -83,14 +83,14 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
     return m;
   }
 
-  Future<void> _open(Map<String, dynamic> o) async {
+  Future<void> _open(Map<String, dynamic> o, [int index = 0]) async {
     final changed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (_) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: _OrderSheet(order: o),
+        child: _OrderSheet(order: o, initialIndex: index),
       ),
     );
     if (changed == true) _load();
@@ -177,7 +177,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                                       ),
                                     ),
-                                    for (final o in byDay[day]!) _OrderTile(order: o, onTap: () => _open(o)),
+                                    for (final o in byDay[day]!) _OrderTile(order: o, onTap: () => _open(o), onEmail: (i) => _open(o, i)),
                                   ],
                                 ],
                               ),
@@ -192,7 +192,8 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
 class _OrderTile extends StatelessWidget {
   final Map<String, dynamic> order;
   final VoidCallback onTap;
-  const _OrderTile({required this.order, required this.onTap});
+  final void Function(int index) onEmail;
+  const _OrderTile({required this.order, required this.onTap, required this.onEmail});
 
   @override
   Widget build(BuildContext context) {
@@ -220,6 +221,24 @@ class _OrderTile extends StatelessWidget {
                 child: Text(_stageLabel[order['stage']] ?? '${order['stage']}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
               ),
             ]),
+            if (emails.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Wrap(spacing: 6, children: [
+                  for (var i = 0; i < emails.length; i++)
+                    InkWell(
+                      onTap: () => onEmail(i),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        width: 30,
+                        height: 28,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.indigoAccent)),
+                        child: Text('${i + 1}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                      ),
+                    ),
+                ]),
+              ),
             for (final e in emails)
               Padding(
                 padding: const EdgeInsets.only(left: 10, top: 3),
@@ -239,7 +258,8 @@ class _OrderTile extends StatelessWidget {
 
 class _OrderSheet extends StatefulWidget {
   final Map<String, dynamic> order;
-  const _OrderSheet({required this.order});
+  final int initialIndex;
+  const _OrderSheet({required this.order, this.initialIndex = 0});
 
   @override
   State<_OrderSheet> createState() => _OrderSheetState();
@@ -253,6 +273,7 @@ class _OrderSheetState extends State<_OrderSheet> {
   String? _error;
   bool _busy = false;
   List<Map<String, dynamic>> _emails = [];
+  late int _pick = widget.initialIndex;
 
   @override
   void initState() {
@@ -315,8 +336,15 @@ class _OrderSheetState extends State<_OrderSheet> {
           TextField(controller: _total, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: dec('Total')),
           const SizedBox(height: 8),
           TextField(controller: _notes, minLines: 2, maxLines: 4, decoration: dec('Notes')),
-          for (final m in _emails) ...[
+          if (_emails.isNotEmpty) ...[
             const SizedBox(height: 12),
+            Wrap(spacing: 8, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
+              Text('Emails (${_emails.length})', style: const TextStyle(fontWeight: FontWeight.w800)),
+              for (var i = 0; i < _emails.length; i++)
+                ChoiceChip(label: Text('${i + 1}', style: const TextStyle(fontWeight: FontWeight.w800)), selected: i == _pick.clamp(0, _emails.length - 1), showCheckmark: false, onSelected: (_) => setState(() => _pick = i)),
+            ]),
+          ],
+          for (final m in (_emails.isEmpty ? <Map<String, dynamic>>[] : [_emails[_pick.clamp(0, _emails.length - 1)]])) ...[
             Text('${m['received_at'] ?? ''} · ${m['kind'] ?? ''} · ${m['subject'] ?? ''}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
             if ('${(m['parsed'] as Map?)?['body_debug'] ?? ''}'.isNotEmpty) Text('Only the preview could be read: ${(m['parsed'] as Map)['body_debug']}', style: const TextStyle(fontSize: 11, color: Colors.orange)),
             const SizedBox(height: 6),
