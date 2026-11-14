@@ -39,7 +39,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
   String? _error;
   bool _loading = true;
   String _stage = '';
-  String _label = ''; // '' | 'marketing'
+  String _label = ''; // '' | 'marketing' | 'notice'
   String _issue = ''; // '' | no_property | no_name | no_total | no_order (orders with bad data)
   final _search = TextEditingController();
 
@@ -174,6 +174,17 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                   _load();
                 },
               ),
+              FilterChip(
+                label: Text('Notices  ${d?['notices'] ?? 0}'),
+                selected: _label == 'notice',
+                onSelected: (_) {
+                  setState(() {
+                    _stage = '';
+                    _label = _label == 'notice' ? '' : 'notice';
+                  });
+                  _load();
+                },
+              ),
             ]),
           ),
           // Orders with bad data: tap to filter, tap again to clear.
@@ -256,7 +267,8 @@ class _OrderTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final emails = (order['emails'] as List?) ?? const [];
     final prop = ((order['property_name'] ?? '') as String).isNotEmpty ? order['property_name'] : (order['property_tag'] ?? '');
-    final no = ((order['order_no'] ?? '') as String).isNotEmpty ? order['order_no'] : order['invoice_no'];
+    final noReal = ((order['order_no'] ?? '') as String).isNotEmpty ? order['order_no'] : order['invoice_no'];
+    final no = ((noReal ?? '') == '' && ((order['notice'] ?? '') as String).isNotEmpty) ? order['notice'] : noReal;
     return InkWell(
       onTap: onTap,
       child: Padding(
