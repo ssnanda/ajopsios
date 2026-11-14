@@ -27,6 +27,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
   String? _error;
   bool _loading = true;
   String _stage = '';
+  String _label = ''; // '' | 'marketing'
   final _search = TextEditingController();
 
   @override
@@ -47,7 +48,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
       _error = null;
     });
     try {
-      final d = await OpsApi.instance.getPurchases(stage: _stage, search: _search.text.trim());
+      final d = await OpsApi.instance.getPurchases(stage: _stage, search: _search.text.trim(), label: _label);
       if (mounted) setState(() => _data = d);
     } catch (e) {
       if (mounted) setState(() => _error = friendlyError(e));
@@ -101,7 +102,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
       useSafeArea: true,
       builder: (_) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: _OrderSheet(order: o, initialIndex: index),
+        child: _OrderSheet(order: o, initialIndex: index, marketingView: _label == 'marketing'),
       ),
     );
     if (changed == true) _load();
@@ -119,10 +120,13 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
           padding: const EdgeInsets.only(right: 8),
           child: FilterChip(
             label: Text('$label  $n'),
-            selected: _stage == key,
+            selected: _stage == key && _label.isEmpty,
             selectedColor: color?.withValues(alpha: .25),
             onSelected: (_) {
-              setState(() => _stage = _stage == key ? '' : key);
+              setState(() {
+                _label = '';
+                _stage = _stage == key ? '' : key;
+              });
               _load();
             },
           ),
@@ -147,6 +151,19 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
               chip('new', 'New', (stages['new'] ?? 0) as int),
               chip('verified', 'Verified', (stages['verified'] ?? 0) as int, color: Colors.green),
               chip('charged', 'Charged', (stages['charged'] ?? 0) as int, color: Colors.green),
+              // The Marketing label: a filter on these orders.
+              FilterChip(
+                label: Text('Marketing  ${d?['marketing'] ?? 0}'),
+                selected: _label == 'marketing',
+                selectedColor: Colors.amber.withValues(alpha: .3),
+                onSelected: (_) {
+                  setState(() {
+                    _stage = '';
+                    _label = _label == 'marketing' ? '' : 'marketing';
+                  });
+                  _load();
+                },
+              ),
             ]),
           ),
           Padding(
@@ -271,7 +288,8 @@ class _OrderTile extends StatelessWidget {
 class _OrderSheet extends StatefulWidget {
   final Map<String, dynamic> order;
   final int initialIndex;
-  const _OrderSheet({required this.order, this.initialIndex = 0});
+  final bool marketingView;
+  const _OrderSheet({required this.order, this.initialIndex = 0, this.marketingView = false});
 
   @override
   State<_OrderSheet> createState() => _OrderSheetState();
@@ -318,7 +336,40 @@ class _OrderSheetState extends State<_OrderSheet> {
     if (rule == null) return;
     setState(() => _busy = true);
     try {
-      await OpsApi.instance.labelMarketing('purchases', [widget.order['id'] as int], rule);
+      await OpsApi.instance.labelMarketing('purchases', [widget.order['id'] as int], 'marketing', rule);
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) setState(() => _error = friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _notMarketing() async {
+    setState(() => _busy = true);
+    try {
+      await OpsApi.instance.labelMarketing('purchases', [widget.order['id'] as int], '');
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) setState(() => _error = friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _deleteMarketing() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Delete this order\'s emails?'),
+        content: const Text('They are moved to the Zoho Trash and stay recoverable there.'),
+        actions: [TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')), TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Delete'))],
+      ),
+    );
+    if (ok != true) return;
+    setState(() => _busy = true);
+    try {
+      await OpsApi.instance.deleteMarketing('purchases', [widget.order['id'] as int]);
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) setState(() => _error = friendlyError(e));
@@ -390,7 +441,11 @@ class _OrderSheetState extends State<_OrderSheet> {
           SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : () => _save(), child: const Text('Save'))),
           const SizedBox(height: 8),
           Wrap(spacing: 8, children: [
-            OutlinedButton(onPressed: _busy ? null : _marketing, child: const Text('Marketing')),
+            if (widget.marketingView) ...[
+              FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700), onPressed: _busy ? null : _deleteMarketing, child: const Text('Delete (to Zoho Trash)')),
+              OutlinedButton(onPressed: _busy ? null : _notMarketing, child: const Text('Not marketing')),
+            ] else
+              OutlinedButton(onPressed: _busy ? null : _marketing, child: const Text('Marketing')),
             for (final s in _stages.where((s) => s != cur))
               OutlinedButton(onPressed: _busy ? null : () => _save(s), child: Text('Mark ${_stageLabel[s]!.toLowerCase()}')),
           ]),

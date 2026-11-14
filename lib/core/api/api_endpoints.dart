@@ -100,12 +100,10 @@ class ApiEndpoints {
   static String mailPipelineItem(String pipe, int id) => '/ops/mail-pipelines/$pipe/items/$id';
   static String mailPipelineStage(String pipe) => '/ops/mail-pipelines/$pipe/stage';
   static String mailPipelineProcess(String pipe) => '/ops/mail-pipelines/$pipe/process';
-  // ── Marketing (AJCore) ──────────────────────────────────────────────────
-  static const String marketing = '/ops/marketing';
-  static String marketingItem(int id) => '/ops/marketing/$id';
-  static const String marketingDelete = '/ops/marketing/delete';
-  static const String marketingRestore = '/ops/marketing/restore';
-  static String labelMarketing(String pipe) => pipe == 'purchases' ? '/ops/purchases/marketing' : '/ops/mail-pipelines/$pipe/marketing';
+  // ── Marketing label (on a pipeline's emails; purchases take order ids) ──
+  static String _marketingBase(String pipe) => pipe == 'purchases' ? '/ops/purchases' : '/ops/mail-pipelines/$pipe';
+  static String marketingLabel(String pipe) => '${_marketingBase(pipe)}/marketing';
+  static String marketingDelete(String pipe) => '${_marketingBase(pipe)}/marketing/delete';
   static String mailPipelineSettings(String pipe) => '/ops/mail-pipelines/$pipe/settings';
 
   // ── Sync (Stripe products/customers/subscriptions/invoices) ───────────────

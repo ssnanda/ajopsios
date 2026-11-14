@@ -19,6 +19,7 @@ class _MailPipelineScreenState extends State<MailPipelineScreen> {
   String? _error;
   bool _loading = true;
   String _stage = '';
+  String _label = ''; // '' | 'marketing'
   final _search = TextEditingController();
 
   @override
@@ -39,7 +40,7 @@ class _MailPipelineScreenState extends State<MailPipelineScreen> {
       _error = null;
     });
     try {
-      final d = await OpsApi.instance.getMailPipeline(widget.pipe, stage: _stage, search: _search.text.trim());
+      final d = await OpsApi.instance.getMailPipeline(widget.pipe, stage: _stage, search: _search.text.trim(), label: _label);
       if (mounted) setState(() => _data = d);
     } catch (e) {
       if (mounted) setState(() => _error = friendlyError(e));
@@ -73,7 +74,7 @@ class _MailPipelineScreenState extends State<MailPipelineScreen> {
       useSafeArea: true,
       builder: (_) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: _ItemSheet(pipe: widget.pipe, item: item, stages: stages),
+        child: _ItemSheet(pipe: widget.pipe, item: item, stages: stages, marketingView: _label == 'marketing'),
       ),
     );
     if (changed == true) _load();
@@ -109,13 +110,29 @@ class _MailPipelineScreenState extends State<MailPipelineScreen> {
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
                     label: Text('${stages[k]}  ${counts[k] ?? 0}'),
-                    selected: _stage == k,
+                    selected: _stage == k && _label.isEmpty,
                     onSelected: (_) {
-                      setState(() => _stage = _stage == k ? '' : k);
+                      setState(() {
+                        _label = '';
+                        _stage = _stage == k ? '' : k;
+                      });
                       _load();
                     },
                   ),
                 ),
+              // The Marketing label: a filter on this pipeline's own mail.
+              FilterChip(
+                label: Text('Marketing  ${d?['marketing'] ?? 0}'),
+                selected: _label == 'marketing',
+                selectedColor: Colors.amber.withValues(alpha: .3),
+                onSelected: (_) {
+                  setState(() {
+                    _stage = '';
+                    _label = _label == 'marketing' ? '' : 'marketing';
+                  });
+                  _load();
+                },
+              ),
             ]),
           ),
           Padding(
@@ -182,7 +199,8 @@ class _ItemSheet extends StatefulWidget {
   final String pipe;
   final Map<String, dynamic> item;
   final Map<String, dynamic> stages;
-  const _ItemSheet({required this.pipe, required this.item, required this.stages});
+  final bool marketingView;
+  const _ItemSheet({required this.pipe, required this.item, required this.stages, this.marketingView = false});
 
   @override
   State<_ItemSheet> createState() => _ItemSheetState();
@@ -221,7 +239,40 @@ class _ItemSheetState extends State<_ItemSheet> {
     if (rule == null) return;
     setState(() => _busy = true);
     try {
-      await OpsApi.instance.labelMarketing(widget.pipe, [widget.item['id'] as int], rule);
+      await OpsApi.instance.labelMarketing(widget.pipe, [widget.item['id'] as int], 'marketing', rule);
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) setState(() => _error = friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _notMarketing() async {
+    setState(() => _busy = true);
+    try {
+      await OpsApi.instance.labelMarketing(widget.pipe, [widget.item['id'] as int], '');
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) setState(() => _error = friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _deleteMarketing() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Delete this email?'),
+        content: const Text('It is moved to the Zoho Trash and stays recoverable there.'),
+        actions: [TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')), TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Delete'))],
+      ),
+    );
+    if (ok != true) return;
+    setState(() => _busy = true);
+    try {
+      await OpsApi.instance.deleteMarketing(widget.pipe, [widget.item['id'] as int]);
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) setState(() => _error = friendlyError(e));
@@ -277,7 +328,11 @@ class _ItemSheetState extends State<_ItemSheet> {
           SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : () => _save(), child: const Text('Save note'))),
           const SizedBox(height: 8),
           Wrap(spacing: 8, children: [
-            OutlinedButton(onPressed: _busy ? null : _marketing, child: const Text('Marketing')),
+            if (widget.marketingView) ...[
+              FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700), onPressed: _busy ? null : _deleteMarketing, child: const Text('Delete (to Zoho Trash)')),
+              OutlinedButton(onPressed: _busy ? null : _notMarketing, child: const Text('Not marketing')),
+            ] else
+              OutlinedButton(onPressed: _busy ? null : _marketing, child: const Text('Marketing')),
             for (final k in widget.stages.keys.where((k) => k != cur))
               OutlinedButton(onPressed: _busy ? null : () => _save(k), child: Text('Mark ${'${widget.stages[k]}'.toLowerCase()}')),
           ]),

@@ -15,7 +15,6 @@ import '../features/settings/settings_screen.dart';
 import '../features/pipeline/screens/pipeline_screen.dart';
 import '../features/pipeline/screens/purchases_screen.dart';
 import '../features/pipeline/screens/mail_pipeline_screen.dart';
-import '../features/pipeline/screens/marketing_screen.dart';
 import '../features/pipeline/screens/pipeline_switch.dart' show kPipelineViews;
 import '../features/live_chat/screens/chat_conversation_by_id_screen.dart';
 import '../features/live_chat/screens/live_chat_screen.dart';
@@ -141,7 +140,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const PipelineScreen(),
             routes: [
               GoRoute(path: 'purchases', builder: (context, state) => const PurchasesScreen()),
-              GoRoute(path: 'marketing', builder: (context, state) => const MarketingScreen()),
               // Any other mailbox sub-pipeline (invoices, insurance, hoa, hoa_legal, ...): see kPipelineViews.
               GoRoute(
                 path: ':pipe',

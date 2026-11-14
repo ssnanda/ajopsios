@@ -648,8 +648,9 @@ class OpsApi {
 
   // ── Pipeline > Purchases ─────────────────────────────────────────────
 
-  Future<Map<String, dynamic>> getPurchases({String? stage, String? search}) async {
+  Future<Map<String, dynamic>> getPurchases({String? stage, String? search, String? label}) async {
     final resp = await ApiClient.instance.dio.get(ApiEndpoints.purchases, queryParameters: {
+      if (label != null && label.isNotEmpty) 'label': label,
       if (stage != null && stage.isNotEmpty) 'stage': stage,
       if (search != null && search.isNotEmpty) 'q': search,
     });
@@ -682,40 +683,24 @@ class OpsApi {
     return resp.data as Map<String, dynamic>;
   }
 
-  // ── Marketing ────────────────────────────────────────────────────────
+  // ── Marketing label ──────────────────────────────────────────────────
 
-  Future<Map<String, dynamic>> getMarketing({String? pipeline, String? search}) async {
-    final resp = await ApiClient.instance.dio.get(ApiEndpoints.marketing, queryParameters: {
-      if (pipeline != null && pipeline.isNotEmpty) 'pipeline': pipeline,
-      if (search != null && search.isNotEmpty) 'q': search,
-    });
+  /// Set (label 'marketing') or clear (label '') the Marketing label. pipe 'purchases' takes order ids. senderRule: '' | 'address' | 'domain'.
+  Future<void> labelMarketing(String pipe, List<int> ids, String label, [String senderRule = '']) async {
+    await ApiClient.instance.dio.post(ApiEndpoints.marketingLabel(pipe), data: {'ids': ids, 'label': label, 'sender_rule': senderRule});
+  }
+
+  /// Delete labelled marketing: moved to the Zoho Trash (recoverable there). Returns {deleted, zoho_errors}.
+  Future<Map<String, dynamic>> deleteMarketing(String pipe, List<int> ids) async {
+    final resp = await ApiClient.instance.dio.post(ApiEndpoints.marketingDelete(pipe), data: {'ids': ids});
     return resp.data as Map<String, dynamic>;
-  }
-
-  Future<Map<String, dynamic>> getMarketingItem(int id) async {
-    final resp = await ApiClient.instance.dio.get(ApiEndpoints.marketingItem(id));
-    return (resp.data as Map<String, dynamic>)['item'] as Map<String, dynamic>;
-  }
-
-  /// Moves emails to the Zoho Trash (recoverable there). Returns {deleted, zoho_errors}.
-  Future<Map<String, dynamic>> deleteMarketing(List<int> ids) async {
-    final resp = await ApiClient.instance.dio.post(ApiEndpoints.marketingDelete, data: {'ids': ids});
-    return resp.data as Map<String, dynamic>;
-  }
-
-  Future<void> restoreMarketing(List<int> ids) async {
-    await ApiClient.instance.dio.post(ApiEndpoints.marketingRestore, data: {'ids': ids});
-  }
-
-  /// Label emails of a pipeline as marketing (purchases: order ids). senderRule: '' | 'address' | 'domain'.
-  Future<void> labelMarketing(String pipe, List<int> ids, String senderRule) async {
-    await ApiClient.instance.dio.post(ApiEndpoints.labelMarketing(pipe), data: {'ids': ids, 'sender_rule': senderRule});
   }
 
   // ── Pipeline > Invoices / Insurance & HOA ───────────────────────────
 
-  Future<Map<String, dynamic>> getMailPipeline(String pipe, {String? stage, String? search}) async {
+  Future<Map<String, dynamic>> getMailPipeline(String pipe, {String? stage, String? search, String? label}) async {
     final resp = await ApiClient.instance.dio.get(ApiEndpoints.mailPipeline(pipe), queryParameters: {
+      if (label != null && label.isNotEmpty) 'label': label,
       if (stage != null && stage.isNotEmpty) 'stage': stage,
       if (search != null && search.isNotEmpty) 'q': search,
     });
