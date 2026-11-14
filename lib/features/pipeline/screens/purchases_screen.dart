@@ -266,6 +266,16 @@ class _OrderTile extends StatelessWidget {
           children: [
             Row(children: [
               Expanded(child: Text('${order['vendor'] ?? ''} · ${no ?? '—'}', style: const TextStyle(fontWeight: FontWeight.w700))),
+              if (order['doc'] == 'quote' || order['doc'] == 'paid')
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: order['doc'] == 'quote' ? const Color(0xFFFEF3C7) : const Color(0xFFDCFCE7),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(order['doc'] == 'quote' ? 'QUOTE' : 'PAID', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: order['doc'] == 'quote' ? const Color(0xFF92400E) : const Color(0xFF166534))),
+                ),
               Text(_money(order['total']), style: const TextStyle(fontWeight: FontWeight.w700)),
             ]),
             const SizedBox(height: 2),
