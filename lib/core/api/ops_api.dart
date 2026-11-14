@@ -656,6 +656,12 @@ class OpsApi {
     return resp.data as Map<String, dynamic>;
   }
 
+  /// The order's emails (with parsed.html / parsed.body once fetched).
+  Future<List<Map<String, dynamic>>> getPurchaseEmails(int id) async {
+    final resp = await ApiClient.instance.dio.get(ApiEndpoints.purchase(id));
+    return ((resp.data as Map<String, dynamic>)['emails'] as List? ?? const []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
   Future<void> updatePurchase(int id, Map<String, dynamic> body) async {
     await ApiClient.instance.dio.post(ApiEndpoints.purchase(id), data: body);
   }

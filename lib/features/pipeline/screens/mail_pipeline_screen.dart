@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/api/ops_api.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/email_html_view.dart';
 import 'pipeline_switch.dart';
 
 /// Pipeline > Invoices / Insurance & HOA: the mailbox's emails by date, stage chips, email text and note on tap.
@@ -239,13 +240,16 @@ class _ItemSheetState extends State<_ItemSheet> {
           Text('${_full['sender'] ?? ''} · ${_full['received_at'] ?? ''}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
           if ('${_full['body_debug'] ?? ''}'.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text('Only the preview could be read: ${_full['body_debug']}', style: const TextStyle(fontSize: 11, color: Colors.orange))),
           const SizedBox(height: 10),
-          Container(
-            constraints: const BoxConstraints(maxHeight: 320),
-            width: double.infinity,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8)),
-            child: SingleChildScrollView(child: Text(body, style: const TextStyle(fontSize: 12))),
-          ),
+          if ('${_full['body_html'] ?? ''}'.isNotEmpty)
+            EmailHtmlView(html: '${_full['body_html']}', height: 460)
+          else
+            Container(
+              constraints: const BoxConstraints(maxHeight: 320),
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8)),
+              child: SingleChildScrollView(child: Text(body, style: const TextStyle(fontSize: 12))),
+            ),
           const SizedBox(height: 10),
           TextField(controller: _notes, minLines: 2, maxLines: 4, decoration: const InputDecoration(labelText: 'Note', border: OutlineInputBorder(), isDense: true)),
           if (_error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_error!, style: const TextStyle(color: Colors.red))),

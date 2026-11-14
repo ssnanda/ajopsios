@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/api/ops_api.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/email_html_view.dart';
 import 'pipeline_switch.dart';
 
 const _stages = ['new', 'verified', 'charged', 'posted', 'ignored'];
@@ -251,6 +252,18 @@ class _OrderSheetState extends State<_OrderSheet> {
   late final _notes = TextEditingController(text: '${widget.order['notes'] ?? ''}');
   String? _error;
   bool _busy = false;
+  List<Map<String, dynamic>> _emails = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Opening an order shows its emails in full (the server fetches any text it does not have yet).
+    OpsApi.instance.getPurchaseEmails(widget.order['id'] as int).then((e) {
+      if (mounted) setState(() => _emails = e);
+    }).catchError((e) {
+      if (mounted) setState(() => _error = friendlyError(e));
+    });
+  }
 
   @override
   void dispose() {
@@ -302,6 +315,16 @@ class _OrderSheetState extends State<_OrderSheet> {
           TextField(controller: _total, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: dec('Total')),
           const SizedBox(height: 8),
           TextField(controller: _notes, minLines: 2, maxLines: 4, decoration: dec('Notes')),
+          for (final m in _emails) ...[
+            const SizedBox(height: 12),
+            Text('${m['received_at'] ?? ''} · ${m['kind'] ?? ''} · ${m['subject'] ?? ''}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            if ('${(m['parsed'] as Map?)?['body_debug'] ?? ''}'.isNotEmpty) Text('Only the preview could be read: ${(m['parsed'] as Map)['body_debug']}', style: const TextStyle(fontSize: 11, color: Colors.orange)),
+            const SizedBox(height: 6),
+            if ('${(m['parsed'] as Map?)?['html'] ?? ''}'.isNotEmpty)
+              EmailHtmlView(html: '${(m['parsed'] as Map)['html']}', height: 420)
+            else
+              Text('${(m['parsed'] as Map?)?['body'] ?? ''}', style: const TextStyle(fontSize: 12)),
+          ],
           if (_error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_error!, style: const TextStyle(color: Colors.red))),
           const SizedBox(height: 12),
           SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : () => _save(), child: const Text('Save'))),

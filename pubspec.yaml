@@ -1,7 +1,7 @@
 name: ajopsios
 description: "AJ Ops mobile — staff app for NC LLC Agents, sharing core auth/api/storage with ajcoreios."
 publish_to: 'none'
-version: 1.0.100+95
+version: 1.0.101+96
 
 environment:
   sdk: ^3.12.2
@@ -66,6 +66,9 @@ dependencies:
 
   # Opening a File's file_url in the system browser/viewer
   url_launcher: ^6.3.1
+
+  # Rich (HTML) email in Pipeline sub-pipelines; JavaScript is switched off in it
+  webview_flutter: ^4.10.0
 
   # Icons
   cupertino_icons: ^1.0.8
