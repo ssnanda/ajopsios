@@ -72,26 +72,23 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
 
   void _toast(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
+  /// Sync = read new mail, then re-parse what is stored (repeated until nothing is left).
   Future<void> _read() async {
     if (((_data?['mailbox'] ?? '') as String).isEmpty) {
       _toast('Set the mailbox in AJCore first (Pipeline > Purchases).');
       return;
     }
-    _toast('Reading the mailbox…');
+    _toast('Syncing…');
     try {
       final r = await OpsApi.instance.processPurchases();
-      _toast('${r['new'] ?? 0} new, ${r['scanned'] ?? 0} scanned');
-      await _load();
-    } catch (e) {
-      _toast(friendlyError(e));
-    }
-  }
-
-  Future<void> _reparse() async {
-    _toast('Re-parsing…');
-    try {
-      final r = await OpsApi.instance.reparsePurchases();
-      _toast('${r['reparsed'] ?? 0} re-parsed, ${r['fetched'] ?? 0} fetched${(r['remaining'] ?? 0) != 0 ? ', ${r['remaining']} left: tap again' : ''}');
+      var fixed = 0, left = 0;
+      for (var i = 0; i < 12; i++) {
+        final p = await OpsApi.instance.reparsePurchases();
+        fixed += ((p['reparsed'] ?? 0) as num).toInt();
+        left = ((p['remaining'] ?? 0) as num).toInt();
+        if (left == 0) break;
+      }
+      _toast('${r['new'] ?? 0} new, ${r['scanned'] ?? 0} scanned · $fixed re-parsed${left != 0 ? ', $left left: sync again' : ''}');
       await _load();
     } catch (e) {
       _toast(friendlyError(e));
@@ -150,8 +147,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
       appBar: AppBar(
         title: const Text('Pipeline'),
         actions: [
-          IconButton(icon: const Icon(Icons.autorenew_rounded), tooltip: 'Re-parse', onPressed: _reparse),
-          IconButton(icon: const Icon(Icons.sync_rounded), tooltip: 'Read mailbox', onPressed: _read),
+          IconButton(icon: const Icon(Icons.sync_rounded), tooltip: 'Sync', onPressed: _read),
         ],
       ),
       body: Column(
