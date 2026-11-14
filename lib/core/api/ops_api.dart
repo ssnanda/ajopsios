@@ -670,6 +670,12 @@ class OpsApi {
     await ApiClient.instance.dio.post(ApiEndpoints.purchasesStage, data: {'ids': ids, 'stage': stage});
   }
 
+  /// Re-runs the extraction on emails already read. Returns {reparsed, fetched, remaining}.
+  Future<Map<String, dynamic>> reparsePurchases() async {
+    final resp = await ApiClient.instance.dio.post(ApiEndpoints.purchasesReparse, data: {});
+    return resp.data as Map<String, dynamic>;
+  }
+
   /// Reads the next batch from the shop mailbox now. Returns {new, scanned, complete, errors}.
   Future<Map<String, dynamic>> processPurchases() async {
     final resp = await ApiClient.instance.dio.post(ApiEndpoints.purchasesProcess, data: {});

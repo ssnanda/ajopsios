@@ -93,6 +93,7 @@ class ApiEndpoints {
   static String purchase(int id) => '/ops/purchases/$id';
   static const String purchasesStage = '/ops/purchases/stage';
   static const String purchasesProcess = '/ops/purchases/process';
+  static const String purchasesReparse = '/ops/purchases/reparse';
 
   // ── Pipeline > Invoices / Insurance & HOA (mailbox sub-pipelines) ─────
   static String mailPipeline(String pipe) => '/ops/mail-pipelines/$pipe';

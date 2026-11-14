@@ -73,6 +73,17 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
     }
   }
 
+  Future<void> _reparse() async {
+    _toast('Re-parsing…');
+    try {
+      final r = await OpsApi.instance.reparsePurchases();
+      _toast('${r['reparsed'] ?? 0} re-parsed, ${r['fetched'] ?? 0} fetched${(r['remaining'] ?? 0) != 0 ? ', ${r['remaining']} left: tap again' : ''}');
+      await _load();
+    } catch (e) {
+      _toast(friendlyError(e));
+    }
+  }
+
   Map<String, List<Map<String, dynamic>>> _byDay(List orders) {
     final m = <String, List<Map<String, dynamic>>>{};
     for (final o in orders) {
@@ -121,6 +132,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
       appBar: AppBar(
         title: const Text('Pipeline'),
         actions: [
+          IconButton(icon: const Icon(Icons.autorenew_rounded), tooltip: 'Re-parse', onPressed: _reparse),
           IconButton(icon: const Icon(Icons.sync_rounded), tooltip: 'Read mailbox', onPressed: _read),
         ],
       ),
