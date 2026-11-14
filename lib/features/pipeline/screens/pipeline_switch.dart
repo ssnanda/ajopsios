@@ -7,8 +7,15 @@ import '../../../core/providers/modules_provider.dart';
 const kPipelineViews = [
   (key: 'filings', label: 'Filings', path: '/pipeline', module: null),
   (key: 'purchases', label: 'Purchases', path: '/pipeline/purchases', module: 'purchases'),
+  // AJCore-RA
   (key: 'invoices', label: 'Invoices', path: '/pipeline/invoices', module: 'invoices'),
-  (key: 'insurance', label: 'Insurance & HOA', path: '/pipeline/insurance', module: 'insurance'),
+  (key: 'insurance', label: 'Insurance', path: '/pipeline/insurance', module: 'insurance'),
+  (key: 'hoa', label: 'HOA', path: '/pipeline/hoa', module: 'hoa'),
+  // AJCore-HOA
+  (key: 'hoa_invoice', label: 'Invoice', path: '/pipeline/hoa_invoice', module: 'hoa_invoice'),
+  (key: 'hoa_legal', label: 'Legal', path: '/pipeline/hoa_legal', module: 'hoa_legal'),
+  (key: 'hoa_closing', label: 'Closing', path: '/pipeline/hoa_closing', module: 'hoa_closing'),
+  (key: 'hoa_insurance', label: 'Insurance', path: '/pipeline/hoa_insurance', module: 'hoa_insurance'),
 ];
 
 /// Switch between the sub-pipelines the site offers (hidden when there is only Filings).

@@ -15,6 +15,7 @@ import '../features/settings/settings_screen.dart';
 import '../features/pipeline/screens/pipeline_screen.dart';
 import '../features/pipeline/screens/purchases_screen.dart';
 import '../features/pipeline/screens/mail_pipeline_screen.dart';
+import '../features/pipeline/screens/pipeline_switch.dart' show kPipelineViews;
 import '../features/live_chat/screens/chat_conversation_by_id_screen.dart';
 import '../features/live_chat/screens/live_chat_screen.dart';
 import '../features/visitors/screens/visitors_hub_screen.dart';
@@ -139,8 +140,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const PipelineScreen(),
             routes: [
               GoRoute(path: 'purchases', builder: (context, state) => const PurchasesScreen()),
-              GoRoute(path: 'invoices', builder: (context, state) => const MailPipelineScreen(pipe: 'invoices', label: 'Invoices')),
-              GoRoute(path: 'insurance', builder: (context, state) => const MailPipelineScreen(pipe: 'insurance', label: 'Insurance & HOA')),
+              // Any other mailbox sub-pipeline (invoices, insurance, hoa, hoa_legal, ...): see kPipelineViews.
+              GoRoute(
+                path: ':pipe',
+                builder: (context, state) {
+                  final pipe = state.pathParameters['pipe'] ?? '';
+                  final view = kPipelineViews.where((v) => v.key == pipe).firstOrNull;
+                  return MailPipelineScreen(pipe: pipe, label: view?.label ?? pipe);
+                },
+              ),
             ],
           ),
           // Old path, kept so existing links still open the Pipeline.
