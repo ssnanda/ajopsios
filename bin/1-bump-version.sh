@@ -104,9 +104,9 @@ Choose release type:
   1) patch  ($(bump_version "$current" patch))
   2) minor  ($(bump_version "$current" minor))
   3) major  ($(bump_version "$current" major))
-  4) build  ($(bump_version "$current" build))
-  5) custom version
-  6) no bump / package current version
+  4) custom version
+  5) no bump / package current version
+  6) build number only  ($(bump_version "$current" build))
 MENU
 
     read -r -p "Enter choice (1-6, default=1): " choice
@@ -116,14 +116,14 @@ MENU
       1|patch|p) bump_version "$current" patch; return 0 ;;
       2|minor|m) bump_version "$current" minor; return 0 ;;
       3|major|M) bump_version "$current" major; return 0 ;;
-      4|build|b) bump_version "$current" build; return 0 ;;
-      5|custom|c)
+      4|custom|c)
         read -r -p "Enter version X.Y.Z+B: " custom_version
         validate_version "$custom_version"
         echo "$custom_version"
         return 0
         ;;
-      6|none|no|n|current) echo "$current"; return 0 ;;
+      5|none|no|n|current) echo "$current"; return 0 ;;
+      6|build|b) bump_version "$current" build; return 0 ;;
       *) echo "Please choose 1, 2, 3, 4, 5, or 6." >&2; echo "" >&2 ;;
     esac
   done

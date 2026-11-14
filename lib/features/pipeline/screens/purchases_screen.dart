@@ -229,7 +229,6 @@ class _OrderTile extends StatelessWidget {
     final emails = (order['emails'] as List?) ?? const [];
     final prop = ((order['property_name'] ?? '') as String).isNotEmpty ? order['property_name'] : (order['property_tag'] ?? '');
     final no = ((order['order_no'] ?? '') as String).isNotEmpty ? order['order_no'] : order['invoice_no'];
-    final grey = TextStyle(fontSize: 12, color: Colors.grey.shade500);
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -267,16 +266,6 @@ class _OrderTile extends StatelessWidget {
                       ),
                     ),
                 ]),
-              ),
-            for (final e in emails)
-              Padding(
-                padding: const EdgeInsets.only(left: 10, top: 3),
-                child: Text(
-                  '${((e['received_at'] ?? '') as String).length >= 16 ? (e['received_at'] as String).substring(11, 16) : ''}  ${e['kind'] ?? ''}  ${e['subject'] ?? ''}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: grey,
-                ),
               ),
           ],
         ),
