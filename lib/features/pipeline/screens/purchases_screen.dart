@@ -80,9 +80,16 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
     }
     _toast('Syncing…');
     try {
-      final r = await OpsApi.instance.processPurchases();
+      var nNew = 0, nScan = 0;
+      for (var i = 0; i < 25; i++) {
+        final rr = await OpsApi.instance.processPurchases();
+        nNew += ((rr['new'] ?? 0) as num).toInt();
+        nScan += ((rr['scanned'] ?? 0) as num).toInt();
+        if (rr['complete'] != false) break;
+      }
+      final r = {'new': nNew, 'scanned': nScan};
       var fixed = 0, left = 0;
-      for (var i = 0; i < 12; i++) {
+      for (var i = 0; i < 80; i++) {
         final p = await OpsApi.instance.reparsePurchases();
         fixed += ((p['reparsed'] ?? 0) as num).toInt();
         left = ((p['remaining'] ?? 0) as num).toInt();
