@@ -42,6 +42,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
   String _label = ''; // '' | 'marketing' | 'notice'
   String _issue = ''; // '' | no_property | no_name | no_total | no_order (orders with bad data)
   final _search = TextEditingController();
+  bool _syncing = false;
 
   @override
   void initState() {
@@ -79,6 +80,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
       return;
     }
     _toast('Syncing…');
+    setState(() => _syncing = true);
     try {
       var nNew = 0, nScan = 0;
       for (var i = 0; i < 25; i++) {
@@ -99,6 +101,8 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
       await _load();
     } catch (e) {
       _toast(friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _syncing = false);
     }
   }
 
@@ -114,13 +118,23 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
   }
 
   Future<void> _open(Map<String, dynamic> o, [int index = 0]) async {
-    final changed = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: _OrderSheet(order: o, initialIndex: index, marketingView: _label == 'marketing'),
+    // A full page (not a sheet): big back arrow, and the iOS swipe from the left edge goes back to the list.
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(
+            leadingWidth: 64,
+            leading: IconButton(
+              tooltip: 'Back',
+              iconSize: 28,
+              constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            title: Text('${o['vendor'] ?? 'Order'}', overflow: TextOverflow.ellipsis),
+          ),
+          body: SafeArea(child: _OrderSheet(order: o, initialIndex: index, marketingView: _label == 'marketing')),
+        ),
       ),
     );
     if (changed == true) _load();
@@ -154,7 +168,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
       appBar: AppBar(
         title: const Text('Pipeline'),
         actions: [
-          IconButton(icon: const Icon(Icons.sync_rounded), tooltip: 'Sync', onPressed: _read),
+          IconButton(icon: const Icon(Icons.sync_rounded), tooltip: 'Sync', onPressed: _syncing ? null : _read),
         ],
       ),
       body: Column(
@@ -164,6 +178,21 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
             child: Row(children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text('All  ${(stages.values.fold<int>(0, (a, v) => a + ((v as num?)?.toInt() ?? 0)))}'),
+                  selected: _stage.isEmpty && _label.isEmpty && _issue.isEmpty,
+                  onSelected: (_) {
+                    setState(() {
+                      _stage = '';
+                      _label = '';
+                      _issue = '';
+                    });
+                    _load();
+                  },
+                ),
+              ),
               chip('verify', 'Needs verification', (stats['needs_verification'] ?? 0) as int, color: Colors.orange),
               chip('new', 'New', (stages['new'] ?? 0) as int),
               chip('verified', 'Verified', (stages['verified'] ?? 0) as int, color: Colors.green),
@@ -224,13 +253,25 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
-            child: TextField(
-              controller: _search,
-              textInputAction: TextInputAction.search,
-              onSubmitted: (_) => _load(),
-              decoration: const InputDecoration(isDense: true, hintText: 'Search order, invoice, property, vendor', prefixIcon: Icon(Icons.search_rounded), border: OutlineInputBorder()),
-            ),
+            child: Row(children: [
+              Expanded(
+                child: TextField(
+                  controller: _search,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => _load(),
+                  decoration: const InputDecoration(isDense: true, hintText: 'Search order, invoice, property, vendor', prefixIcon: Icon(Icons.search_rounded), border: OutlineInputBorder()),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.tonalIcon(
+                onPressed: _syncing ? null : _read,
+                icon: _syncing ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.sync_rounded, size: 18),
+                label: Text(_syncing ? 'Syncing' : 'Sync'),
+                style: FilledButton.styleFrom(visualDensity: VisualDensity.compact, padding: const EdgeInsets.symmetric(horizontal: 12)),
+              ),
+            ]),
           ),
+          if (_syncing) const LinearProgressIndicator(minHeight: 2),
           Expanded(
             child: _loading && d == null
                 ? const Center(child: CircularProgressIndicator())
@@ -500,7 +541,8 @@ class _OrderSheetState extends State<_OrderSheet> {
             for (final s in _stages.where((s) => s != cur))
               OutlinedButton(onPressed: _busy ? null : () => _save(s), child: Text('Mark ${_stageLabel[s]!.toLowerCase()}')),
           ]),
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Close')),
+          const SizedBox(height: 8),
+          SizedBox(width: double.infinity, height: 52, child: OutlinedButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Close', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)))),
         ],
       ),
     );
