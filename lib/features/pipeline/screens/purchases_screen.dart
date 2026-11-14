@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/api/ops_api.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/email_html_view.dart';
@@ -6,6 +7,17 @@ import 'pipeline_switch.dart';
 
 const _stages = ['new', 'verified', 'charged', 'posted', 'ignored'];
 const _stageLabel = {'new': 'New', 'verified': 'Verified', 'charged': 'Charged', 'posted': 'Posted', 'ignored': 'Ignored'};
+
+/// Times arrive in UTC ("2026-11-14 13:15:55"); shown in the phone's own time zone.
+DateTime? _local(dynamic s) => DateTime.tryParse('${s ?? ''}'.replaceFirst(' ', 'T') + 'Z')?.toLocal();
+
+/// "Nov 14, 8:15 AM" (with the year when it is not this year); noTime for a date-only value (stored as noon UTC).
+String _fmt(dynamic s, {bool noTime = false}) {
+  final d = _local(s);
+  if (d == null) return '—';
+  final y = d.year != DateTime.now().year ? ', y' : '';
+  return DateFormat('MMM d$y${noTime ? '' : ', h:mm a'}').format(d);
+}
 
 String _money(dynamic v) {
   final n = v is num ? v.toDouble() : double.tryParse('${v ?? ''}');
@@ -89,8 +101,9 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
     final m = <String, List<Map<String, dynamic>>>{};
     for (final o in orders) {
       final row = Map<String, dynamic>.from(o as Map);
-      final d = ((row['order_date'] ?? '') as String);
-      m.putIfAbsent(d.length >= 10 ? d.substring(0, 10) : '—', () => []).add(row);
+      // Grouped by the latest email of the order (new mail rises to the top); falls back to the order date.
+      final d = _local(row['last_email_at'] ?? row['order_date']);
+      m.putIfAbsent(d == null ? '—' : DateFormat('yyyy-MM-dd').format(d), () => []).add(row);
     }
     return m;
   }
@@ -240,6 +253,11 @@ class _OrderTile extends StatelessWidget {
               Expanded(child: Text('${order['vendor'] ?? ''} · ${no ?? '—'}', style: const TextStyle(fontWeight: FontWeight.w700))),
               Text(_money(order['total']), style: const TextStyle(fontWeight: FontWeight.w700)),
             ]),
+            const SizedBox(height: 2),
+            Text(
+              'Updated ${_fmt(order['last_email_at'] ?? order['order_date'])}  ·  Ordered ${_fmt(order['order_date'], noTime: '${order['order_date'] ?? ''}'.endsWith('12:00:00'))}',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            ),
             const SizedBox(height: 2),
             Row(children: [
               Expanded(child: Text(((prop ?? '') as String).isEmpty ? 'No property' : prop as String, style: TextStyle(fontSize: 13, color: ((prop ?? '') as String).isEmpty ? Colors.orange : null))),
