@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/modules_provider.dart';
 
-/// Sub-pipelines under Pipeline: key, label, route, module the site must offer (null = always).
+/// Sub-pipelines under Pipeline: key, label, route, module the site must offer (Filings belongs to AJCore-RA sites).
 const kPipelineViews = [
-  (key: 'filings', label: 'Filings', path: '/pipeline', module: null),
+  (key: 'filings', label: 'Filings', path: '/pipeline', module: 'filings'),
   (key: 'purchases', label: 'Purchases', path: '/pipeline/purchases', module: 'purchases'),
   // AJCore-RA
   (key: 'invoices', label: 'Invoices', path: '/pipeline/invoices', module: 'invoices'),
@@ -26,7 +26,7 @@ class PipelineSwitch extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final modules = ref.watch(modulesProvider).value;
-    final views = kPipelineViews.where((v) => v.module == null || (modules?.contains(v.module) ?? false)).toList();
+    final views = kPipelineViews.where((v) => modules?.contains(v.module) ?? false).toList();
     if (views.length < 2) return const SizedBox.shrink();
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,

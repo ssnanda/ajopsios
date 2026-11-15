@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/providers/modules_provider.dart';
 import '../../../core/models/pipeline_item_model.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
@@ -77,6 +79,17 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Filings belongs to AJCore-RA sites: elsewhere this opens the first sub-pipeline the site offers.
+    final modules = ref.watch(modulesProvider).value;
+    if (modules != null && !modules.contains('filings')) {
+      final first = kPipelineViews.where((v) => modules.contains(v.module)).firstOrNull;
+      if (first != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.go(first.path);
+        });
+        return const Scaffold(body: SizedBox.shrink());
+      }
+    }
     final state = ref.watch(pipelineProvider);
     final notifier = ref.read(pipelineProvider.notifier);
     final items = state.items;
