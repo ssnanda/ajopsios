@@ -94,6 +94,7 @@ class ApiEndpoints {
   static const String purchasesStage = '/ops/purchases/stage';
   static const String purchasesProcess = '/ops/purchases/process';
   static const String purchasesReparse = '/ops/purchases/reparse';
+  static const String purchasesDelete = '/ops/purchases/delete';
 
   // ── Pipeline > Invoices / Insurance & HOA (mailbox sub-pipelines) ─────
   static String mailPipeline(String pipe) => '/ops/mail-pipelines/$pipe';

@@ -449,11 +449,12 @@ class _OrderSheetState extends State<_OrderSheet> {
     }
   }
 
-  Future<void> _deleteMarketing() async {
+  /// Moves this order's emails (or just one, [messageId]) to the Zoho Trash: recoverable there, never permanently deleted.
+  Future<void> _deleteMarketing([String? messageId]) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text('Delete this order\'s emails?'),
+        title: Text(messageId == null ? 'Delete this order\'s emails?' : 'Delete this email?'),
         content: const Text('They are moved to the Zoho Trash and stay recoverable there.'),
         actions: [TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')), TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Delete'))],
       ),
@@ -461,7 +462,14 @@ class _OrderSheetState extends State<_OrderSheet> {
     if (ok != true) return;
     setState(() => _busy = true);
     try {
-      await OpsApi.instance.deleteMarketing('purchases', [widget.order['id'] as int]);
+      final r = messageId == null
+          ? await OpsApi.instance.deletePurchases(ids: [widget.order['id'] as int])
+          : await OpsApi.instance.deletePurchases(messageIds: [messageId]);
+      final errs = (r['zoho_errors'] as List?) ?? const [];
+      if (errs.isNotEmpty && mounted) {
+        setState(() => _error = 'Zoho: ${errs.join(' | ')}');
+        return;
+      }
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) setState(() => _error = friendlyError(e));
@@ -522,7 +530,11 @@ class _OrderSheetState extends State<_OrderSheet> {
           for (final m in (_emails.isEmpty ? <Map<String, dynamic>>[] : [_emails[_pick.clamp(0, _emails.length - 1)]])) ...[
             Text('${m['received_at'] ?? ''} · ${m['kind'] ?? ''} · ${m['subject'] ?? ''}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
             if ('${(m['parsed'] as Map?)?['body_debug'] ?? ''}'.isNotEmpty) Text('Only the preview could be read: ${(m['parsed'] as Map)['body_debug']}', style: const TextStyle(fontSize: 11, color: Colors.orange)),
-            const SizedBox(height: 6),
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: Colors.red.shade700, padding: EdgeInsets.zero, minimumSize: const Size(0, 36), alignment: Alignment.centerLeft),
+              onPressed: _busy ? null : () => _deleteMarketing('${m['message_id'] ?? ''}'),
+              child: const Text('Delete this email (to Zoho Trash)'),
+            ),
             if ('${(m['parsed'] as Map?)?['html'] ?? ''}'.isNotEmpty)
               EmailHtmlView(html: '${(m['parsed'] as Map)['html']}', height: 420)
             else
@@ -533,11 +545,15 @@ class _OrderSheetState extends State<_OrderSheet> {
           SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : () => _save(), child: const Text('Save'))),
           const SizedBox(height: 8),
           Wrap(spacing: 8, children: [
-            if (widget.marketingView) ...[
-              FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700), onPressed: _busy ? null : _deleteMarketing, child: const Text('Delete (to Zoho Trash)')),
-              OutlinedButton(onPressed: _busy ? null : _notMarketing, child: const Text('Not marketing')),
-            ] else
+            if (widget.marketingView)
+              OutlinedButton(onPressed: _busy ? null : _notMarketing, child: const Text('Not marketing'))
+            else
               OutlinedButton(onPressed: _busy ? null : _marketing, child: const Text('Marketing')),
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(foregroundColor: Colors.red.shade700, side: BorderSide(color: Colors.red.shade700)),
+              onPressed: _busy ? null : () => _deleteMarketing(),
+              child: const Text('Delete order (to Zoho Trash)'),
+            ),
             for (final s in _stages.where((s) => s != cur))
               OutlinedButton(onPressed: _busy ? null : () => _save(s), child: Text('Mark ${_stageLabel[s]!.toLowerCase()}')),
           ]),

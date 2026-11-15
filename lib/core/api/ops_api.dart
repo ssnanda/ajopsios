@@ -692,6 +692,12 @@ class OpsApi {
   }
 
   /// Delete labelled marketing: moved to the Zoho Trash (recoverable there). Returns {deleted, zoho_errors}.
+  /// Moves orders (ids) and/or single emails (messageIds) to the Zoho Trash; never a permanent delete.
+  Future<Map<String, dynamic>> deletePurchases({List<int> ids = const [], List<String> messageIds = const []}) async {
+    final resp = await ApiClient.instance.dio.post(ApiEndpoints.purchasesDelete, data: {'ids': ids, 'message_ids': messageIds});
+    return Map<String, dynamic>.from(resp.data as Map);
+  }
+
   Future<Map<String, dynamic>> deleteMarketing(String pipe, List<int> ids) async {
     final resp = await ApiClient.instance.dio.post(ApiEndpoints.marketingDelete(pipe), data: {'ids': ids});
     return resp.data as Map<String, dynamic>;
