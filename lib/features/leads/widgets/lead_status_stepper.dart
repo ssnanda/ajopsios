@@ -130,6 +130,15 @@ class LeadStatusStepper extends StatelessWidget {
             child: const Text('Tour Complete — back to Engaged'),
           ),
         ],
+        if (!canBranch) ...[
+          const SizedBox(height: 8),
+          // Reaching out (New/Auto Reached/Reached) can end in "call me later" — park it out of the active queue.
+          Row(
+            children: [
+              Expanded(child: _BranchButton(icon: Icons.event_repeat_rounded, label: 'Follow-Up', busy: busy, onTap: () => onChange('future_follow_up'))),
+            ],
+          ),
+        ],
         if (canBranch) ...[
           const SizedBox(height: 8),
           // One compact row of three equal buttons (icon + short label), grey until chosen —
