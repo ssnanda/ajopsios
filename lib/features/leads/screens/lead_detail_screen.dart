@@ -23,6 +23,11 @@ String _defaultOutreachMessage(String firstName) {
       '4 - Something Else / Talk to a Person';
 }
 
+String _firstName(String value) {
+  final parts = value.trim().split(' ').where((part) => part.isNotEmpty);
+  return parts.isEmpty ? '' : parts.first;
+}
+
 /// Google's "/u/N/" path segment (N = 0-based) selects which signed-in Google account a
 /// multi-account link opens against — same convention Gmail/Drive/Calendar all use. Google Voice
 /// was opening the primary account (index 0) instead of the business one; confirmed by hand
@@ -56,9 +61,17 @@ Future<bool> _launchGoogleVoiceUniversalLink(Uri uri) {
 /// it's one paste away once the compose box is open; the phone number itself is shown in the
 /// confirmation snackbar below to search for since only one thing can live on the clipboard at a
 /// time.
-Future<void> _launchGoogleVoiceText(BuildContext context, String phone, String firstName) async {
-  await Clipboard.setData(ClipboardData(text: _defaultOutreachMessage(firstName)));
-  final uri = Uri.parse('https://voice.google.com/u/$_googleVoiceAccountIndex/messages');
+Future<void> _launchGoogleVoiceText(
+  BuildContext context,
+  String phone,
+  String firstName,
+) async {
+  await Clipboard.setData(
+    ClipboardData(text: _defaultOutreachMessage(firstName)),
+  );
+  final uri = Uri.parse(
+    'https://voice.google.com/u/$_googleVoiceAccountIndex/messages',
+  );
   final ok = await _launchGoogleVoiceUniversalLink(uri);
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
@@ -105,7 +118,11 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
     }
   }
 
-  Future<void> _setStage(LeadDetailNotifier notifier, Lead lead, String stage) async {
+  Future<void> _setStage(
+    LeadDetailNotifier notifier,
+    Lead lead,
+    String stage,
+  ) async {
     if (stage == 'customer') {
       final result = await pickCustomer(context, allowManualEntry: true);
       if (result == null || !mounted) return;
@@ -125,7 +142,9 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
       // requires initialDate >= firstDate or it throws, so an overdue (past) existing date falls back
       // to today rather than crashing.
       final existing = DateTime.tryParse(lead.leadFollowUpAt);
-      final initialDate = existing != null && !existing.isBefore(now) ? existing : now;
+      final initialDate = existing != null && !existing.isBefore(now)
+          ? existing
+          : now;
       final date = await showDatePicker(
         context: context,
         initialDate: initialDate,
@@ -151,9 +170,14 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete this lead?'),
-        content: Text('${lead.displayName} will be permanently deleted. This can\'t be undone.'),
+        content: Text(
+          '${lead.displayName} will be permanently deleted. This can\'t be undone.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
@@ -186,7 +210,10 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
           "and its IP address will be blocked on Cloudflare.",
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Mark Spam', style: TextStyle(color: Colors.red)),
@@ -206,7 +233,9 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
     // context is about to be removed from the tree.
     final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).pop();
-    messenger.showSnackBar(SnackBar(content: Text(result?.summary ?? 'Marked as spam.')));
+    messenger.showSnackBar(
+      SnackBar(content: Text(result?.summary ?? 'Marked as spam.')),
+    );
   }
 
   @override
@@ -226,16 +255,36 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
               MaterialPageRoute(builder: (_) => LeadEditScreen(lead: lead)),
             ),
           ),
-          if (!lead.isSpam)
-            IconButton(
-              icon: const Icon(Icons.report_outlined),
-              tooltip: 'Mark as Spam',
-              onPressed: state.busy ? null : () => _markSpam(notifier, lead),
-            ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline_rounded),
-            tooltip: 'Delete Lead',
-            onPressed: state.busy ? null : () => _deleteLead(notifier, lead),
+          PopupMenuButton<String>(
+            tooltip: 'More actions',
+            enabled: !state.busy,
+            onSelected: (value) {
+              if (value == 'spam') _markSpam(notifier, lead);
+              if (value == 'delete') _deleteLead(notifier, lead);
+            },
+            itemBuilder: (context) => [
+              if (!lead.isSpam)
+                const PopupMenuItem(
+                  value: 'spam',
+                  child: ListTile(
+                    leading: Icon(Icons.report_outlined),
+                    title: Text('Mark as spam'),
+                  ),
+                ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: ListTile(
+                  leading: Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.red,
+                  ),
+                  title: Text(
+                    'Delete lead',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -244,36 +293,54 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
         children: [
           _InfoCard(lead: lead),
           if (lead.email.isNotEmpty || lead.phone.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Row(children: [
-              if (lead.email.isNotEmpty)
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.mark_email_unread_outlined, size: 18),
-                    label: const Text('Email (AI)'),
-                    onPressed: () async {
-                      if (await showLeadComposeSheet(context, lead, email: true)) await notifier.refresh();
-                    },
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (lead.email.isNotEmpty)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(
+                        Icons.mark_email_unread_outlined,
+                        size: 18,
+                      ),
+                      label: const Text('Draft email'),
+                      onPressed: () async {
+                        if (await showLeadComposeSheet(
+                          context,
+                          lead,
+                          email: true,
+                        )) {
+                          await notifier.refresh();
+                        }
+                      },
+                    ),
                   ),
-                ),
-              if (lead.email.isNotEmpty && lead.phone.isNotEmpty) const SizedBox(width: 10),
-              if (lead.phone.isNotEmpty)
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.sms_outlined, size: 18),
-                    label: const Text('Text (AI)'),
-                    onPressed: () async {
-                      if (await showLeadComposeSheet(context, lead, email: false)) await notifier.refresh();
-                    },
+                if (lead.email.isNotEmpty && lead.phone.isNotEmpty)
+                  const SizedBox(width: 10),
+                if (lead.phone.isNotEmpty)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.sms_outlined, size: 18),
+                      label: const Text('Draft text'),
+                      onPressed: () async {
+                        if (await showLeadComposeSheet(
+                          context,
+                          lead,
+                          email: false,
+                        )) {
+                          await notifier.refresh();
+                        }
+                      },
+                    ),
                   ),
-                ),
-            ]),
+              ],
+            ),
           ],
           const SizedBox(height: 16),
           Text(
-            'LEAD STATUS',
+            'Lead status',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 13,
               fontWeight: FontWeight.w700,
               color: Colors.grey.shade600,
             ),
@@ -287,9 +354,9 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
           _MessageAndFields(lead: lead),
           const SizedBox(height: 20),
           Text(
-            'NOTES',
+            'Notes',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 13,
               fontWeight: FontWeight.w700,
               color: Colors.grey.shade600,
             ),
@@ -301,7 +368,6 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
             ...lead.notesList.map(
               (n) => Card(
                 elevation: 0,
-                color: Colors.grey.shade50,
                 margin: const EdgeInsets.only(bottom: 8),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
@@ -314,7 +380,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
                         '${n.authorName.isNotEmpty ? n.authorName : "Staff"} · ${formatSiteLocalDatetime(n.createdAt)}',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey.shade500,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -329,7 +395,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
                 child: TextField(
                   controller: _noteCtrl,
                   decoration: const InputDecoration(
-                    hintText: 'Add a note...',
+                    hintText: 'Add a note',
                     isDense: true,
                     border: OutlineInputBorder(),
                   ),
@@ -354,7 +420,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
                         _noteCtrl.clear();
                         await _run(() => notifier.addNote(text));
                       },
-                child: const Text('Add Note'),
+                child: const Text('Add'),
               ),
             ],
           ),
@@ -372,10 +438,20 @@ class _InfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
     final chips = <Widget>[
-      if (lead.siteLabel.isNotEmpty) _Chip(Icons.public_rounded, lead.siteLabel, Colors.blue.shade700),
-      if (lead.formTitle.isNotEmpty) _Chip(Icons.description_outlined, lead.formTitle, Colors.purple.shade600),
+      if (lead.siteLabel.isNotEmpty)
+        _Chip(Icons.public_rounded, lead.siteLabel, Colors.blue.shade700),
+      if (lead.formTitle.isNotEmpty)
+        _Chip(
+          Icons.description_outlined,
+          lead.formTitle,
+          Colors.purple.shade600,
+        ),
       if (lead.createdAt.isNotEmpty)
-        _Chip(Icons.schedule_outlined, formatSiteLocalDatetime(lead.createdAt), Colors.teal.shade700),
+        _Chip(
+          Icons.schedule_outlined,
+          formatSiteLocalDatetime(lead.createdAt),
+          Colors.teal.shade700,
+        ),
     ];
     return Card(
       elevation: 0,
@@ -398,7 +474,11 @@ class _InfoCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         lead.company,
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: primary),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: primary,
+                        ),
                       ),
                     ),
                   ],
@@ -412,7 +492,7 @@ class _InfoCard extends StatelessWidget {
                 onTap: () => launchUrl(Uri(scheme: 'mailto', path: lead.email)),
               ),
             if (lead.phone.isNotEmpty)
-              _PhoneRow(phone: lead.phone, firstName: lead.name.trim().split(RegExp(r'\s+')).first),
+              _PhoneRow(phone: lead.phone, firstName: _firstName(lead.name)),
             if (chips.isNotEmpty) ...[
               const SizedBox(height: 4),
               Wrap(spacing: 6, runSpacing: 6, children: chips),
@@ -444,7 +524,14 @@ class _Chip extends StatelessWidget {
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 5),
           Flexible(
-            child: Text(text, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: color)),
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
           ),
         ],
       ),
@@ -460,22 +547,37 @@ class _MessageAndFields extends StatelessWidget {
   final Lead lead;
   const _MessageAndFields({required this.lead});
 
-  static const _palette = [Colors.deepOrange, Colors.indigo, Colors.pink, Colors.green, Colors.brown];
+  static const _palette = [
+    Colors.deepOrange,
+    Colors.indigo,
+    Colors.pink,
+    Colors.green,
+    Colors.brown,
+  ];
 
   @override
   Widget build(BuildContext context) {
     final message = lead.notes.trim();
-    final shown = {lead.name, lead.email, lead.company, lead.phone, message}
-        .map((v) => v.trim().toLowerCase())
-        .where((v) => v.isNotEmpty)
-        .toSet();
-    final fields = lead.extraFields.where((f) => !shown.contains(f.value.trim().toLowerCase())).toList();
+    final shown = {
+      lead.name,
+      lead.email,
+      lead.company,
+      lead.phone,
+      message,
+    }.map((v) => v.trim().toLowerCase()).where((v) => v.isNotEmpty).toSet();
+    final fields = lead.extraFields
+        .where((f) => !shown.contains(f.value.trim().toLowerCase()))
+        .toList();
     final shortFields = fields.where((f) => f.value.length <= 80).toList();
-    final longTexts = [
-      if (message.isNotEmpty) message,
-      ...fields.where((f) => f.value.length > 80 && f.value.trim() != message).map((f) => f.value.trim()),
+    final longTexts = <({String label, String value})>[
+      if (message.isNotEmpty) (label: 'Message', value: message),
+      ...fields
+          .where((f) => f.value.length > 80 && f.value.trim() != message)
+          .map((f) => (label: f.label, value: f.value.trim())),
     ];
-    if (shortFields.isEmpty && longTexts.isEmpty) return const SizedBox.shrink();
+    if (shortFields.isEmpty && longTexts.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.only(top: 16),
@@ -490,11 +592,17 @@ class _MessageAndFields extends StatelessWidget {
                 runSpacing: 6,
                 children: [
                   for (int i = 0; i < shortFields.length; i++)
-                    _Chip(Icons.label_outline_rounded, shortFields[i].value, _palette[i % _palette.length].shade600),
+                    _Chip(
+                      Icons.label_outline_rounded,
+                      shortFields[i].label.isEmpty
+                          ? shortFields[i].value
+                          : '${shortFields[i].label}: ${shortFields[i].value}',
+                      _palette[i % _palette.length].shade600,
+                    ),
                 ],
               ),
             ),
-          for (final t in longTexts)
+          for (final field in longTexts)
             Card(
               elevation: 0,
               margin: const EdgeInsets.only(bottom: 10),
@@ -504,7 +612,27 @@ class _MessageAndFields extends StatelessWidget {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(14),
-                child: SizedBox(width: double.infinity, child: SelectableText(t)),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (field.label.isNotEmpty) ...[
+                        Text(
+                          field.label,
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                      ],
+                      SelectableText(field.value),
+                    ],
+                  ),
+                ),
               ),
             ),
         ],
@@ -526,7 +654,15 @@ class _PhoneRow extends StatelessWidget {
         children: [
           Icon(Icons.phone_outlined, size: 16, color: Colors.green.shade700),
           const SizedBox(width: 8),
-          Expanded(child: Text(phone, style: TextStyle(fontWeight: FontWeight.w700, color: Colors.green.shade800))),
+          Expanded(
+            child: Text(
+              phone,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: Colors.green.shade800,
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.copy_outlined, size: 22),
             tooltip: 'Copy phone number',
@@ -535,7 +671,11 @@ class _PhoneRow extends StatelessWidget {
             onPressed: () => _copyPhone(context, phone),
           ),
           IconButton(
-            icon: Icon(Icons.sms_outlined, size: 22, color: Colors.green.shade700),
+            icon: Icon(
+              Icons.sms_outlined,
+              size: 22,
+              color: Colors.green.shade700,
+            ),
             tooltip: 'Text via Google Voice',
             visualDensity: VisualDensity.compact,
             constraints: const BoxConstraints(minWidth: 44, minHeight: 40),
@@ -565,7 +705,16 @@ class _Row extends StatelessWidget {
           Expanded(
             child: onTap == null
                 ? Text(text)
-                : InkWell(onTap: onTap, child: Text(text, style: TextStyle(color: color ?? Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600))),
+                : InkWell(
+                    onTap: onTap,
+                    child: Text(
+                      text,
+                      style: TextStyle(
+                        color: color ?? Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),

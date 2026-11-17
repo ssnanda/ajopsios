@@ -33,22 +33,33 @@ class LeadStatusStepper extends StatelessWidget {
     final theme = Theme.of(context);
     final current = lead.leadStatus.isEmpty ? 'new' : lead.leadStatus;
 
-    if (current == 'customer' || current == 'lost' || current == 'future_follow_up') {
-      return _TerminalBadge(lead: lead, current: current, busy: busy, onChange: onChange);
+    if (current == 'customer' ||
+        current == 'lost' ||
+        current == 'future_follow_up') {
+      return _TerminalBadge(
+        lead: lead,
+        current: current,
+        busy: busy,
+        onChange: onChange,
+      );
     }
 
     // 'auto_reached' (cron) and 'reached' (manual) are parallel alternatives that both lead to
     // Engaged — grouped into one forked step; every other stage is a group of one.
     final groups = <List<String>>[];
     for (final k in lead.linearPipelineStages) {
-      if (k == 'reached' && groups.isNotEmpty && groups.last.contains('auto_reached')) {
+      if (k == 'reached' &&
+          groups.isNotEmpty &&
+          groups.last.contains('auto_reached')) {
         groups.last.add(k);
       } else {
         groups.add([k]);
       }
     }
     final currentIdx = groups.indexWhere((g) => g.contains(current));
-    final canBranch = _branchEligibleFrom.contains(current) || currentIdx >= groups.length - 1;
+    final canBranch =
+        _branchEligibleFrom.contains(current) ||
+        currentIdx >= groups.length - 1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,7 +76,9 @@ class LeadStatusStepper extends StatelessWidget {
                     child: Container(
                       width: 20,
                       height: 3,
-                      color: i <= currentIdx ? Colors.green.shade300 : theme.colorScheme.outlineVariant,
+                      color: i <= currentIdx
+                          ? Colors.green.shade300
+                          : theme.colorScheme.outlineVariant,
                     ),
                   ),
                 SizedBox(
@@ -73,7 +86,10 @@ class LeadStatusStepper extends StatelessWidget {
                   child: Column(
                     children: [
                       // Past the fork the branch taken isn't known — one "Reached" check, not both.
-                      for (final key in (i < currentIdx && groups[i].length > 1 ? const ['reached'] : groups[i]))
+                      for (final key
+                          in (i < currentIdx && groups[i].length > 1
+                              ? const ['reached']
+                              : groups[i]))
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: busy ? null : () => onChange(key),
@@ -91,13 +107,23 @@ class LeadStatusStepper extends StatelessWidget {
                                         ? Colors.green
                                         : key == current
                                         ? theme.colorScheme.primary
-                                        : theme.colorScheme.surfaceContainerHighest,
+                                        : theme
+                                              .colorScheme
+                                              .surfaceContainerHighest,
                                     border: key == current
-                                        ? Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.25), width: 4)
+                                        ? Border.all(
+                                            color: theme.colorScheme.primary
+                                                .withValues(alpha: 0.25),
+                                            width: 4,
+                                          )
                                         : null,
                                   ),
                                   child: i < currentIdx
-                                      ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
+                                      ? const Icon(
+                                          Icons.check_rounded,
+                                          color: Colors.white,
+                                          size: 16,
+                                        )
                                       : null,
                                 ),
                                 const SizedBox(height: 4),
@@ -109,7 +135,9 @@ class LeadStatusStepper extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: key == current ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
+                                    color: key == current
+                                        ? theme.colorScheme.onSurface
+                                        : theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -127,7 +155,7 @@ class LeadStatusStepper extends StatelessWidget {
           const SizedBox(height: 8),
           OutlinedButton(
             onPressed: busy ? null : () => onChange('engaged'),
-            child: const Text('Tour Complete — back to Engaged'),
+            child: const Text('Mark tour complete'),
           ),
         ],
         if (!canBranch) ...[
@@ -135,7 +163,14 @@ class LeadStatusStepper extends StatelessWidget {
           // Reaching out (New/Auto Reached/Reached) can end in "call me later" — park it out of the active queue.
           Row(
             children: [
-              Expanded(child: _BranchButton(icon: Icons.event_repeat_rounded, label: 'Follow-Up', busy: busy, onTap: () => onChange('future_follow_up'))),
+              Expanded(
+                child: _BranchButton(
+                  icon: Icons.event_repeat_rounded,
+                  label: 'Follow-Up',
+                  busy: busy,
+                  onTap: () => onChange('future_follow_up'),
+                ),
+              ),
             ],
           ),
         ],
@@ -145,11 +180,32 @@ class LeadStatusStepper extends StatelessWidget {
           // 40px tall keeps them easy to tap without the old full-width, 52px-each stack.
           Row(
             children: [
-              Expanded(child: _BranchButton(icon: Icons.check_circle_outline_rounded, label: 'Customer', busy: busy, onTap: () => onChange('customer'))),
+              Expanded(
+                child: _BranchButton(
+                  icon: Icons.check_circle_outline_rounded,
+                  label: 'Customer',
+                  busy: busy,
+                  onTap: () => onChange('customer'),
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: _BranchButton(icon: Icons.event_repeat_rounded, label: 'Follow-Up', busy: busy, onTap: () => onChange('future_follow_up'))),
+              Expanded(
+                child: _BranchButton(
+                  icon: Icons.event_repeat_rounded,
+                  label: 'Follow-Up',
+                  busy: busy,
+                  onTap: () => onChange('future_follow_up'),
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: _BranchButton(icon: Icons.cancel_outlined, label: 'Lost', busy: busy, onTap: () => onChange('lost'))),
+              Expanded(
+                child: _BranchButton(
+                  icon: Icons.cancel_outlined,
+                  label: 'Lost',
+                  busy: busy,
+                  onTap: () => onChange('lost'),
+                ),
+              ),
             ],
           ),
         ],
@@ -163,7 +219,12 @@ class _BranchButton extends StatelessWidget {
   final String label;
   final bool busy;
   final VoidCallback onTap;
-  const _BranchButton({required this.icon, required this.label, required this.busy, required this.onTap});
+  const _BranchButton({
+    required this.icon,
+    required this.label,
+    required this.busy,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -195,13 +256,20 @@ class _TerminalBadge extends StatelessWidget {
   /// 'future_follow_up' here to change the date doesn't need a separate code path.
   final void Function(String stage) onChange;
 
-  const _TerminalBadge({required this.lead, required this.current, required this.busy, required this.onChange});
+  const _TerminalBadge({
+    required this.lead,
+    required this.current,
+    required this.busy,
+    required this.onChange,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final followUpDue = current == 'future_follow_up' &&
+    final followUpDue =
+        current == 'future_follow_up' &&
         lead.leadFollowUpAt.isNotEmpty &&
-        (DateTime.tryParse(lead.leadFollowUpAt)?.isBefore(DateTime.now()) ?? false);
+        (DateTime.tryParse(lead.leadFollowUpAt)?.isBefore(DateTime.now()) ??
+            false);
 
     final Color bg;
     final Color fg;
@@ -227,18 +295,30 @@ class _TerminalBadge extends StatelessWidget {
           // Used to always reopen (reset to New) on tap, even for Future Follow-Up — which meant
           // "I just want to update the date" silently reset the whole lead's status. Tapping the
           // chip now edits the date instead; reopening moved to its own explicit "Reopen" tap target.
-          onTap: busy ? null : () => onChange(isFollowUp ? 'future_follow_up' : 'new'),
+          onTap: busy
+              ? null
+              : () => onChange(isFollowUp ? 'future_follow_up' : 'new'),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(999),
+            ),
             child: Text(
               '${leadPipelineLabels[current] ?? current} — tap to ${isFollowUp ? 'change date' : 'reopen'}',
-              style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 13),
+              style: TextStyle(
+                color: fg,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
             ),
           ),
         ),
         if (current == 'customer' && lead.customerName.isNotEmpty)
-          Text('→ ${lead.customerName}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+          Text(
+            '→ ${lead.customerName}',
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+          ),
         if (isFollowUp && lead.leadFollowUpAt.isNotEmpty)
           Text(
             (followUpDue ? 'Due ' : '') + _fmtDate(lead.leadFollowUpAt),
@@ -253,7 +333,11 @@ class _TerminalBadge extends StatelessWidget {
             onTap: busy ? null : () => onChange('new'),
             child: Text(
               'Reopen',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 12, decoration: TextDecoration.underline),
+              style: TextStyle(
+                color: Colors.grey.shade500,
+                fontSize: 12,
+                decoration: TextDecoration.underline,
+              ),
             ),
           ),
       ],

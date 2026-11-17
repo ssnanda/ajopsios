@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/customer_model.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
+import '../../../core/widgets/status_badge.dart';
 import '../providers/customer_detail_provider.dart';
 
 class CustomerDetailScreen extends ConsumerWidget {
@@ -41,7 +42,14 @@ class CustomerDetailScreen extends ConsumerWidget {
         .runAction(action, extra: extra);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(err ?? (action == 'send_ra_authorization' ? 'RA authorization sent.' : 'Done.'))),
+        SnackBar(
+          content: Text(
+            err ??
+                (action == 'send_ra_authorization'
+                    ? 'RA authorization sent.'
+                    : 'Done.'),
+          ),
+        ),
       );
     }
   }
@@ -67,7 +75,7 @@ class CustomerDetailScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 children: [
                   _InfoCard(detail: state.detail!),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   _ActionsCard(
                     detail: state.detail!,
                     busy: state.actionBusy,
@@ -78,15 +86,19 @@ class CustomerDetailScreen extends ConsumerWidget {
                       confirmMessage: confirm,
                       // {company} in the authorization email is the filing entity, not the contact person.
                       extra: action == 'send_ra_authorization'
-                          ? {'company': state.detail!.businessName.isNotEmpty ? state.detail!.businessName : customer.displayName}
+                          ? {
+                              'company': state.detail!.businessName.isNotEmpty
+                                  ? state.detail!.businessName
+                                  : customer.displayName,
+                            }
                           : null,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   _SubscriptionsSection(
                     subscriptions: state.detail!.subscriptions,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   _ServiceRequestsSection(
                     requests: state.detail!.serviceRequests,
                   ),
@@ -111,7 +123,7 @@ class _InfoCard extends StatelessWidget {
         side: BorderSide(color: Colors.grey.shade200),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -148,11 +160,15 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: Colors.grey.shade600),
-          const SizedBox(width: 8),
+          Icon(
+            icon,
+            size: 18,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 10),
           Expanded(child: Text(text)),
         ],
       ),
@@ -173,6 +189,10 @@ class _ActionsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = detail.customer.portalStatus;
+    final scheme = Theme.of(context).colorScheme;
+    final statusLabel = status.isEmpty
+        ? 'Unknown'
+        : status.replaceAll('_', ' ');
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -180,66 +200,102 @@ class _ActionsCard extends StatelessWidget {
         side: BorderSide(color: Colors.grey.shade200),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'PORTAL STATUS: ${status.isEmpty ? "unknown" : status.replaceAll('_', ' ')}',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: Colors.grey.shade600,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            Row(
               children: [
-                if (status != 'active')
-                  OutlinedButton(
-                    onPressed: busy ? null : () => onAction('enable', null),
-                    child: const Text('Enable'),
+                Expanded(
+                  child: Text(
+                    'Customer portal',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                StatusBadge.fromStatus(statusLabel),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Manage access and customer emails.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                if (status != 'active' && status != 'archived')
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      onPressed: busy ? null : () => onAction('enable', null),
+                      icon: const Icon(Icons.lock_open_rounded, size: 18),
+                      label: const Text('Enable portal'),
+                    ),
                   ),
                 if (status == 'active')
-                  OutlinedButton(
-                    onPressed: busy ? null : () => onAction('disable', null),
-                    child: const Text('Disable'),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: busy
+                          ? null
+                          : () => onAction(
+                              'disable',
+                              'Disable this customer’s portal access?',
+                            ),
+                      icon: const Icon(Icons.lock_outline_rounded, size: 18),
+                      label: const Text('Disable portal'),
+                    ),
                   ),
                 if (status == 'archived')
-                  OutlinedButton(
-                    onPressed: busy ? null : () => onAction('restore', null),
-                    child: const Text('Restore'),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: busy ? null : () => onAction('restore', null),
+                      icon: const Icon(Icons.restore_rounded, size: 18),
+                      label: const Text('Restore'),
+                    ),
                   ),
-                OutlinedButton(
-                  onPressed: busy
-                      ? null
-                      : () => onAction(
-                          'reset_password',
-                          'Send a password reset link to this customer?',
-                        ),
-                  child: const Text('Reset password'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: busy
+                        ? null
+                        : () => onAction(
+                            'reset_password',
+                            'Send a password reset link to this customer?',
+                          ),
+                    icon: const Icon(Icons.password_rounded, size: 18),
+                    label: const Text('Reset password'),
+                  ),
                 ),
-                OutlinedButton(
-                  onPressed: busy
-                      ? null
-                      : () => onAction(
-                          'send_welcome',
-                          'Resend the welcome email?',
-                        ),
-                  child: const Text('Send welcome'),
-                ),
-                FilledButton.tonal(
-                  onPressed: busy
-                      ? null
-                      : () => onAction(
-                          'send_ra_authorization',
-                          'Email the Registered Agent authorization to ${detail.customer.email}?',
-                        ),
-                  child: const Text('Send RA Authorization'),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: busy
+                        ? null
+                        : () => onAction(
+                            'send_welcome',
+                            'Resend the welcome email?',
+                          ),
+                    icon: const Icon(Icons.waving_hand_outlined, size: 18),
+                    label: const Text('Welcome email'),
+                  ),
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: busy
+                  ? null
+                  : () => onAction(
+                      'send_ra_authorization',
+                      'Email the Registered Agent authorization to ${detail.customer.email}?',
+                    ),
+              icon: const Icon(Icons.verified_user_outlined, size: 18),
+              label: const Text('Send RA authorization'),
             ),
           ],
         ),
@@ -258,9 +314,9 @@ class _SubscriptionsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'SUBSCRIPTIONS',
+          'Subscriptions',
           style: TextStyle(
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: FontWeight.w700,
             color: Colors.grey.shade600,
           ),
@@ -275,20 +331,11 @@ class _SubscriptionsSection extends StatelessWidget {
           ...subscriptions.map(
             (s) => Card(
               elevation: 0,
-              color: Colors.grey.shade50,
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 dense: true,
                 title: Text(s.priceLabel),
-                trailing: Text(
-                  s.status,
-                  style: TextStyle(
-                    color: s.status == 'active'
-                        ? Colors.green
-                        : Colors.grey.shade600,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                trailing: StatusBadge.fromStatus(s.status),
               ),
             ),
           ),
@@ -307,31 +354,32 @@ class _ServiceRequestsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'SERVICE REQUESTS',
+          'Service requests',
           style: TextStyle(
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: FontWeight.w700,
             color: Colors.grey.shade600,
           ),
         ),
         const SizedBox(height: 8),
         if (requests.isEmpty)
-          Text(
-            'No requests.',
-            style: TextStyle(color: Colors.grey.shade600),
-          )
+          Text('No requests.', style: TextStyle(color: Colors.grey.shade600))
         else
           ...requests.map(
             (r) => Card(
               elevation: 0,
-              color: Colors.grey.shade50,
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 dense: true,
                 title: Text(
                   '${r.requestNumber.isNotEmpty ? r.requestNumber : '#${r.id}'} · ${r.serviceName.isEmpty ? 'Service Request' : r.serviceName}',
                 ),
-                subtitle: Text(r.serviceStatus.replaceAll('_', ' ')),
+                subtitle: Text(
+                  r.serviceStatus.replaceAll('_', ' '),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             ),
           ),
