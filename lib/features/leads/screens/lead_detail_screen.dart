@@ -162,6 +162,70 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
       return;
     }
 
+    // Tour Scheduled / Reschedule: pick date + time. AJCore logs "Tour scheduled" or
+    // "Tour rescheduled" in the lead history.
+    if (stage == 'tour' || stage == 'tour_reschedule') {
+      final now = DateTime.now();
+      final existing = DateTime.tryParse(lead.leadTourAt)?.toLocal();
+      final date = await showDatePicker(
+        context: context,
+        initialDate: existing != null && !existing.isBefore(now) ? existing : now,
+        firstDate: now.subtract(const Duration(days: 30)),
+        lastDate: now.add(const Duration(days: 365)),
+        helpText: 'Tour date',
+      );
+      if (date == null || !mounted) return;
+      final time = await showTimePicker(
+        context: context,
+        initialTime: existing != null
+            ? TimeOfDay.fromDateTime(existing)
+            : const TimeOfDay(hour: 10, minute: 0),
+        helpText: 'Tour time',
+      );
+      if (time == null || !mounted) return;
+      String two(int n) => n.toString().padLeft(2, '0');
+      final tourAt =
+          '${date.year}-${two(date.month)}-${two(date.day)}T${two(time.hour)}:${two(time.minute)}';
+      await _run(() => notifier.setStage('tour', tourAt: tourAt));
+      return;
+    }
+
+    // Cancel Tour (button) or stepping back from Tour Scheduled to an earlier stage —
+    // AJCore logs "Tour cancelled" and clears the tour date.
+    const beforeTour = ['new', 'auto_reached', 'reached', 'engaged'];
+    if (stage == 'tour_cancel' ||
+        (lead.leadStatus == 'tour' && beforeTour.contains(stage))) {
+      final target = stage == 'tour_cancel' ? 'engaged' : stage;
+      final reasonCtrl = TextEditingController();
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Cancel this tour?'),
+          content: TextField(
+            controller: reasonCtrl,
+            decoration: const InputDecoration(hintText: 'Reason (optional)'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Keep tour'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Cancel tour', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
+      final reason = reasonCtrl.text.trim();
+      reasonCtrl.dispose();
+      if (ok != true || !mounted) return;
+      await _run(
+        () => notifier.setStage(target, note: reason.isEmpty ? null : reason),
+      );
+      return;
+    }
+
     await _run(() => notifier.setStage(stage));
   }
 

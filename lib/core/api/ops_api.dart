@@ -477,6 +477,7 @@ class OpsApi {
     String? stripeCustomerId,
     String? followUpAt,
     String? nonStripeCustomerName,
+    String? tourAt,
   }) async {
     final response = await ApiClient.instance.dio.patch(
       ApiEndpoints.leadPipelineStatus(id),
@@ -486,6 +487,7 @@ class OpsApi {
         if (stripeCustomerId != null) 'stripe_customer_id': stripeCustomerId,
         if (followUpAt != null) 'follow_up_at': followUpAt,
         if (nonStripeCustomerName != null) 'non_stripe_customer_name': nonStripeCustomerName,
+        if (tourAt != null) 'tour_at': tourAt,
       },
     );
     final data = response.data;

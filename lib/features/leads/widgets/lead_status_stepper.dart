@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/lead_model.dart';
 
-const _branchEligibleFrom = ['engaged', 'tour'];
+const _branchEligibleFrom = ['engaged', 'tour', 'tour_complete'];
+
+String _fmtTour(String iso) {
+  final d = DateTime.tryParse(iso)?.toLocal();
+  if (d == null) return '';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
+  final mm = d.minute.toString().padLeft(2, '0');
+  return '${months[d.month - 1]} ${d.day}, $h:$mm ${d.hour < 12 ? 'AM' : 'PM'}';
+}
 
 /// LEAD STATUS stepper — same visual language as service requests' SVC STATUS
 /// (ServiceStatusStepper): a row of tap-to-jump circles connected by a bar,
@@ -9,7 +18,7 @@ const _branchEligibleFrom = ['engaged', 'tour'];
 /// Adds three differences specific to leads (mirrors AJOps web's
 /// LeadStatusStepper): the linear stages are per-lead/per-site
 /// (lead.linearPipelineStages — e.g. University Office Suites' extra "Tour"
-/// step), a "Tour Complete" shortcut back to Engaged, and three terminal
+/// step), a "Tour Complete" shortcut forward to tour_complete, and three terminal
 /// branches (Customer/Future Follow-Up/Lost) offered once the lead reaches
 /// Engaged (or Tour) rather than being reachable from every stage.
 class LeadStatusStepper extends StatelessWidget {
@@ -153,9 +162,37 @@ class LeadStatusStepper extends StatelessWidget {
         ),
         if (current == 'tour') ...[
           const SizedBox(height: 8),
-          OutlinedButton(
-            onPressed: busy ? null : () => onChange('engaged'),
-            child: const Text('Mark tour complete'),
+          if (lead.leadTourAt.isNotEmpty)
+            Text(
+              'Tour: ${_fmtTour(lead.leadTourAt)}',
+              style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              OutlinedButton(
+                onPressed: busy ? null : () => onChange('tour_complete'),
+                child: const Text('Tour complete'),
+              ),
+              OutlinedButton(
+                onPressed: busy ? null : () => onChange('tour_reschedule'),
+                child: const Text('Reschedule'),
+              ),
+              OutlinedButton(
+                onPressed: busy ? null : () => onChange('tour_cancel'),
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Cancel tour'),
+              ),
+            ],
+          ),
+        ],
+        if (current == 'tour_complete' && lead.leadTourAt.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Toured ${_fmtTour(lead.leadTourAt)}',
+            style: theme.textTheme.bodySmall,
           ),
         ],
         if (!canBranch) ...[

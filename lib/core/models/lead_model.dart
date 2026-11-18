@@ -5,7 +5,7 @@ class Lead {
   final int id;
   final String formTitle;
   final String status; // new | read | won | lost | duplicate | spam
-  final String leadStatus; // pipeline: new|auto_reached|reached|engaged|tour|customer|future_follow_up|lost
+  final String leadStatus; // pipeline: new|auto_reached|reached|engaged|tour|tour_complete|customer|future_follow_up|lost
   final String leadFollowUpAt;
   final String name;
   final String email;
@@ -25,6 +25,8 @@ class Lead {
   /// (see get_lead_pipeline_linear_stages() in class-ajforms-admin.php) — mirrors AJOps web's
   /// Lead.leadPipelineStages. Falls back to the generic default when AJCore omits it.
   final List<String> leadPipelineStages;
+  /// Scheduled tour (ISO UTC) — set on Tour Scheduled, kept on Tour Complete, '' if none/cancelled.
+  final String leadTourAt;
   final String sourceUrl;
   /// Every non-empty form field (GET /ops/leads/{id} only — empty on list rows). Drives the
   /// "Additional Fields" section, same as AJOps web's lead.allFields.
@@ -50,6 +52,7 @@ class Lead {
     required this.siteLabel,
     required this.notesList,
     required this.leadPipelineStages,
+    this.leadTourAt = '',
     this.sourceUrl = '',
     this.allFields = const [],
   });
@@ -80,6 +83,7 @@ class Lead {
       notesList: (json['notes_list'] as List<dynamic>? ?? [])
           .map((e) => LeadNote.fromJson(e as Map<String, dynamic>))
           .toList(),
+      leadTourAt: json['lead_tour_at'] as String? ?? '',
       sourceUrl: json['source_url'] as String? ?? '',
       allFields: (json['all_fields'] as List<dynamic>? ?? [])
           .map((e) => LeadField.fromJson(e as Map<String, dynamic>))
@@ -216,6 +220,7 @@ const leadPipelineLabels = {
   'reached': 'Reached',
   'engaged': 'Engaged',
   'tour': 'Tour',
+  'tour_complete': 'Toured',
   'future_follow_up': 'Follow-up',
   'customer': 'Customer',
   'lost': 'Lost',

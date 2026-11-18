@@ -70,6 +70,8 @@ class LeadDetailNotifier extends StateNotifier<LeadDetailState> {
     String? stripeCustomerId,
     String? followUpAt,
     String? nonStripeCustomerName,
+    String? tourAt,
+    String? note,
   }) => _run(() async {
     await _api.setLeadPipelineStatus(
       state.lead.id,
@@ -77,6 +79,8 @@ class LeadDetailNotifier extends StateNotifier<LeadDetailState> {
       stripeCustomerId: stripeCustomerId,
       followUpAt: followUpAt,
       nonStripeCustomerName: nonStripeCustomerName,
+      tourAt: tourAt,
+      note: note,
     );
     final refreshed = await _api.getLead(state.lead.id);
     if (refreshed.leadStatus != leadStatus) {
