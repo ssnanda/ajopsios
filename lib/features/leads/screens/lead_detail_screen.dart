@@ -190,6 +190,47 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
       return;
     }
 
+    // Tour Complete: ask for tour notes; AJCore appends them to the
+    // "Tour completed <date/time>" note.
+    if (stage == 'tour_complete' && lead.leadStatus != 'tour_complete') {
+      final notesCtrl = TextEditingController();
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Tour notes'),
+          content: TextField(
+            controller: notesCtrl,
+            autofocus: true,
+            minLines: 3,
+            maxLines: 6,
+            decoration: const InputDecoration(
+              hintText: 'How did the tour go? Interest, objections, next step…',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Mark tour complete'),
+            ),
+          ],
+        ),
+      );
+      final notes = notesCtrl.text.trim();
+      notesCtrl.dispose();
+      if (ok != true || !mounted) return;
+      await _run(
+        () => notifier.setStage(
+          'tour_complete',
+          note: notes.isEmpty ? null : notes,
+        ),
+      );
+      return;
+    }
+
     // Cancel Tour (button) or stepping back from Tour Scheduled to an earlier stage —
     // AJCore logs "Tour cancelled" and clears the tour date.
     const beforeTour = ['new', 'auto_reached', 'reached', 'engaged'];
@@ -429,7 +470,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
           if (lead.notesList.isEmpty)
             Text('No notes yet.', style: TextStyle(color: Colors.grey.shade600))
           else
-            ...lead.notesList.map(
+            ...lead.notesList.reversed.map( // newest first
               (n) => Card(
                 elevation: 0,
                 margin: const EdgeInsets.only(bottom: 8),

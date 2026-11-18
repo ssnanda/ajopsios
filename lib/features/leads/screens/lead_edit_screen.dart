@@ -200,7 +200,7 @@ class _LeadEditScreenState extends ConsumerState<LeadEditScreen> {
           if (state.lead.notesList.isEmpty)
             Text('No notes yet.', style: TextStyle(color: Colors.grey.shade600))
           else
-            ...state.lead.notesList.map(
+            ...state.lead.notesList.reversed.map( // newest first
               (n) => Card(
                 elevation: 0,
                 color: Colors.grey.shade50,

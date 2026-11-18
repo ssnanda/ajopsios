@@ -6,7 +6,20 @@ const _branchEligibleFrom = ['engaged', 'tour', 'tour_complete'];
 String _fmtTour(String iso) {
   final d = DateTime.tryParse(iso)?.toLocal();
   if (d == null) return '';
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
   final mm = d.minute.toString().padLeft(2, '0');
   return '${months[d.month - 1]} ${d.day}, $h:$mm ${d.hour < 12 ? 'AM' : 'PM'}';
@@ -75,89 +88,101 @@ class LeadStatusStepper extends StatelessWidget {
       children: [
         Opacity(
           opacity: busy ? 0.5 : 1,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (int i = 0; i < groups.length; i++) ...[
-                if (i > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 17),
-                    child: Container(
-                      width: 20,
-                      height: 3,
-                      color: i <= currentIdx
-                          ? Colors.green.shade300
-                          : theme.colorScheme.outlineVariant,
+          // Scrolls sideways when the site's pipeline is wider than the screen (e.g. University
+          // Office Suites' Tour Scheduled + Tour Complete); starts scrolled to the current step.
+          child: _StepperScroll(
+            currentOffset: currentIdx <= 0
+                ? 0
+                : groups
+                      .take(currentIdx)
+                      .fold<double>(
+                        0,
+                        (sum, g) => sum + 20 + (g.length > 1 ? 88 : 72),
+                      ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (int i = 0; i < groups.length; i++) ...[
+                  if (i > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 17),
+                      child: Container(
+                        width: 20,
+                        height: 3,
+                        color: i <= currentIdx
+                            ? Colors.green.shade300
+                            : theme.colorScheme.outlineVariant,
+                      ),
                     ),
-                  ),
-                SizedBox(
-                  width: groups[i].length > 1 && i >= currentIdx ? 88 : 72,
-                  child: Column(
-                    children: [
-                      // Past the fork the branch taken isn't known — one "Reached" check, not both.
-                      for (final key
-                          in (i < currentIdx && groups[i].length > 1
-                              ? const ['reached']
-                              : groups[i]))
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: busy ? null : () => onChange(key),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Column(
-                              children: [
-                                Container(
-                                  width: 28,
-                                  height: 28,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: i < currentIdx
-                                        ? Colors.green
-                                        : key == current
-                                        ? theme.colorScheme.primary
-                                        : theme
-                                              .colorScheme
-                                              .surfaceContainerHighest,
-                                    border: key == current
-                                        ? Border.all(
-                                            color: theme.colorScheme.primary
-                                                .withValues(alpha: 0.25),
-                                            width: 4,
+                  SizedBox(
+                    width: groups[i].length > 1 && i >= currentIdx ? 88 : 72,
+                    child: Column(
+                      children: [
+                        // Past the fork the branch taken isn't known — one "Reached" check, not both.
+                        for (final key
+                            in (i < currentIdx && groups[i].length > 1
+                                ? const ['reached']
+                                : groups[i]))
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: busy ? null : () => onChange(key),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 2),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: 28,
+                                    height: 28,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: i < currentIdx
+                                          ? Colors.green
+                                          : key == current
+                                          ? theme.colorScheme.primary
+                                          : theme
+                                                .colorScheme
+                                                .surfaceContainerHighest,
+                                      border: key == current
+                                          ? Border.all(
+                                              color: theme.colorScheme.primary
+                                                  .withValues(alpha: 0.25),
+                                              width: 4,
+                                            )
+                                          : null,
+                                    ),
+                                    child: i < currentIdx
+                                        ? const Icon(
+                                            Icons.check_rounded,
+                                            color: Colors.white,
+                                            size: 16,
                                           )
                                         : null,
                                   ),
-                                  child: i < currentIdx
-                                      ? const Icon(
-                                          Icons.check_rounded,
-                                          color: Colors.white,
-                                          size: 16,
-                                        )
-                                      : null,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  leadPipelineLabels[key] ?? key,
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: key == current
-                                        ? theme.colorScheme.onSurface
-                                        : theme.colorScheme.onSurfaceVariant,
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    leadPipelineLabels[key] ?? key,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: key == current
+                                          ? theme.colorScheme.onSurface
+                                          : theme.colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
         if (current == 'tour') ...[
@@ -165,7 +190,9 @@ class LeadStatusStepper extends StatelessWidget {
           if (lead.leadTourAt.isNotEmpty)
             Text(
               'Tour: ${_fmtTour(lead.leadTourAt)}',
-              style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           const SizedBox(height: 4),
           Wrap(
@@ -386,4 +413,57 @@ String _fmtDate(String iso) {
   final d = DateTime.tryParse(iso);
   if (d == null) return iso;
   return '${d.month}/${d.day}/${d.year}';
+}
+
+/// Horizontal scroller for the stepper row that brings the current step into view on first build.
+class _StepperScroll extends StatefulWidget {
+  final double currentOffset;
+  final Widget child;
+  const _StepperScroll({required this.currentOffset, required this.child});
+
+  @override
+  State<_StepperScroll> createState() => _StepperScrollState();
+}
+
+class _StepperScrollState extends State<_StepperScroll> {
+  final _controller = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reveal());
+  }
+
+  @override
+  void didUpdateWidget(covariant _StepperScroll old) {
+    super.didUpdateWidget(old);
+    if (old.currentOffset != widget.currentOffset) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _reveal());
+    }
+  }
+
+  void _reveal() {
+    if (!mounted || !_controller.hasClients) return;
+    final pos = _controller.position;
+    // Keep one step of context to the left of the current one.
+    final target = (widget.currentOffset - 92).clamp(0.0, pos.maxScrollExtent);
+    _controller.animateTo(
+      target,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+    controller: _controller,
+    scrollDirection: Axis.horizontal,
+    child: widget.child,
+  );
 }
