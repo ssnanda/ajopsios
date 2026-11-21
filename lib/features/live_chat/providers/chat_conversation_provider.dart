@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/api/ops_api.dart';
+import '../../../core/api/ajops_api.dart';
 import '../../../core/models/chat_session_model.dart';
 import '../../../core/models/chat_message_model.dart';
 import '../../../core/utils/error_utils.dart';
@@ -49,19 +49,23 @@ class ChatConversationState {
 /// session endpoint, only the list and its messages sub-resource.
 class ChatConversationNotifier extends StateNotifier<ChatConversationState> {
   ChatConversationNotifier(ChatSession initialSession)
-      : super(ChatConversationState(session: initialSession)) {
+    : super(ChatConversationState(session: initialSession)) {
     load();
     _timer = Timer.periodic(_pollInterval, (_) => load(silent: true));
   }
 
-  final _api = OpsApi.instance;
+  final _api = AjopsApi.instance;
   Timer? _timer;
 
   Future<void> load({bool silent = false}) async {
     if (!silent) state = state.copyWith(loading: true, clearError: true);
     try {
-      final messages = await _api.getChatSessionMessages(state.session.id);
-      state = state.copyWith(messages: messages, loading: false, clearError: true);
+      final messages = await _api.getChatMessages(state.session);
+      state = state.copyWith(
+        messages: messages,
+        loading: false,
+        clearError: true,
+      );
     } catch (e) {
       if (!silent) {
         state = state.copyWith(loading: false, error: friendlyError(e));
@@ -74,7 +78,7 @@ class ChatConversationNotifier extends StateNotifier<ChatConversationState> {
     if (trimmed.isEmpty) return null;
     state = state.copyWith(sending: true);
     try {
-      await _api.replyToChatSession(state.session.id, trimmed);
+      await _api.replyToChat(state.session, trimmed);
       state = state.copyWith(sending: false);
       await load(silent: true);
       return null;
@@ -84,9 +88,12 @@ class ChatConversationNotifier extends StateNotifier<ChatConversationState> {
     }
   }
 
-  Future<String?> claim() => _runAction(() => _api.claimChatSession(state.session.id));
-  Future<String?> unclaim() => _runAction(() => _api.unclaimChatSession(state.session.id));
-  Future<String?> close() => _runAction(() => _api.closeChatSession(state.session.id));
+  Future<String?> claim() =>
+      _runAction(() => _api.chatAction(state.session, 'claim'));
+  Future<String?> unclaim() =>
+      _runAction(() => _api.chatAction(state.session, 'unclaim'));
+  Future<String?> close() =>
+      _runAction(() => _api.chatAction(state.session, 'close'));
 
   Future<String?> _runAction(Future<ChatSession> Function() action) async {
     state = state.copyWith(actionBusy: true);
@@ -109,5 +116,5 @@ class ChatConversationNotifier extends StateNotifier<ChatConversationState> {
 
 final chatConversationProvider = StateNotifierProvider.autoDispose
     .family<ChatConversationNotifier, ChatConversationState, ChatSession>(
-  (ref, session) => ChatConversationNotifier(session),
-);
+      (ref, session) => ChatConversationNotifier(session),
+    );

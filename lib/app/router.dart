@@ -45,7 +45,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         final host = state.uri.host;
         if (host.isEmpty) return '/live-chat';
         final path = state.uri.path; // e.g. "/42" for ajops://live-chat/42
-        return '/$host$path';
+        final query = state.uri.hasQuery ? '?${state.uri.query}' : '';
+        return '/$host$path$query';
       }
 
       final authState = ref.read(authProvider);
@@ -60,10 +61,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     refreshListenable: notifier,
     routes: [
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       ShellRoute(
         builder: (context, state, child) => ShellScreen(child: child),
         routes: [
@@ -93,8 +91,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: ':sessionId',
                 builder: (context, state) {
-                  final id = int.tryParse(state.pathParameters['sessionId'] ?? '') ?? 0;
-                  return ChatConversationByIdScreen(sessionId: id);
+                  final id =
+                      int.tryParse(state.pathParameters['sessionId'] ?? '') ??
+                      0;
+                  return ChatConversationByIdScreen(
+                    sessionId: id,
+                    siteDomain: state.uri.queryParameters['site'] ?? '',
+                  );
                 },
               ),
             ],
@@ -113,11 +116,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: ':id',
-                builder: (context, state) => CommunityScreen(id: state.pathParameters['id']!),
+                builder: (context, state) =>
+                    CommunityScreen(id: state.pathParameters['id']!),
                 routes: [
                   GoRoute(
                     path: 'units/:unitId',
-                    builder: (context, state) => UnitScreen(unitId: int.tryParse(state.pathParameters['unitId'] ?? '') ?? 0),
+                    builder: (context, state) => UnitScreen(
+                      unitId:
+                          int.tryParse(state.pathParameters['unitId'] ?? '') ??
+                          0,
+                    ),
                   ),
                 ],
               ),
@@ -139,14 +147,22 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/pipeline',
             builder: (context, state) => const PipelineScreen(),
             routes: [
-              GoRoute(path: 'purchases', builder: (context, state) => const PurchasesScreen()),
+              GoRoute(
+                path: 'purchases',
+                builder: (context, state) => const PurchasesScreen(),
+              ),
               // Any other mailbox sub-pipeline (invoices, insurance, hoa, hoa_legal, ...): see kPipelineViews.
               GoRoute(
                 path: ':pipe',
                 builder: (context, state) {
                   final pipe = state.pathParameters['pipe'] ?? '';
-                  final view = kPipelineViews.where((v) => v.key == pipe).firstOrNull;
-                  return MailPipelineScreen(pipe: pipe, label: view?.label ?? pipe);
+                  final view = kPipelineViews
+                      .where((v) => v.key == pipe)
+                      .firstOrNull;
+                  return MailPipelineScreen(
+                    pipe: pipe,
+                    label: view?.label ?? pipe,
+                  );
                 },
               ),
             ],

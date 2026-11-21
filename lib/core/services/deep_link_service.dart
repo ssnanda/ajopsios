@@ -33,6 +33,7 @@ class DeepLinkService {
       _navController.add('/live-chat');
       return;
     }
-    _navController.add('/${uri.host}${uri.path}');
+    final query = uri.hasQuery ? '?${uri.query}' : '';
+    _navController.add('/${uri.host}${uri.path}$query');
   }
 }

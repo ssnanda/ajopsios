@@ -3,6 +3,7 @@
 /// web client reads.
 class ChatSession {
   final int id;
+  final String siteDomain;
   final String siteUuid;
   final String siteLabel;
   final String sessionUuid;
@@ -19,6 +20,7 @@ class ChatSession {
 
   const ChatSession({
     required this.id,
+    required this.siteDomain,
     required this.siteUuid,
     required this.siteLabel,
     required this.sessionUuid,
@@ -38,6 +40,7 @@ class ChatSession {
     final rawStaffId = json['assignedStaffId'];
     return ChatSession(
       id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      siteDomain: json['siteDomain'] as String? ?? '',
       siteUuid: json['siteUuid'] as String? ?? '',
       siteLabel: json['siteLabel'] as String? ?? '',
       sessionUuid: json['sessionUuid'] as String? ?? '',
@@ -48,14 +51,17 @@ class ChatSession {
       createdAt: json['createdAt'] as String? ?? '',
       lastMessageAt: json['lastMessageAt'] as String? ?? '',
       closedAt: json['closedAt'] as String? ?? '',
-      assignedStaffId: rawStaffId == null ? null : int.tryParse(rawStaffId.toString()),
+      assignedStaffId: rawStaffId == null
+          ? null
+          : int.tryParse(rawStaffId.toString()),
       assignedStaffName: json['assignedStaffName'] as String? ?? '',
       automationMuted: json['automationMuted'] == true,
     );
   }
 
-  String get displayName =>
-      visitorName.isNotEmpty ? visitorName : (visitorEmail.isNotEmpty ? visitorEmail : 'Visitor');
+  String get displayName => visitorName.isNotEmpty
+      ? visitorName
+      : (visitorEmail.isNotEmpty ? visitorEmail : 'Visitor');
 
   bool get isOpen => status == 'open';
   bool get isAssigned => assignedStaffId != null && assignedStaffId != 0;
@@ -63,8 +69,9 @@ class ChatSession {
   // Keyed by id for Riverpod .family caching — a freshly-fetched ChatSession
   // instance for the same conversation should reuse the same provider entry.
   @override
-  bool operator ==(Object other) => other is ChatSession && other.id == id;
+  bool operator ==(Object other) =>
+      other is ChatSession && other.id == id && other.siteDomain == siteDomain;
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(id, siteDomain);
 }

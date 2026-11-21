@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/api/ops_api.dart';
+import '../../../core/api/ajops_api.dart';
 import '../../../core/models/chat_session_model.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/utils/error_utils.dart';
@@ -47,7 +47,7 @@ class ChatListNotifier extends StateNotifier<ChatListState> {
     _timer = Timer.periodic(_pollInterval, (_) => load(silent: true));
   }
 
-  final _api = OpsApi.instance;
+  final _api = AjopsApi.instance;
   Timer? _timer;
 
   // Per-session lastMessageAt as of the previous poll, used to detect new
@@ -55,7 +55,7 @@ class ChatListNotifier extends StateNotifier<ChatListState> {
   // wasn't in the list before) worth alerting on. Populated but not alerted
   // on during the very first load — otherwise every already-open chat at
   // app launch would fire a notification.
-  final Map<int, String> _lastKnownMessageAt = {};
+  final Map<String, String> _lastKnownMessageAt = {};
   bool _hasLoadedOnce = false;
 
   Future<void> load({bool silent = false}) async {
@@ -65,7 +65,11 @@ class ChatListNotifier extends StateNotifier<ChatListState> {
         status: state.statusFilter == 'all' ? null : state.statusFilter,
       );
       _detectNewActivityAndNotify(sessions);
-      state = state.copyWith(sessions: sessions, loading: false, clearError: true);
+      state = state.copyWith(
+        sessions: sessions,
+        loading: false,
+        clearError: true,
+      );
     } catch (e) {
       // Silent polling failures don't clobber a list that's already showing —
       // only surface the error state on an explicit/initial load.
@@ -79,22 +83,31 @@ class ChatListNotifier extends StateNotifier<ChatListState> {
     final changed = <ChatSession>[];
     for (final s in sessions) {
       if (!s.isOpen) continue;
-      final previous = _lastKnownMessageAt[s.id];
+      final key = '${s.siteDomain}:${s.id}';
+      final previous = _lastKnownMessageAt[key];
       if (previous == null || previous != s.lastMessageAt) {
         changed.add(s);
       }
-      _lastKnownMessageAt[s.id] = s.lastMessageAt;
+      _lastKnownMessageAt[key] = s.lastMessageAt;
     }
 
     if (_hasLoadedOnce && changed.isNotEmpty) {
-      final title = changed.length == 1 ? 'New Live Chat message' : 'New Live Chat activity';
+      final title = changed.length == 1
+          ? 'New Live Chat message'
+          : 'New Live Chat activity';
       final body = changed.length == 1
           ? 'From ${changed.first.displayName}'
           : '${changed.length} conversations have new activity';
       // Deep-links straight to the conversation when there's exactly one; falls back to the list
       // (the default payload) when several changed at once, since there's no single "the" chat to jump to.
-      final payload = changed.length == 1 ? '/live-chat/${changed.first.id}' : '/live-chat';
-      NotificationService.instance.showNewMessage(title: title, body: body, payload: payload);
+      final payload = changed.length == 1
+          ? '/live-chat/${changed.first.id}?site=${Uri.encodeQueryComponent(changed.first.siteDomain)}'
+          : '/live-chat';
+      NotificationService.instance.showNewMessage(
+        title: title,
+        body: body,
+        payload: payload,
+      );
     }
     _hasLoadedOnce = true;
   }
@@ -111,6 +124,7 @@ class ChatListNotifier extends StateNotifier<ChatListState> {
   }
 }
 
-final chatListProvider = StateNotifierProvider.autoDispose<ChatListNotifier, ChatListState>(
-  (ref) => ChatListNotifier(),
-);
+final chatListProvider =
+    StateNotifierProvider.autoDispose<ChatListNotifier, ChatListState>(
+      (ref) => ChatListNotifier(),
+    );
