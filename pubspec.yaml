@@ -1,7 +1,7 @@
 name: ajopsios
 description: "AJ Ops mobile — staff app for NC LLC Agents, sharing core auth/api/storage with ajcoreios."
 publish_to: 'none'
-version: 1.3.12+115
+version: 1.3.13+116
 
 environment:
   sdk: ^3.12.2
@@ -20,7 +20,7 @@ dependencies:
   go_router: ^14.6.2
 
   # Secure credential storage
-  flutter_secure_storage: ^9.2.2
+  flutter_secure_storage: ^10.3.3
 
   # Biometric authentication (shared AuthRepository supports it; optional at login)
   local_auth: ^2.3.0
