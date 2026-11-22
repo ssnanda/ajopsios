@@ -1,7 +1,7 @@
 name: ajopsios
 description: "AJ Ops mobile — staff app for NC LLC Agents, sharing core auth/api/storage with ajcoreios."
 publish_to: 'none'
-version: 1.3.13+116
+version: 1.3.14+117
 
 environment:
   sdk: ^3.12.2
@@ -56,7 +56,7 @@ dependencies:
 
   # Mail scan capture (camera/gallery) and Files attachment picker (any file type)
   image_picker: ^1.1.2
-  file_picker: ^8.1.7
+  file_picker: ^13.4.1
 
   # Inspections: where the photo was taken (GPS) and the street address for it (native reverse geocoding)
   geolocator: ^13.0.2

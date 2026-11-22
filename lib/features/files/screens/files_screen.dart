@@ -26,8 +26,8 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
   }
 
   Future<void> _attachFile() async {
-    final result = await FilePicker.platform.pickFiles();
-    final path = result?.files.single.path;
+    final file = await FilePicker.pickFile();
+    final path = file?.path;
     if (path == null || !mounted) return;
     final err = await ref.read(filesProvider.notifier).uploadFile(filePath: path);
     if (!mounted) return;
