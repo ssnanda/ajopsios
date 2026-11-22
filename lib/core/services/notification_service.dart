@@ -26,19 +26,23 @@ class NotificationService {
 
   Future<void> init() async {
     if (_initialized) return;
-    _initialized = true;
 
+    const androidSettings = AndroidInitializationSettings('ic_stat_aj_ops');
     const darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
     await _plugin.initialize(
-      const InitializationSettings(iOS: darwinSettings),
+      const InitializationSettings(
+        android: androidSettings,
+        iOS: darwinSettings,
+      ),
       onDidReceiveNotificationResponse: (response) {
         _tapController.add(response.payload ?? '/live-chat');
       },
     );
+    _initialized = true;
   }
 
   /// Visible alert only — badge count is NOT set here. flutter_local_notifications has no
@@ -59,6 +63,14 @@ class NotificationService {
       title,
       body,
       const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'live_chat',
+          'Live chat',
+          channelDescription: 'New AJ Ops live chat messages',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: 'ic_stat_aj_ops',
+        ),
         iOS: DarwinNotificationDetails(presentAlert: true, presentBadge: false, presentSound: true),
       ),
       payload: payload,
