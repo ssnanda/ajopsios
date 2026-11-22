@@ -30,11 +30,11 @@
   "android": {
     "name": "AJ Ops",
     "packageName": "com.itspector.ajops",
-    "version": "1.3.15",
-    "buildVersion": "118",
+    "version": "1.3.16",
+    "buildVersion": "119",
     "date": "2026-11-22",
     "type": "apk",
     "downloadURL": "https://github.com/ssnanda/ajopsios/releases/download/android-latest/ajopsios.apk",
-    "size": 77133425
+    "size": 77163013
   }
 }
