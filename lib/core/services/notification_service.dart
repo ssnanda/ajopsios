@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter_app_badger/flutter_app_badger.dart';
+import 'package:app_badge_plus/app_badge_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 /// Local (on-device) notifications only — no APNs/remote push. This app is
@@ -45,7 +45,7 @@ class NotificationService {
   /// dedicated "set badge only" API; its badgeNumber only rides along with an actual .show()
   /// call, and that call's presentAlert/Badge/Sound flags govern in-app FOREGROUND presentation
   /// only, not background delivery — so using it as the badge's source of truth risks a stray
-  /// empty banner if a sync fires while backgrounded. setBadgeCount() (via flutter_app_badger,
+  /// empty banner if a sync fires while backgrounded. setBadgeCount() (via app_badge_plus,
   /// which touches nothing notification-related) is the single source of truth for the badge —
   /// see AppBadgeSyncNotifier, which polls /ops/summary and keeps it current independently of
   /// whether any alert happens to fire.
@@ -67,11 +67,8 @@ class NotificationService {
 
   Future<void> setBadgeCount(int count) async {
     try {
-      if (count <= 0) {
-        await FlutterAppBadger.removeBadge();
-      } else {
-        await FlutterAppBadger.updateBadgeCount(count);
-      }
+      // updateBadge(0) clears the badge.
+      await AppBadgePlus.updateBadge(count < 0 ? 0 : count);
     } catch (_) {
       // Badge sync is best-effort — never worth surfacing a failure for.
     }

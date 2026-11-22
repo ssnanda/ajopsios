@@ -1,7 +1,7 @@
 name: ajopsios
 description: "AJ Ops mobile — staff app for NC LLC Agents, sharing core auth/api/storage with ajcoreios."
 publish_to: 'none'
-version: 1.3.9+112
+version: 1.3.10+113
 
 environment:
   sdk: ^3.12.2
@@ -45,8 +45,9 @@ dependencies:
   # govern IN-APP FOREGROUND presentation only, not background delivery. A periodic
   # badge-only sync could show a stray empty banner if it fires while backgrounded.
   # This package sets UIApplication.applicationIconBadgeNumber directly, no
-  # notification involved at all.
-  flutter_app_badger: ^1.5.0
+  # notification involved at all. (Replaced flutter_app_badger, abandoned and
+  # missing the Android namespace AGP 8+/9 requires — it broke the APK build.)
+  app_badge_plus: ^1.4.0
 
   # ajops:// deep links (SMS alert -> tap -> straight to Live Chat). Custom URL
   # scheme, not Universal Links — Associated Domains also needs a paid

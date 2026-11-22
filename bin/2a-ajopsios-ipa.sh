@@ -85,7 +85,7 @@ require_files() {
 }
 
 require_git() {
-  command -v git >/dev/null 2>&1 || { echo "Error: git command is required" >&2; exit1; }
+  command -v git >/dev/null 2>&1 || { echo "Error: git command is required" >&2; exit 1; }
   git -C "$ROOT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
     echo "Error: $ROOT_DIR is not a git repository" >&2
     exit 1
@@ -173,6 +173,12 @@ write_altstore_manifest() {
   bundle="$(app_bundle_id)"; bundle="${bundle:-com.itspector.ajops}"
   dl="https://github.com/$GITHUB_REPO/releases/download/$RELEASE_TAG/$(basename "$IPA_FINAL_PATH")"
 
+  # Carry over the "android" entry written by 2e-ajopsios-apk.sh (AltStore ignores it).
+  local android_json=""
+  if [[ -f "$ALTSTORE_MANIFEST" ]] && command -v jq >/dev/null 2>&1; then
+    android_json="$(jq -c '.android // empty' "$ALTSTORE_MANIFEST" 2>/dev/null || true)"
+  fi
+
   cat > "$ALTSTORE_MANIFEST" <<JSON
 {
   "name": "$APP_NAME",
@@ -205,6 +211,12 @@ write_altstore_manifest() {
   "news": []
 }
 JSON
+
+  if [[ -n "$android_json" ]]; then
+    local tmp; tmp="$(mktemp "${TMPDIR:-/tmp}/altstore.XXXXXX")"
+    jq --argjson a "$android_json" '.android = $a' "$ALTSTORE_MANIFEST" > "$tmp"
+    mv -f "$tmp" "$ALTSTORE_MANIFEST"
+  fi
 
   git add "$ALTSTORE_MANIFEST"
   if git diff --cached --quiet; then

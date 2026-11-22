@@ -7,15 +7,15 @@ set -euo pipefail
 # ~/Documents/GitHub/apk/ajopsios.apk (or .aab).
 #
 # Version bumping lives in bin/1-bump-version.sh — called when the tree is dirty
-# or you pass --bump/--version/--no-bump. By default: build + commit, no push.
-#   --push      also push the branch
-#   --publish   push + refresh the rolling "android-latest" GitHub release
+# or you pass --bump/--version/--no-bump. By default (same as 2a-ajopsios-ipa.sh)
+# it builds, records the APK link under "android" in altstore.json, pushes the
+# branch, and refreshes the rolling "android-latest" GitHub release.
 #
 # Common runs:
 #   ./bin/2e-ajopsios-apk.sh
+#   ./bin/2e-ajopsios-apk.sh --quick
+#   ./bin/2e-ajopsios-apk.sh --local
 #   ./bin/2e-ajopsios-apk.sh --aab
-#   ./bin/2e-ajopsios-apk.sh --bump patch --publish
-#   ./bin/2e-ajopsios-apk.sh --no-bump
 #   ./bin/2e-ajopsios-apk.sh --delete
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -28,10 +28,16 @@ RELEASE_TAG="android-latest"
 RELEASE_TITLE="AJ Ops — Android (latest)"
 API_BASE_URL="https://ncllcagents.com/wp-json/ajcore/v1"
 
+# altstore.json is owned by 2a-ajopsios-ipa.sh (AltStore reads "apps"). This script
+# only rewrites the top-level "android" key, which AltStore ignores, so the same
+# raw URL also tells you where the newest APK is. 2a preserves this key.
+ALTSTORE_MANIFEST="$ROOT_DIR/altstore.json"
+ANDROID_PACKAGE="com.itspector.ajops"
+
 BUILD_TYPE="apk"
 GIT_COMMIT="true"
-GIT_PUSH="false"
-GITHUB_RELEASE="false"
+GIT_PUSH="true"
+GITHUB_RELEASE="true"
 SKIP_CLEAN="false"
 DELETE_ONLY="false"
 PRUNE_OLD="false"
@@ -50,14 +56,16 @@ Options:
   --no-bump             Build the current version, don't bump
   --delete              Delete the local APK/AAB and exit (no build)
   --repo OWNER/REPO     Override GitHub repo (default: ssnanda/ajopsios)
-  --push                Push the branch to origin after building
-  --publish             Push + refresh the rolling android-latest release
+  --local               Build locally without pushing or publishing
+  --no-publish          Build and push, but don't refresh android-latest
+  --push                Explicitly enable the default push behavior
+  --publish             Explicitly enable the default publish behavior
   --prune-old           Delete leftover per-version v* releases/tags, then exit
   --no-git-commit       Rewrite pubspec.yaml only, don't commit the bump
   --quick               Skip flutter clean (faster rebuild)
   --help
 
-Default (no flags): bump if the tree is dirty, build, commit — no push, no release.
+Default: bump when dirty, build, update altstore.json "android", push, publish android-latest.
 USAGE
 }
 
@@ -151,6 +159,33 @@ build_artifact() {
   [[ -f "$ARTIFACT_FINAL_PATH" ]] || { echo "Error: failed to copy artifact to $ARTIFACT_FINAL_PATH" >&2; exit 1; }
 }
 
+write_altstore_android() {
+  require_git
+  cd "$ROOT_DIR"
+  command -v jq >/dev/null 2>&1 || { echo "Error: jq required to update altstore.json" >&2; exit 1; }
+  [[ -f "$ALTSTORE_MANIFEST" ]] || { echo "Error: missing $ALTSTORE_MANIFEST (run 2a-ajopsios-ipa.sh once)" >&2; exit 1; }
+
+  local tmp dl
+  dl="https://github.com/$GITHUB_REPO/releases/download/$RELEASE_TAG/$(basename "$ARTIFACT_FINAL_PATH")"
+  tmp="$(mktemp "${TMPDIR:-/tmp}/altstore.XXXXXX")"
+  jq --arg name "$APP_NAME" --arg pkg "$ANDROID_PACKAGE" \
+     --arg version "${VERSION%+*}" --arg build "${VERSION#*+}" \
+     --arg date "$(date +%Y-%m-%d)" --arg type "$BUILD_TYPE" --arg dl "$dl" \
+     --argjson size "$(stat -f%z "$ARTIFACT_FINAL_PATH")" \
+     '.android = {name: $name, packageName: $pkg, version: $version, buildVersion: $build,
+                  date: $date, type: $type, downloadURL: $dl, size: $size}' \
+     "$ALTSTORE_MANIFEST" > "$tmp"
+  mv -f "$tmp" "$ALTSTORE_MANIFEST"
+
+  git add "$ALTSTORE_MANIFEST"
+  if git diff --cached --quiet; then
+    echo "AltStore: android entry unchanged"
+  else
+    git commit -m "AltStore manifest android $VERSION"
+    echo "AltStore: android entry updated for $VERSION"
+  fi
+}
+
 publish_latest_artifact() {
   require_gh
   require_git
@@ -171,8 +206,9 @@ This release always holds the latest build; older builds are not kept."
     gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPO" --yes
   fi
 
+  # --latest=false: ios-latest stays the repo's "Latest" release.
   gh release create "$RELEASE_TAG" "$ARTIFACT_FINAL_PATH" \
-    --repo "$GITHUB_REPO" --title "$RELEASE_TITLE" --notes "$notes"
+    --repo "$GITHUB_REPO" --title "$RELEASE_TITLE" --notes "$notes" --latest=false
   echo "GitHub: published $VERSION to $RELEASE_TAG"
   echo "  https://github.com/$GITHUB_REPO/releases/download/$RELEASE_TAG/$(basename "$ARTIFACT_FINAL_PATH")"
 }
@@ -211,6 +247,8 @@ while [[ $# -gt 0 ]]; do
     --delete) DELETE_ONLY="true"; shift ;;
     --prune-old) PRUNE_OLD="true"; shift ;;
     --repo) GITHUB_REPO="${2:-}"; shift 2 ;;
+    --local) GIT_PUSH="false"; GITHUB_RELEASE="false"; shift ;;
+    --no-publish) GITHUB_RELEASE="false"; shift ;;
     --push) GIT_PUSH="true"; shift ;;
     --publish) GIT_PUSH="true"; GITHUB_RELEASE="true"; shift ;;
     --no-git-commit) GIT_COMMIT="false"; shift ;;
@@ -274,6 +312,10 @@ echo ""
 delete_old_artifact
 build_artifact
 
+if [[ "$GITHUB_RELEASE" == "true" && "$GIT_COMMIT" == "true" ]]; then
+  write_altstore_android
+fi
+
 if [[ "$GIT_PUSH" == "true" ]]; then
   git_push_branch
 fi
@@ -288,6 +330,9 @@ echo "  Done!"
 echo "════════════════════════════════════════"
 echo "Version:        $VERSION"
 echo "Built artifact: $ARTIFACT_FINAL_PATH"
-[[ "$GITHUB_RELEASE" == "true" ]] && echo "Release:        https://github.com/$GITHUB_REPO/releases/tag/$RELEASE_TAG"
+if [[ "$GITHUB_RELEASE" == "true" ]]; then
+  echo "Release:        https://github.com/$GITHUB_REPO/releases/tag/$RELEASE_TAG"
+  echo "Download:       https://github.com/$GITHUB_REPO/releases/download/$RELEASE_TAG/$(basename "$ARTIFACT_FINAL_PATH")"
+fi
 echo "════════════════════════════════════════"
 echo ""

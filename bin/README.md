@@ -10,7 +10,7 @@ Build + release scripts for **AJ Ops** (`ssnanda/ajopsios`). Same scheme as
 | `2b-sim-iphone.sh` | run the app in the configured iPhone simulator | — |
 | `2c-sim-ipad.sh` | run the app in the configured iPad simulator | — |
 | `2d-device-run.sh` | run the app on a physical iOS device | — |
-| `2e-ajopsios-apk.sh` | build Android APK/AAB → optional publish to rolling `android-latest` | `~/Documents/GitHub/apk/ajopsios.apk` / `.aab` |
+| `2e-ajopsios-apk.sh` | build + publish Android APK/AAB to rolling `android-latest` and record its link under `android` in `altstore.json` | `~/Documents/GitHub/apk/ajopsios.apk` / `.aab` |
 
 ## Usage
 
@@ -32,7 +32,8 @@ Build + release scripts for **AJ Ops** (`ssnanda/ajopsios`). Same scheme as
 2. Build the IPA / APK.
 3. The iOS script pushes the branch, regenerates `altstore.json`, and refreshes
    the rolling `ios-latest` release by default. Use `--local` to stop after the
-   local build. Android publishing remains opt-in with `--publish`.
+   local build. The Android script does the same (push, `altstore.json`
+   `android` entry, rolling `android-latest`); `--local` skips it.
 
 ## AltStore (iOS auto-update)
 
@@ -49,6 +50,9 @@ Add it as a Source in AltStore, install AJ Ops from it, and **Refresh All**
   and `CFBundleVersion` as `buildVersion`, plus the IPA's privacy permissions.
 - Bundle id: `com.itspector.ajops`.
 - `--publish` keeps the manifest's `version` / `size` / `downloadURL` in sync.
+- Top-level `android` (written by `2e-ajopsios-apk.sh`, ignored by AltStore, kept
+  by `2a`) holds the latest APK's version, size and
+  `https://github.com/ssnanda/ajopsios/releases/download/android-latest/ajopsios.apk`.
 
 ## Generated files
 
