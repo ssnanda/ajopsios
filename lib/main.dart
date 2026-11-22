@@ -7,8 +7,18 @@ import 'core/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService.instance.init();
-  await DeepLinkService.instance.init();
-  await InspectionQueue.instance.init();
+  // None of these are required to show the login screen. A throw here used to abort main()
+  // before runApp, leaving the native splash up forever (Android: stripped notification icon).
+  await _safeInit('notifications', NotificationService.instance.init);
+  await _safeInit('deep links', DeepLinkService.instance.init);
+  await _safeInit('inspection queue', InspectionQueue.instance.init);
   runApp(const SiteScope(child: AjOpsApp()));
+}
+
+Future<void> _safeInit(String name, Future<void> Function() init) async {
+  try {
+    await init().timeout(const Duration(seconds: 5));
+  } catch (e, st) {
+    debugPrint('Startup: $name init failed: $e\n$st');
+  }
 }

@@ -1,5 +1,6 @@
 package com.ncllcagents.ajopsios
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+// local_auth (biometric unlock) requires a FragmentActivity on Android.
+class MainActivity : FlutterFragmentActivity()

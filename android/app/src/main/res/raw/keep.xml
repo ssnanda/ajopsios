@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Release builds shrink resources and strip any drawable only referenced by name from Dart.
+     flutter_local_notifications looks up ic_stat_aj_ops by name (NotificationService), so without
+     this keep rule it is removed, initialize() throws invalid_icon, and the app hangs on the splash. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_aj_ops" />
